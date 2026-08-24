@@ -74,7 +74,7 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
 
 - [x] **Sprint 12** : prochaines actions datées par offre (relance, entretien…)
   + section « À faire aujourd'hui » (tableau de bord et email).
-- [ ] **Sprint 16** : contacts recruteurs par entreprise (nom, email,
+- [x] **Sprint 16** : contacts recruteurs par entreprise (nom, email,
   téléphone, notes), rattachés aux offres.
 - [ ] **Sprint 17** : focus du jour — 3 actions suggérées (pépite à traiter,
   relance due, action datée).

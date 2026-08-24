@@ -43,6 +43,10 @@ export const api = {
   generateEmail: (id, kind) => request(`/api/offers/${id}/email?kind=${kind}`, { method: 'POST' }),
   gapAnalysis: (id) => request(`/api/offers/${id}/gap-analysis`, { method: 'POST' }),
 
+  contacts: (company) => request(`/api/contacts${company ? `?company=${encodeURIComponent(company)}` : ''}`),
+  addContact: (body) => request('/api/contacts', { method: 'POST', body: JSON.stringify(body) }),
+  deleteContact: (id) => request(`/api/contacts/${id}`, { method: 'DELETE' }),
+
   profile: () => request('/api/profile'),
   updateProfile: (body) => request('/api/profile', { method: 'PUT', body: JSON.stringify(body) }),
   uploadCv: (file) => {

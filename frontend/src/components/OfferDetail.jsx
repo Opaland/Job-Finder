@@ -15,7 +15,14 @@ export default function OfferDetail({ offerId, onClose }) {
   const [enriching, setEnriching] = useState(false)
   const [emailDraft, setEmailDraft] = useState(null)
   const [emailGenerating, setEmailGenerating] = useState(null)
+  const [contacts, setContacts] = useState([])
+  const [newContact, setNewContact] = useState(null)
   const showToast = useToast()
+
+  const loadContacts = (company) => {
+    if (!company) return
+    api.contacts(company).then(setContacts).catch(() => {})
+  }
 
   const generateEmail = async (kind) => {
     if (DEMO) { showToast(DEMO_ONLY_MSG, true); return }
@@ -37,6 +44,7 @@ export default function OfferDetail({ offerId, onClose }) {
       setNotes(o.notes || '')
       setLetter(o.cover_letter || '')
       setPrep(o.interview_prep || '')
+      loadContacts(o.company)
       if (o.status === 'nouvelle') {
         api.updateOffer(o.id, { status: 'vue' }).then(setOffer).catch(() => {})
       }
@@ -266,8 +274,10 @@ export default function OfferDetail({ offerId, onClose }) {
               >
                 Copier
               </button>
-              <a href={`mailto:?subject=${encodeURIComponent(emailDraft.objet)}&body=${encodeURIComponent(emailDraft.corps)}`}>
-                <button className="secondary">Ouvrir dans mon client mail</button>
+              <a href={`mailto:${encodeURIComponent(contacts.find((c) => c.email)?.email || '')}?subject=${encodeURIComponent(emailDraft.objet)}&body=${encodeURIComponent(emailDraft.corps)}`}>
+                <button className="secondary">
+                  Ouvrir dans mon client mail{contacts.find((c) => c.email) ? ` (→ ${contacts.find((c) => c.email).name})` : ''}
+                </button>
               </a>
             </div>
           </div>
@@ -313,6 +323,50 @@ export default function OfferDetail({ offerId, onClose }) {
           onChange={(e) => setPrep(e.target.value)}
           onBlur={() => prep !== (offer.interview_prep || '') && patch({ interview_prep: prep }, 'Fiche enregistrée.')}
         />
+
+        {offer.company && (
+          <>
+            <div className="section-title">Contacts chez {offer.company}</div>
+            {contacts.length === 0 && <p className="hint" style={{ margin: '2px 0 6px' }}>Aucun contact enregistré pour cette entreprise.</p>}
+            {contacts.map((c) => (
+              <div key={c.id} className="actions-row" style={{ margin: '2px 0' }}>
+                <span><b>{c.name}</b>{c.role ? ` · ${c.role}` : ''}</span>
+                {c.email && <a href={`mailto:${c.email}`}>{c.email}</a>}
+                {c.phone && <span className="hint">{c.phone}</span>}
+                <button
+                  className="fav" title="Supprimer ce contact" style={{ fontSize: 14 }}
+                  onClick={async () => {
+                    try { await api.deleteContact(c.id); loadContacts(offer.company) } catch (err) { showToast(err.message, true) }
+                  }}
+                >✕</button>
+              </div>
+            ))}
+            {newContact === null ? (
+              <button className="secondary" style={{ marginTop: 4 }} onClick={() => setNewContact({ name: '', role: '', email: '', phone: '' })}>
+                + Ajouter un contact
+              </button>
+            ) : (
+              <div className="actions-row" style={{ marginTop: 6 }}>
+                <input type="text" placeholder="Nom *" style={{ width: 140 }} value={newContact.name} onChange={(e) => setNewContact({ ...newContact, name: e.target.value })} />
+                <input type="text" placeholder="Rôle" style={{ width: 130 }} value={newContact.role} onChange={(e) => setNewContact({ ...newContact, role: e.target.value })} />
+                <input type="text" placeholder="Email" style={{ width: 180 }} value={newContact.email} onChange={(e) => setNewContact({ ...newContact, email: e.target.value })} />
+                <input type="text" placeholder="Téléphone" style={{ width: 120 }} value={newContact.phone} onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })} />
+                <button
+                  className="primary"
+                  onClick={async () => {
+                    try {
+                      await api.addContact({ company: offer.company, ...newContact })
+                      setNewContact(null)
+                      loadContacts(offer.company)
+                      showToast('Contact ajouté.')
+                    } catch (err) { showToast(err.message, true) }
+                  }}
+                >OK</button>
+                <button className="secondary" onClick={() => setNewContact(null)}>Annuler</button>
+              </div>
+            )}
+          </>
+        )}
 
         <div className="section-title">Prochaine action</div>
         <div className="actions-row" style={{ margin: '4px 0 8px' }}>

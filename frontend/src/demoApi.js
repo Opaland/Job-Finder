@@ -6,6 +6,9 @@ import data from './demoData.json'
 const state = {
   offers: JSON.parse(JSON.stringify(data.offers)),
   profile: JSON.parse(JSON.stringify(data.profile)),
+  contacts: [
+    { id: 1, company: 'Éditeur logiciels santé', name: 'Claire Dupont', role: 'Talent Acquisition', email: 'c.dupont@exemple.fr', phone: '', notes: '' },
+  ],
 }
 
 const LOCAL_ONLY =
@@ -14,6 +17,10 @@ const LOCAL_ONLY =
 
 function offerById(id) {
   return state.offers.find((o) => o.id === Number(id))
+}
+
+function params_get(query, key) {
+  return new URLSearchParams(query).get(key)
 }
 
 function listOffers(query) {
@@ -188,6 +195,22 @@ export async function demoRequest(path, options = {}) {
   if (route === '/api/digests/today') return data.digest
   if (route === '/api/digests') return [data.digest]
   if (route.startsWith('/api/digests/')) throw new Error(LOCAL_ONLY)
+  if (route === '/api/contacts' && method === 'GET') {
+    const company = (params_get(query, 'company') || '').toLowerCase()
+    return company
+      ? state.contacts.filter((c) => c.company.toLowerCase() === company)
+      : state.contacts
+  }
+  if (route === '/api/contacts' && method === 'POST') {
+    const contact = { id: Math.max(0, ...state.contacts.map((c) => c.id)) + 1, role: '', email: '', phone: '', notes: '', ...body }
+    state.contacts.push(contact)
+    return contact
+  }
+  const contactMatch = route.match(/^\/api\/contacts\/(\d+)$/)
+  if (contactMatch && method === 'DELETE') {
+    state.contacts = state.contacts.filter((c) => c.id !== Number(contactMatch[1]))
+    return { deleted: true }
+  }
   if (route === '/api/sources') return data.sources
   if (route === '/api/stats') return computeStats()
   if (route === '/api/backup') throw new Error(LOCAL_ONLY)
