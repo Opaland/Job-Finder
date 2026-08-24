@@ -94,6 +94,37 @@ Barème : 90-100 = poste identique à son métier actuel (Test Manager/QA Lead) 
     return (max(0.0, min(100.0, score)), reason)
 
 
+def ai_interview_prep(offer: dict, cv_text: str) -> str | None:
+    """Génère une fiche de préparation d'entretien pour l'offre. None si IA indisponible."""
+    if not cli_available():
+        return None
+    prompt = f"""Tu prépares Cédric Moretti (Test Manager / QA Lead, 15 ans d'expérience, Lyon) à un
+entretien d'embauche pour cette offre.
+
+Son CV (résumé) :
+---
+{cv_text[:6000]}
+---
+
+L'offre :
+Titre : {offer.get('title', '')}
+Entreprise : {offer.get('company', '')}
+Lieu : {offer.get('location', '')}
+Description : {offer.get('description', '')[:6000]}
+
+Rédige une fiche de préparation d'entretien en français, directe et actionnable, avec exactement
+ces sections (titres en gras markdown) :
+
+**Pitch d'accroche (30 secondes)** — un paragraphe à l'oral, personnalisé pour ce poste.
+**Tes points forts face à cette annonce** — 4 à 6 puces reliant des éléments précis du CV aux attentes de l'offre (avec les chiffres du CV).
+**Questions probables du recruteur** — 5 à 7 questions avec, pour chacune, l'angle de réponse conseillé en une phrase.
+**Points de vigilance** — 2 à 4 aspects où le profil peut être challengé (surqualification, techno absente du CV…) et comment les retourner.
+**Tes questions à poser** — 4 à 5 questions pertinentes qui montrent ta séniorité QA.
+
+Réponds UNIQUEMENT avec la fiche, sans commentaire avant ou après."""
+    return _run_claude(prompt, timeout=300)
+
+
 def ai_cover_letter(offer: dict, cv_text: str, letter_template: str) -> str | None:
     """Génère une lettre de motivation adaptée à l'offre. Renvoie None si l'IA est indisponible."""
     if not cli_available():

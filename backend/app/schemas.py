@@ -34,6 +34,7 @@ class OfferDetail(OfferSummary):
     ai_reason: str
     notes: str
     cover_letter: str
+    interview_prep: str | None
     other_sources: list
     status_history: list
     last_seen_at: datetime
@@ -44,6 +45,7 @@ class OfferUpdate(BaseModel):
     notes: str | None = None
     favorite: bool | None = None
     cover_letter: str | None = None
+    interview_prep: str | None = None
 
 
 class ProfileOut(BaseModel):
@@ -67,6 +69,7 @@ class ProfileOut(BaseModel):
     excluded_keywords: list
     scan_hour: str
     sources_enabled: dict
+    scoring_weights: dict | None
 
 
 class ProfileUpdate(BaseModel):
@@ -85,6 +88,7 @@ class ProfileUpdate(BaseModel):
     excluded_keywords: list | None = None
     scan_hour: str | None = None
     sources_enabled: dict | None = None
+    scoring_weights: dict | None = None
 
 
 class ScanRunOut(BaseModel):

@@ -54,6 +54,19 @@ REMOTE_HINTS = [
     "teletravail total", "remote", "teletravail",
 ]
 
+# Pondérations par défaut (modifiables dans Profil & CV). Le score final est
+# toujours ramené sur 100, quel que soit le total des pondérations.
+DEFAULT_WEIGHTS = {
+    "titre": 40,
+    "competences": 25,
+    "seniorite": 10,
+    "localisation": 15,
+    "contrat": 5,
+    "secteur": 5,
+}
+# Barème interne de chaque critère (l'échelle sur laquelle les fonctions notent).
+_BASE_MAX = dict(DEFAULT_WEIGHTS)
+
 
 @dataclass
 class ScoreResult:
@@ -152,8 +165,18 @@ def _sector_score(text_norm: str, sector_bonus: list[str]) -> tuple[float, str]:
 
 
 def score_offer(offer: dict, profile: dict) -> ScoreResult:
-    """Calcule le score d'une offre (dict normalisé) contre le profil (dict)."""
+    """Calcule le score d'une offre (dict normalisé) contre le profil (dict).
+
+    Chaque critère note sur son barème interne, puis est mis à l'échelle des
+    pondérations du profil ; le total est ramené sur 100.
+    """
     res = ScoreResult()
+    weights = {**DEFAULT_WEIGHTS, **{k: v for k, v in (profile.get("scoring_weights") or {}).items() if k in DEFAULT_WEIGHTS}}
+    total_weight = sum(weights.values()) or 1
+
+    def add_weighted(key: str, label: str, pts: float, why: str):
+        scaled = pts * weights[key] / _BASE_MAX[key] if _BASE_MAX[key] else 0
+        res.add(label, scaled, weights[key], why)
 
     title_norm = normalize(offer.get("title", ""))
     desc_norm = normalize(offer.get("description", ""))
@@ -165,27 +188,30 @@ def score_offer(offer: dict, profile: dict) -> ScoreResult:
     excluded_hit = next((k for k in excluded if k and contains_word(full_norm, k)), None)
 
     pts, why = _title_score(title_norm, desc_norm, profile.get("target_titles", []))
-    res.add("Adéquation du poste", pts, 40, why)
+    add_weighted("titre", "Adéquation du poste", pts, why)
     qa_score = pts
 
     pts, why = _skills_score(desc_norm, title_norm, profile.get("skills", []))
-    res.add("Compétences du CV", pts, 25, why)
+    add_weighted("competences", "Compétences du CV", pts, why)
 
     pts, why, is_junior = _seniority_score(title_norm, desc_norm)
-    res.add("Niveau / séniorité", pts, 10, why)
+    add_weighted("seniorite", "Niveau / séniorité", pts, why)
 
     pts, why = _location_score(
         location_norm, desc_norm, title_norm,
         profile.get("location_keywords", []), profile.get("remote_ok", True),
         bool(offer.get("remote")),
     )
-    res.add("Localisation", pts, 15, why)
+    add_weighted("localisation", "Localisation", pts, why)
 
     pts, why = _contract_score(contract_norm, desc_norm, profile.get("contracts", []))
-    res.add("Contrat", pts, 5, why)
+    add_weighted("contrat", "Contrat", pts, why)
 
     pts, why = _sector_score(full_norm, profile.get("sector_bonus", []))
-    res.add("Secteur", pts, 5, why)
+    add_weighted("secteur", "Secteur", pts, why)
+
+    # Ramène le total sur 100 quel que soit le total des pondérations.
+    res.score = res.score * 100.0 / total_weight
 
     # Plafonds : hors QA ou junior, l'offre reste listée mais ne peut pas être bien classée.
     if qa_score == 0:

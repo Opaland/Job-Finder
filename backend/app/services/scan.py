@@ -40,6 +40,7 @@ def profile_to_dict(profile: Profile) -> dict:
         "contracts": profile.contracts or [],
         "sector_bonus": profile.sector_bonus or [],
         "excluded_keywords": profile.excluded_keywords or [],
+        "scoring_weights": profile.scoring_weights or {},
     }
 
 

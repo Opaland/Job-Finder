@@ -24,14 +24,14 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
 - [x] **Sprint 2** : tableau Kanban du pipeline — colonnes par statut, cartes
   glissées-déposées (le statut reste modifié uniquement par l'utilisateur),
   disponible aussi dans la démo.
-- [ ] **Sprint 3 (part. 1)** : préparation d'entretien par l'IA locale — fiche
+- [x] **Sprint 3 (part. 1)** : préparation d'entretien par l'IA locale — fiche
   générée par Claude pour une offre (points forts du CV face à l'annonce,
   questions probables du recruteur, questions à poser, pièges), stockée sur
   l'offre et exportable.
 
 ### EPIC C — Matching intelligent
 
-- [ ] **Sprint 3 (part. 2)** : pondérations du scoring réglables dans l'UI
+- [x] **Sprint 3 (part. 2)** : pondérations du scoring réglables dans l'UI
   (titre / compétences / séniorité / localisation / contrat / secteur) avec
   re-scoring immédiat ; migration automatique de la base (les données existantes
   sont préservées).

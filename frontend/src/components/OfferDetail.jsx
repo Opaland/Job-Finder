@@ -8,7 +8,9 @@ export default function OfferDetail({ offerId, onClose }) {
   const [offer, setOffer] = useState(null)
   const [notes, setNotes] = useState('')
   const [letter, setLetter] = useState('')
+  const [prep, setPrep] = useState('')
   const [generating, setGenerating] = useState(false)
+  const [prepGenerating, setPrepGenerating] = useState(false)
   const [enriching, setEnriching] = useState(false)
   const showToast = useToast()
 
@@ -17,6 +19,7 @@ export default function OfferDetail({ offerId, onClose }) {
       setOffer(o)
       setNotes(o.notes || '')
       setLetter(o.cover_letter || '')
+      setPrep(o.interview_prep || '')
       if (o.status === 'nouvelle') {
         api.updateOffer(o.id, { status: 'vue' }).then(setOffer).catch(() => {})
       }
@@ -194,6 +197,47 @@ export default function OfferDetail({ offerId, onClose }) {
           value={letter}
           onChange={(e) => setLetter(e.target.value)}
           onBlur={() => letter !== offer.cover_letter && patch({ cover_letter: letter }, 'Lettre enregistrée.')}
+        />
+
+        <div className="section-title">Préparation d'entretien</div>
+        <div className="actions-row" style={{ margin: '4px 0 8px' }}>
+          <button
+            className="primary"
+            disabled={prepGenerating}
+            onClick={async () => {
+              if (DEMO) { showToast(DEMO_ONLY_MSG, true); return }
+              setPrepGenerating(true)
+              try {
+                const updated = await api.interviewPrep(offer.id)
+                setOffer(updated)
+                setPrep(updated.interview_prep || '')
+                showToast("Fiche d'entretien générée : pitch, points forts, questions probables, vigilances.")
+              } catch (err) {
+                showToast(err.message, true)
+              } finally {
+                setPrepGenerating(false)
+              }
+            }}
+          >
+            {prepGenerating
+              ? (<><span className="spin" />Préparation en cours…</>)
+              : (prep ? "Régénérer la fiche d'entretien" : "Préparer l'entretien avec Claude")}
+          </button>
+          {prep && (
+            <button
+              className="secondary"
+              onClick={() => { navigator.clipboard.writeText(prep); showToast('Fiche copiée dans le presse-papiers.') }}
+            >
+              Copier la fiche
+            </button>
+          )}
+        </div>
+        <textarea
+          rows={prep ? 14 : 3}
+          placeholder="Pitch, points forts face à l'annonce, questions probables du recruteur, vigilances, questions à poser…"
+          value={prep}
+          onChange={(e) => setPrep(e.target.value)}
+          onBlur={() => prep !== (offer.interview_prep || '') && patch({ interview_prep: prep }, 'Fiche enregistrée.')}
         />
 
         <div className="section-title">Tes notes</div>

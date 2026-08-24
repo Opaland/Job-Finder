@@ -58,6 +58,7 @@ class Offer(Base):
     favorite: Mapped[bool] = mapped_column(Boolean, default=False)
     notes: Mapped[str] = mapped_column(Text, default="")
     cover_letter: Mapped[str] = mapped_column(Text, default="")
+    interview_prep: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     other_sources: Mapped[list] = mapped_column(JSON, default=list)
 
@@ -90,6 +91,8 @@ class Profile(Base):
 
     scan_hour: Mapped[str] = mapped_column(String(5), default="07:30")
     sources_enabled: Mapped[dict] = mapped_column(JSON, default=dict)
+    # Pondérations du score (voir services/scoring.py DEFAULT_WEIGHTS) ; None = défauts.
+    scoring_weights: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 

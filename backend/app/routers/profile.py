@@ -23,7 +23,7 @@ def update_profile(update: ProfileUpdate, db: Session = Depends(get_db)):
     changed_scoring = False
     scoring_fields = {
         "target_titles", "skills", "location_keywords", "radius_km", "remote_ok",
-        "contracts", "sector_bonus", "excluded_keywords",
+        "contracts", "sector_bonus", "excluded_keywords", "scoring_weights",
     }
     for field, value in update.model_dump(exclude_unset=True).items():
         setattr(profile, field, value)

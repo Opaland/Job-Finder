@@ -6,7 +6,7 @@ Usage :
 """
 import sys
 
-from .database import Base, SessionLocal, engine
+from .database import SessionLocal, engine, ensure_schema
 from .services.digest import build_digest, send_digest_email
 from .services.scan import run_scan
 from .services.seeding import ensure_profile
@@ -14,7 +14,7 @@ from .services.seeding import ensure_profile
 
 def main():
     command = sys.argv[1] if len(sys.argv) > 1 else "scan"
-    Base.metadata.create_all(engine)
+    ensure_schema(engine)
     db = SessionLocal()
     try:
         ensure_profile(db)

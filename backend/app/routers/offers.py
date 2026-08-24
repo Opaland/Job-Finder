@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import OFFER_STATUSES, Offer, Profile, utcnow
 from ..schemas import OfferDetail, OfferSummary, OfferUpdate
-from ..services.claude_ai import ai_cover_letter, cli_available
+from ..services.claude_ai import ai_cover_letter, ai_interview_prep, cli_available
 from ..services.enrich import fetch_full_description
 
 router = APIRouter(prefix="/api/offers", tags=["offres"])
@@ -140,6 +140,8 @@ def update_offer(offer_id: int, update: OfferUpdate, db: Session = Depends(get_d
         offer.favorite = update.favorite
     if update.cover_letter is not None:
         offer.cover_letter = update.cover_letter
+    if update.interview_prep is not None:
+        offer.interview_prep = update.interview_prep
 
     db.commit()
     return offer
@@ -171,6 +173,35 @@ def generate_letter(offer_id: int, db: Session = Depends(get_db)):
     if not letter:
         raise HTTPException(502, "La génération a échoué (voir les logs). Réessaie ou édite la lettre manuellement.")
     offer.cover_letter = letter.strip()
+    db.commit()
+    return offer
+
+
+@router.post("/{offer_id}/interview-prep", response_model=OfferDetail)
+def generate_interview_prep(offer_id: int, db: Session = Depends(get_db)):
+    """Génère une fiche de préparation d'entretien via la session locale Claude Code."""
+    offer = db.get(Offer, offer_id)
+    if not offer:
+        raise HTTPException(404, "Offre introuvable")
+    if not cli_available():
+        raise HTTPException(
+            503,
+            "CLI Claude Code introuvable sur ce poste. Vérifie que la commande « claude » "
+            "fonctionne dans un terminal.",
+        )
+    profile = db.get(Profile, 1)
+    prep = ai_interview_prep(
+        {
+            "title": offer.title,
+            "company": offer.company,
+            "location": offer.location,
+            "description": offer.description,
+        },
+        profile.cv_text,
+    )
+    if not prep:
+        raise HTTPException(502, "La génération a échoué (voir les logs). Réessaie dans un instant.")
+    offer.interview_prep = prep.strip()
     db.commit()
     return offer
 

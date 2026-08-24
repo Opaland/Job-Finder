@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { api, formatDate } from '../api.js'
 import { useToast } from '../App.jsx'
 
@@ -28,6 +28,15 @@ function TagEditor({ values, onChange, placeholder }) {
     </div>
   )
 }
+
+const WEIGHT_FIELDS = [
+  ['titre', 'Adéquation du poste', 40],
+  ['competences', 'Compétences du CV', 25],
+  ['seniorite', 'Niveau / séniorité', 10],
+  ['localisation', 'Localisation', 15],
+  ['contrat', 'Contrat', 5],
+  ['secteur', 'Secteur', 5],
+]
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState(null)
@@ -59,6 +68,7 @@ export default function ProfilePage() {
         excluded_keywords: profile.excluded_keywords,
         sector_bonus: profile.sector_bonus,
         scan_hour: profile.scan_hour,
+        scoring_weights: profile.scoring_weights || null,
       }
       setProfile(await api.updateProfile(body))
       showToast('Profil enregistré — les scores des offres ont été recalculés.')
@@ -160,6 +170,41 @@ export default function ProfilePage() {
           <label>Heure du scan quotidien</label>
           <input type="time" value={profile.scan_hour} onChange={(e) => set('scan_hour', e.target.value)} style={{ width: 120 }} />
         </div>
+      </div>
+
+      <div className="card">
+        <h2>Pondérations du score</h2>
+        <p className="hint" style={{ marginTop: 0 }}>
+          Le poids de chaque critère dans le classement. Le total est libre : le score est
+          toujours ramené sur 100. Enregistrer recalcule toutes les offres.
+        </p>
+        <div className="form-grid" style={{ maxWidth: 480 }}>
+          {WEIGHT_FIELDS.map(([key, label, def]) => {
+            const weights = profile.scoring_weights || {}
+            const value = weights[key] ?? def
+            return (
+              <Fragment key={key}>
+                <label>{label}</label>
+                <div>
+                  <input
+                    type="number" min="0" max="100" value={value} style={{ width: 80 }}
+                    onChange={(e) => set('scoring_weights', {
+                      ...Object.fromEntries(WEIGHT_FIELDS.map(([k, , d]) => [k, weights[k] ?? d])),
+                      [key]: Math.max(0, Number(e.target.value) || 0),
+                    })}
+                  />
+                  <span className="hint" style={{ marginLeft: 8 }}>défaut : {def}</span>
+                </div>
+              </Fragment>
+            )
+          })}
+        </div>
+        <p className="hint">
+          Total actuel :{' '}
+          <b>{WEIGHT_FIELDS.reduce((sum, [k, , d]) => sum + ((profile.scoring_weights || {})[k] ?? d), 0)}</b>
+          {' '}· <button className="secondary" style={{ padding: '3px 10px', fontSize: 12 }}
+            onClick={() => set('scoring_weights', null)}>Revenir aux défauts</button>
+        </p>
       </div>
 
       <div className="card">
