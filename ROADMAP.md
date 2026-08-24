@@ -40,12 +40,12 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
 
 - [x] **Sprint 4** : restauration de sauvegarde depuis l'UI (validation du
   fichier, copie de sécurité automatique, migration de la sauvegarde).
-- [ ] **Sprint 5** : détection de doublons par similarité de titre (fusion au
+- [x] **Sprint 5** : détection de doublons par similarité de titre (fusion au
   scan des offres de même entreprise aux titres quasi identiques).
 
 ### EPIC E — Pilotage avancé
 
-- [ ] **Sprint 6** : réactivité des entreprises — candidatures, réponses,
+- [x] **Sprint 6** : réactivité des entreprises — candidatures, réponses,
   délai moyen et attentes en cours, par entreprise (page Statistiques).
 - [ ] **Sprint 7** : pépites (score ≥ 85 mises en avant dans l'appli et le
   digest) + objectif hebdomadaire de candidatures avec jauge de progression.

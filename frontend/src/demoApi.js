@@ -74,6 +74,20 @@ function computeStats() {
     perDay.push({ date: key, count: Math.max(0, count) })
   }
 
+  const companies = []
+  offers.forEach((o) => {
+    const applied = (o.status_history || []).find((h) => h.status === 'postulee')
+    if (!applied) return
+    const pendingDays = Math.max(0, Math.floor((Date.now() - new Date(applied.date)) / 86400000))
+    companies.push({
+      company: o.company || 'Entreprise non précisée',
+      applications: 1,
+      responses: ['entretien', 'refusee'].includes(o.status) ? 1 : 0,
+      avg_response_days: null,
+      pending_days: ['postulee', 'relancee'].includes(o.status) ? pendingDays : null,
+    })
+  })
+
   return {
     totals: {
       offers: offers.length,
@@ -89,6 +103,7 @@ function computeStats() {
       .sort((a, b) => b.count - a.count),
     score_bins: bins.map((count, i) => ({ label: i < 9 ? `${i * 10}-${i * 10 + 9}` : '90-100', count })),
     per_day: perDay,
+    companies,
   }
 }
 

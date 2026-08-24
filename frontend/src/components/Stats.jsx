@@ -220,6 +220,36 @@ export default function Stats() {
         <HBarChart items={data.by_source.map((s) => ({ label: s.label, count: s.count }))} onHover={setTip} />
       </div>
 
+      {data.companies?.length > 0 && (
+        <div className="card">
+          <h2>Réactivité des entreprises</h2>
+          <p className="hint" style={{ marginTop: 0 }}>
+            Calculée depuis l'historique de tes candidatures (une « réponse » = passage en entretien ou refus).
+          </p>
+          <table className="simple">
+            <thead>
+              <tr>
+                <th>Entreprise</th><th>Candidatures</th><th>Réponses</th>
+                <th>Délai moyen de réponse</th><th>En attente depuis</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.companies.map((c) => (
+                <tr key={c.company}>
+                  <td><b>{c.company}</b></td>
+                  <td>{c.applications}</td>
+                  <td>{c.responses}</td>
+                  <td>{c.avg_response_days != null ? `${c.avg_response_days} j` : '—'}</td>
+                  <td className={c.pending_days >= 7 ? 'warn' : ''}>
+                    {c.pending_days != null ? `${c.pending_days} j` : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       <div className="card">
         <h2>Distribution des scores</h2>
         <p className="hint" style={{ marginTop: 0 }}>Plus la distribution penche à droite, plus la collecte est pertinente.</p>

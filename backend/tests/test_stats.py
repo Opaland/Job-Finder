@@ -67,6 +67,33 @@ def test_stats_repartitions(client):
     assert sum(d["count"] for d in data["per_day"]) == 6  # toutes collectées sous 30 jours
 
 
+def test_reactivite_entreprises(client):
+    """La réactivité par entreprise se calcule depuis l'historique des statuts."""
+    from app.database import get_db
+
+    # Récupère la session injectée pour enrichir l'historique de deux offres.
+    db = next(iter(fastapi_app.dependency_overrides[get_db]()))
+    now = utcnow()
+    o_reponse = db.query(Offer).filter(Offer.status == "entretien").one()
+    o_reponse.company = "Rapide SAS"
+    o_reponse.status_history = [
+        {"status": "postulee", "date": (now - timedelta(days=10)).isoformat(), "par": "utilisateur"},
+        {"status": "entretien", "date": (now - timedelta(days=6)).isoformat(), "par": "utilisateur"},
+    ]
+    o_attente = db.query(Offer).filter(Offer.status == "postulee").one()
+    o_attente.company = "Silencieuse SARL"
+    o_attente.status_history = [
+        {"status": "postulee", "date": (now - timedelta(days=12)).isoformat(), "par": "utilisateur"},
+    ]
+    db.commit()
+
+    companies = {c["company"]: c for c in client.get("/api/stats").json()["companies"]}
+    assert companies["Rapide SAS"]["responses"] == 1
+    assert companies["Rapide SAS"]["avg_response_days"] == 4
+    assert companies["Silencieuse SARL"]["responses"] == 0
+    assert companies["Silencieuse SARL"]["pending_days"] == 12
+
+
 def test_stats_base_vide(tmp_path):
     from fastapi.testclient import TestClient
 

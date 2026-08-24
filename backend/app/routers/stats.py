@@ -27,6 +27,62 @@ SOURCE_LABELS = {
 }
 
 
+def _parse_dt(value):
+    from datetime import datetime
+
+    try:
+        return datetime.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _company_stats(db: Session) -> list[dict]:
+    """Réactivité par entreprise, calculée depuis l'historique des statuts."""
+    now = utcnow()
+    by_company: dict[str, dict] = {}
+    for offer in db.query(Offer).all():
+        history = offer.status_history or []
+        applied = next(
+            (_parse_dt(h.get("date")) for h in history if h.get("status") == "postulee"),
+            None,
+        )
+        if applied is None:
+            continue
+        response = next(
+            (
+                _parse_dt(h.get("date"))
+                for h in history
+                if h.get("status") in ("entretien", "refusee")
+                and _parse_dt(h.get("date")) is not None
+                and _parse_dt(h.get("date")) >= applied
+            ),
+            None,
+        )
+        entry = by_company.setdefault(
+            offer.company or "Entreprise non précisée",
+            {"applications": 0, "responses": 0, "delays": [], "pending": []},
+        )
+        entry["applications"] += 1
+        if response is not None:
+            entry["responses"] += 1
+            entry["delays"].append(max(0, (response - applied).days))
+        elif offer.status in ("postulee", "relancee"):
+            entry["pending"].append(max(0, (now - applied).days))
+
+    companies = [
+        {
+            "company": name,
+            "applications": e["applications"],
+            "responses": e["responses"],
+            "avg_response_days": round(sum(e["delays"]) / len(e["delays"])) if e["delays"] else None,
+            "pending_days": max(e["pending"]) if e["pending"] else None,
+        }
+        for name, e in by_company.items()
+    ]
+    companies.sort(key=lambda c: (-c["applications"], c["company"]))
+    return companies[:25]
+
+
 @router.get("/stats")
 def stats(db: Session = Depends(get_db)):
     now = utcnow()
@@ -92,6 +148,7 @@ def stats(db: Session = Depends(get_db)):
         "by_source": by_source,
         "score_bins": score_bins,
         "per_day": per_day,
+        "companies": _company_stats(db),
     }
 
 
