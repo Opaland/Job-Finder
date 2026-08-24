@@ -59,6 +59,40 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
 - [x] **Sprint 10** : durcissement final — tests supplémentaires, revue de
   code globale, documentation et site à jour, tag v2.0.
 
+## V3
+
+### EPIC G — Capture & candidature
+
+- [ ] **Sprint 11** : ajout manuel d'offres — coller une annonce (LinkedIn,
+  Indeed, cooptation…) : parsing heuristique, scoring immédiat, dédoublonnage.
+- [ ] **Sprint 13** : emails de candidature et de relance générés par l'IA
+  locale (mailto pré-rempli + copie).
+- [ ] **Sprint 14** : analyse d'écart CV ↔ offre par l'IA (compétences
+  manquantes, conseils ATS), stockée sur l'offre.
+
+### EPIC H — Organisation quotidienne
+
+- [ ] **Sprint 12** : prochaines actions datées par offre (relance, entretien…)
+  + section « À faire aujourd'hui » (tableau de bord et email).
+- [ ] **Sprint 16** : contacts recruteurs par entreprise (nom, email,
+  téléphone, notes), rattachés aux offres.
+- [ ] **Sprint 17** : focus du jour — 3 actions suggérées (pépite à traiter,
+  relance due, action datée).
+
+### EPIC I — Fiabilité & visibilité
+
+- [ ] **Sprint 15** : pagination et tris avancés de la liste des offres
+  (tri par date de publication, filtre entreprise).
+- [ ] **Sprint 18** : santé des sources — historique d'erreurs sur 14 jours,
+  retries HTTP avec backoff dans les connecteurs.
+- [ ] **Sprint 19** : journal d'activité (scans, changements de statut,
+  générations IA).
+
+### EPIC J — Release
+
+- [ ] **Sprint 20** : durcissement, revue de code globale, doc/site/démo à
+  jour, CHANGELOG, v2.1.
+
 ### Réserve (non planifié)
 
 - Connecteurs supplémentaires (jobboards spécialisés QA) — nécessite de

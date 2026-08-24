@@ -13,7 +13,7 @@ export const useToast = () => useContext(ToastContext)
 const PAGES = [
   { id: 'dashboard', label: 'Tableau de bord', icon: '🏠' },
   { id: 'offers', label: 'Offres', icon: '🎯' },
-  { id: 'kanban', label: 'Pipeline', icon: '🗂️' },
+  { id: 'kanban', label: 'Kanban', icon: '🗂️' },
   { id: 'stats', label: 'Statistiques', icon: '📊' },
   { id: 'profile', label: 'Profil & CV', icon: '👤' },
   { id: 'sources', label: 'Sources & réglages', icon: '🔌' },

@@ -48,7 +48,7 @@ export default function Kanban({ scanning }) {
 
   return (
     <div>
-      <h1>Pipeline</h1>
+      <h1>Kanban des candidatures</h1>
       <p className="page-sub">
         Glisse une carte d'une colonne à l'autre pour changer son statut — toi seul décides,
         jamais un scan.
