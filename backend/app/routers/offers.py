@@ -58,6 +58,60 @@ def list_offers(
     }
 
 
+@router.get("/export.xlsx")
+def export_xlsx(db: Session = Depends(get_db)):
+    """Exporte toutes les offres suivies dans un classeur Excel (tri par score)."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    status_labels = {
+        "nouvelle": "Nouvelle", "vue": "Vue", "a_postuler": "À postuler",
+        "postulee": "Postulée", "relancee": "Relancée", "entretien": "Entretien",
+        "refusee": "Refusée", "fermee": "Fermée",
+    }
+    headers = [
+        ("Score", 8), ("Titre", 42), ("Entreprise", 24), ("Lieu", 20), ("Contrat", 14),
+        ("Salaire", 16), ("Télétravail", 11), ("Statut", 12), ("Favori", 8),
+        ("Source", 16), ("Publiée le", 12), ("Collectée le", 12), ("Avis IA", 40),
+        ("Notes", 40), ("Lien", 45),
+    ]
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Offres"
+    header_fill = PatternFill("solid", fgColor="10192B")
+    for col, (label, width) in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=col, value=label)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = header_fill
+        ws.column_dimensions[get_column_letter(col)].width = width
+    ws.freeze_panes = "A2"
+
+    offers = db.query(Offer).order_by(Offer.final_score.desc()).all()
+    for row, o in enumerate(offers, start=2):
+        values = [
+            round(o.final_score), o.title, o.company, o.location, o.contract_type,
+            o.salary_text, "Oui" if o.remote else "", status_labels.get(o.status, o.status),
+            "★" if o.favorite else "",
+            o.source, o.published_at.strftime("%d/%m/%Y") if o.published_at else "",
+            o.collected_at.strftime("%d/%m/%Y"), o.ai_reason, o.notes, o.url,
+        ]
+        for col, value in enumerate(values, start=1):
+            cell = ws.cell(row=row, column=col, value=value)
+            cell.alignment = Alignment(vertical="top", wrap_text=col in (2, 13, 14))
+    ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{max(len(offers) + 1, 2)}"
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    return Response(
+        content=buffer.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="job_finder_offres.xlsx"'},
+    )
+
+
+
 @router.get("/{offer_id}", response_model=OfferDetail)
 def get_offer(offer_id: int, db: Session = Depends(get_db)):
     offer = db.get(Offer, offer_id)

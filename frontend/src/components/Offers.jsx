@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, formatDate, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
+import { api, DEMO, formatDate, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
 import { useToast } from '../App.jsx'
 import OfferDetail from './OfferDetail.jsx'
 
@@ -91,6 +91,24 @@ export default function Offers({ scanning }) {
           <option value="score">Tri : score</option>
           <option value="date">Tri : date</option>
         </select>
+        <button
+          className="secondary"
+          title="Exporter toutes les offres et leur suivi dans un classeur Excel"
+          onClick={() => {
+            if (DEMO) {
+              showToast("Export Excel disponible uniquement dans l'application locale (démo en ligne).", true)
+              return
+            }
+            const link = document.createElement('a')
+            link.href = '/api/offers/export.xlsx'
+            link.download = ''
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+          }}
+        >
+          📊 Exporter en Excel
+        </button>
       </div>
 
       <div className="card" style={{ padding: '4px 14px' }}>
