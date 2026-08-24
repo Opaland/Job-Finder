@@ -17,7 +17,7 @@ from ..connectors import ALL_CONNECTORS
 from ..models import Offer, Profile, ScanRun, utcnow
 from .claude_ai import ai_score_offer, cli_available
 from .scoring import combined_score, score_offer
-from .textutils import fingerprint
+from .textutils import fingerprint, normalize, titles_similar
 
 logger = logging.getLogger("jobfinder.scan")
 
@@ -80,6 +80,14 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
         stats: dict[str, dict] = {}
         scan_started = utcnow()
 
+        # Index (entreprise normalisée → offres connues) pour détecter les
+        # doublons dont le titre varie légèrement (« H/F », « CDI »…).
+        company_index: dict[str, list[tuple[int, str]]] = {}
+        for oid, otitle, ocompany in db.query(Offer.id, Offer.title, Offer.company).all():
+            key = normalize(ocompany or "")
+            if len(key) >= 3:
+                company_index.setdefault(key, []).append((oid, otitle))
+
         for connector in ALL_CONNECTORS:
             if not enabled.get(connector.name, True):
                 stats[connector.name] = {"label": connector.label, "skipped": True}
@@ -120,6 +128,14 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
 
                 fp = fingerprint(raw.title, raw.company)
                 twin = db.query(Offer).filter(Offer.fingerprint == fp).first()
+                if twin is None:
+                    # Même entreprise + titre quasi identique = même offre.
+                    company_key = normalize(raw.company or "")
+                    if len(company_key) >= 3:
+                        for oid, otitle in company_index.get(company_key, []):
+                            if titles_similar(raw.title, otitle):
+                                twin = db.get(Offer, oid)
+                                break
                 if twin:
                     # Même offre déjà connue via une autre source : on note la piste
                     # supplémentaire sans créer de doublon.
@@ -152,6 +168,10 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
                     {"status": "nouvelle", "date": utcnow().isoformat(), "par": "scan"}
                 ]
                 db.add(offer)
+                db.flush()
+                new_key = normalize(offer.company or "")
+                if len(new_key) >= 3:
+                    company_index.setdefault(new_key, []).append((offer.id, offer.title))
                 source_stat["new"] += 1
 
             db.commit()
