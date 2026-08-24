@@ -9,6 +9,7 @@ export default function OfferDetail({ offerId, onClose }) {
   const [notes, setNotes] = useState('')
   const [letter, setLetter] = useState('')
   const [prep, setPrep] = useState('')
+  const [gapGenerating, setGapGenerating] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [prepGenerating, setPrepGenerating] = useState(false)
   const [enriching, setEnriching] = useState(false)
@@ -214,6 +215,32 @@ export default function OfferDetail({ offerId, onClose }) {
           onChange={(e) => setLetter(e.target.value)}
           onBlur={() => letter !== offer.cover_letter && patch({ cover_letter: letter }, 'Lettre enregistrée.')}
         />
+
+        <div className="section-title">Adéquation CV ↔ offre</div>
+        <div className="actions-row" style={{ margin: '4px 0 8px' }}>
+          <button
+            className="secondary"
+            disabled={gapGenerating}
+            onClick={async () => {
+              if (DEMO) { showToast(DEMO_ONLY_MSG, true); return }
+              setGapGenerating(true)
+              try {
+                const updated = await api.gapAnalysis(offer.id)
+                setOffer(updated)
+                showToast("Analyse d'écart générée : couvert, manquant, adaptations du CV, verdict.")
+              } catch (err) {
+                showToast(err.message, true)
+              } finally {
+                setGapGenerating(false)
+              }
+            }}
+          >
+            {gapGenerating
+              ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Analyse en cours…</>)
+              : (offer.gap_analysis ? "🔍 Régénérer l'analyse d'écart CV ↔ offre" : "🔍 Analyser l'écart CV ↔ offre")}
+          </button>
+        </div>
+        {offer.gap_analysis && <div className="desc" style={{ maxHeight: 300 }}>{offer.gap_analysis}</div>}
 
         <div className="section-title">Emails</div>
         <div className="actions-row" style={{ margin: '4px 0 8px' }}>

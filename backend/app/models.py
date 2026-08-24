@@ -62,6 +62,8 @@ class Offer(Base):
     # Prochaine action décidée par l'utilisateur (relance, entretien…), datée.
     next_action_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     next_action_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Analyse d'écart CV ↔ offre générée par l'IA (compétences manquantes, conseils ATS).
+    gap_analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     other_sources: Mapped[list] = mapped_column(JSON, default=list)
 

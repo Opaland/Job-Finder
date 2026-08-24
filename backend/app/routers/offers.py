@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import OFFER_STATUSES, Offer, Profile, utcnow
 from ..schemas import ManualOffer, OfferDetail, OfferSummary, OfferUpdate
-from ..services.claude_ai import ai_cover_letter, ai_email, ai_interview_prep, cli_available
+from ..services.claude_ai import ai_cover_letter, ai_email, ai_gap_analysis, ai_interview_prep, cli_available
 from ..services.enrich import fetch_full_description
 
 router = APIRouter(prefix="/api/offers", tags=["offres"])
@@ -237,6 +237,30 @@ def generate_letter(offer_id: int, db: Session = Depends(get_db)):
     if not letter:
         raise HTTPException(502, "La génération a échoué (voir les logs). Réessaie ou édite la lettre manuellement.")
     offer.cover_letter = letter.strip()
+    db.commit()
+    return offer
+
+
+@router.post("/{offer_id}/gap-analysis", response_model=OfferDetail)
+def generate_gap_analysis(offer_id: int, db: Session = Depends(get_db)):
+    """Analyse d'écart CV ↔ offre (compétences couvertes/manquantes, conseils ATS)."""
+    offer = db.get(Offer, offer_id)
+    if not offer:
+        raise HTTPException(404, "Offre introuvable")
+    if not cli_available():
+        raise HTTPException(
+            503,
+            "CLI Claude Code introuvable sur ce poste. Vérifie que la commande « claude » "
+            "fonctionne dans un terminal.",
+        )
+    profile = db.get(Profile, 1)
+    analysis = ai_gap_analysis(
+        {"title": offer.title, "company": offer.company, "description": offer.description},
+        profile.cv_text,
+    )
+    if not analysis:
+        raise HTTPException(502, "La génération a échoué (voir les logs). Réessaie dans un instant.")
+    offer.gap_analysis = analysis.strip()
     db.commit()
     return offer
 

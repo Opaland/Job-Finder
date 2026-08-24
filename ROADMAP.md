@@ -67,7 +67,7 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
   Indeed, cooptation…) : parsing heuristique, scoring immédiat, dédoublonnage.
 - [x] **Sprint 13** : emails de candidature et de relance générés par l'IA
   locale (mailto pré-rempli + copie).
-- [ ] **Sprint 14** : analyse d'écart CV ↔ offre par l'IA (compétences
+- [x] **Sprint 14** : analyse d'écart CV ↔ offre par l'IA (compétences
   manquantes, conseils ATS), stockée sur l'offre.
 
 ### EPIC H — Organisation quotidienne

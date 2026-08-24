@@ -36,6 +36,7 @@ class OfferDetail(OfferSummary):
     notes: str
     cover_letter: str
     interview_prep: str | None
+    gap_analysis: str | None
     next_action_note: str | None
     other_sources: list
     status_history: list

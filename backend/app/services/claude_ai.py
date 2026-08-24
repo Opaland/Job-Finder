@@ -166,6 +166,34 @@ Réponds UNIQUEMENT avec la fiche, sans commentaire avant ou après."""
     return _run_claude(prompt, timeout=300)
 
 
+def ai_gap_analysis(offer: dict, cv_text: str) -> str | None:
+    """Analyse d'écart CV ↔ offre : ce qui manque et comment adapter le CV. None si IA absente."""
+    if not cli_available():
+        return None
+    prompt = f"""Tu es un expert du recrutement QA et des ATS (logiciels de tri de candidatures).
+Compare ce CV à cette offre et produis une analyse d'écart actionnable.
+
+CV (résumé) :
+---
+{cv_text[:6000]}
+---
+
+Offre :
+Titre : {offer.get('title', '')}
+Entreprise : {offer.get('company', '')}
+Description : {offer.get('description', '')[:6000]}
+
+Rédige en français, avec exactement ces sections (titres en gras markdown) :
+
+**Ce que l'offre demande et que le CV couvre déjà** — 4 à 6 puces, chacune citant le mot-clé de l'offre ET l'élément du CV qui y répond.
+**Ce qui manque ou est peu visible dans le CV** — 3 à 5 puces honnêtes : exigences de l'offre absentes ou trop discrètes dans le CV.
+**Adaptations du CV recommandées pour cette candidature** — 3 à 5 puces concrètes : mots-clés exacts à ajouter (pour l'ATS), éléments à remonter ou reformuler, avec la formulation suggérée.
+**Verdict** — 2 phrases : faut-il candidater tel quel, adapter d'abord le CV, ou passer.
+
+Réponds UNIQUEMENT avec l'analyse, sans commentaire avant ou après."""
+    return _run_claude(prompt, timeout=300)
+
+
 def ai_cover_letter(offer: dict, cv_text: str, letter_template: str) -> str | None:
     """Génère une lettre de motivation adaptée à l'offre. Renvoie None si l'IA est indisponible."""
     if not cli_available():
