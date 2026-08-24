@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, formatDate, scoreColor, SOURCE_LABELS, STATUS_LABELS } from '../api.js'
+import { api, formatDate, GEM_SCORE, scoreColor, SOURCE_LABELS, STATUS_LABELS } from '../api.js'
 
 function OfferLine({ offer }) {
   return (
@@ -89,7 +89,7 @@ export default function Dashboard({ scanning, goToOffers }) {
       {p.gems?.length > 0 && (
         <div className="card" style={{ borderColor: '#aceebb' }}>
           <h2 style={{ color: '#1a7f37' }}>💎 Pépites à regarder en priorité ({p.gems.length})</h2>
-          <p className="hint" style={{ marginTop: 0 }}>Score ≥ 85, pas encore traitées.</p>
+          <p className="hint" style={{ marginTop: 0 }}>Score ≥ {GEM_SCORE}, pas encore traitées.</p>
           <table className="simple">
             <tbody>{p.gems.map((o) => <OfferLine key={o.id} offer={o} />)}</tbody>
           </table>

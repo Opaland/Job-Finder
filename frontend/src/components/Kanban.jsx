@@ -11,10 +11,13 @@ export default function Kanban({ scanning }) {
   const [dragOverCol, setDragOverCol] = useState(null)
   const showToast = useToast()
 
+  const [truncated, setTruncated] = useState(0)
+
   const load = useCallback(async () => {
     try {
-      const data = await api.offers({ limit: 500, sort: 'score' })
+      const data = await api.offers({ limit: 2000, sort: 'score' })
       setOffers(data.items)
+      setTruncated(Math.max(0, data.total - data.items.length))
     } catch (err) {
       showToast(`Chargement impossible : ${err.message}`, true)
     }
@@ -49,6 +52,9 @@ export default function Kanban({ scanning }) {
       <p className="page-sub">
         Glisse une carte d'une colonne à l'autre pour changer son statut — toi seul décides,
         jamais un scan.
+        {truncated > 0 && (
+          <span className="warn"> Affichage des 2000 meilleures offres ({truncated} non affichées — utilise les filtres de la page Offres).</span>
+        )}
       </p>
 
       <div className="kanban">

@@ -56,7 +56,7 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
   mots-clés de recherche des connecteurs ne sont plus codés en dur).
 - [x] **Sprint 9** : mode sombre complet (tokens CSS + pas sombres validés de
   la palette dataviz).
-- [ ] **Sprint 10** : durcissement final — tests supplémentaires, revue de
+- [x] **Sprint 10** : durcissement final — tests supplémentaires, revue de
   code globale, documentation et site à jour, tag v2.0.
 
 ### Réserve (non planifié)

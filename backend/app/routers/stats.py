@@ -17,14 +17,10 @@ from ..services.scan import scan_status
 
 router = APIRouter(prefix="/api", tags=["statistiques"])
 
-SOURCE_LABELS = {
-    "france_travail": "France Travail",
-    "adzuna": "Adzuna",
-    "jsearch": "LinkedIn / Indeed",
-    "wttj": "Welcome to the Jungle",
-    "apec": "APEC",
-    "hellowork": "HelloWork",
-}
+# Libellés servis par les connecteurs eux-mêmes : une seule source de vérité.
+from ..connectors import ALL_CONNECTORS
+
+SOURCE_LABELS = {c.name: c.label for c in ALL_CONNECTORS}
 
 
 def _parse_dt(value):
@@ -40,8 +36,10 @@ def _company_stats(db: Session) -> list[dict]:
     """Réactivité par entreprise, calculée depuis l'historique des statuts."""
     now = utcnow()
     by_company: dict[str, dict] = {}
-    for offer in db.query(Offer).all():
-        history = offer.status_history or []
+    for company, status, status_history in db.query(
+        Offer.company, Offer.status, Offer.status_history
+    ).all():
+        history = status_history or []
         applied = next(
             (_parse_dt(h.get("date")) for h in history if h.get("status") == "postulee"),
             None,
@@ -59,14 +57,14 @@ def _company_stats(db: Session) -> list[dict]:
             None,
         )
         entry = by_company.setdefault(
-            offer.company or "Entreprise non précisée",
+            company or "Entreprise non précisée",
             {"applications": 0, "responses": 0, "delays": [], "pending": []},
         )
         entry["applications"] += 1
         if response is not None:
             entry["responses"] += 1
             entry["delays"].append(max(0, (response - applied).days))
-        elif offer.status in ("postulee", "relancee"):
+        elif status in ("postulee", "relancee"):
             entry["pending"].append(max(0, (now - applied).days))
 
     companies = [
@@ -201,17 +199,37 @@ async def restore(file: UploadFile):
             raise HTTPException(400, "Fichier SQLite illisible ou corrompu — restauration annulée.")
         finally:
             check.close()
+
+        # Copie de sécurité de la base actuelle, puis restauration via l'API
+        # backup de SQLite : le remplacement se fait page à page sous verrou
+        # d'écriture, une requête concurrente voit toujours une base cohérente
+        # (jamais un fichier à moitié écrit).
+        db_path = Path(settings.db_path)
+        safety_name = f"avant_restauration_{utcnow().strftime('%Y-%m-%d_%H%M%S')}.db"
+        if db_path.exists():
+            current = sqlite3.connect(db_path)
+            safety = sqlite3.connect(db_path.parent / safety_name)
+            try:
+                with safety:
+                    current.backup(safety)
+            finally:
+                safety.close()
+                current.close()
+
+        src = sqlite3.connect(tmp_path)
+        dest = sqlite3.connect(db_path)
+        try:
+            with dest:
+                src.backup(dest)
+        finally:
+            dest.close()
+            src.close()
     finally:
         Path(tmp_path).unlink(missing_ok=True)
 
-    # Copie de sécurité de la base actuelle, puis remplacement et migration
-    # (une sauvegarde d'une ancienne version reçoit les colonnes récentes).
-    db_path = Path(settings.db_path)
-    safety_name = f"avant_restauration_{utcnow().strftime('%Y-%m-%d_%H%M%S')}.db"
-    if db_path.exists():
-        (db_path.parent / safety_name).write_bytes(db_path.read_bytes())
+    # Purge les connexions du pool puis migre la base restaurée si elle vient
+    # d'une version antérieure de l'application.
     engine.dispose()
-    db_path.write_bytes(content)
     ensure_schema(engine)
 
     return {

@@ -49,8 +49,14 @@ Tout est modifiable dans l'onglet **Profil & CV**.
 | **« Pourquoi ce score ? »** | Chaque offre affiche le détail de son score, critère par critère |
 | **Dédoublonnage** | Une même offre vue sur deux sites = une seule fiche (les autres sources sont listées dessus) |
 | **Statuts** | Nouvelle → Vue → À postuler → Postulée → Relancée → Entretien → Refusée / Fermée — **modifiés uniquement par toi** |
-| **Point quotidien** | Scan automatique chaque matin (07:30 par défaut) + tableau de bord + email récapitulatif |
-| **Lettres de motivation** | Génération d'une lettre adaptée à l'offre à partir de ta lettre type et de ton CV (Claude local), éditable et copiable |
+| **Point quotidien** | Scan automatique chaque matin (07:30 par défaut) + tableau de bord + email récapitulatif (pépites, relances, objectif hebdo) |
+| **Lettres de motivation** | Génération d'une lettre adaptée à l'offre (Claude local), éditable, copiable, export Word |
+| **Préparation d'entretien** | Fiche générée par Claude : pitch, points forts face à l'annonce, questions probables, vigilances, questions à poser |
+| **Pipeline Kanban** | Colonnes par statut, cartes en glisser-déposer |
+| **Statistiques** | KPI, activité 30 jours, pipeline, sources, distribution des scores, réactivité des entreprises (délais de réponse) |
+| **Pépites & objectif** | Offres score ≥ 85 mises en avant partout ; objectif de candidatures hebdomadaire avec jauge |
+| **Personnalisation** | Pondérations du score réglables, requêtes de scan configurables, mode sombre |
+| **Données** | Enrichissement de description depuis le site d'origine, export Excel du suivi, sauvegarde et restauration de la base en un clic, migration automatique du schéma |
 | **Notes & favoris** | Notes libres, favoris ★, historique des statuts par offre |
 
 ## 3. Configurer les sources (clés gratuites)

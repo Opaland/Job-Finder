@@ -119,6 +119,9 @@ export const SOURCE_LABELS = {
   hellowork: 'HelloWork',
 }
 
+// Seuil « pépite » — garder aligné avec GEM_SCORE (backend/app/services/digest.py).
+export const GEM_SCORE = 85
+
 export function scoreColor(score) {
   if (score >= 70) return '#1a7f37'
   if (score >= 45) return '#9a6700'

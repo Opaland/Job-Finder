@@ -20,11 +20,13 @@ const PAGES = [
 ]
 
 function initialTheme() {
+  let theme = 'light'
   try {
-    return localStorage.getItem('jf_theme') === 'dark' ? 'dark' : 'light'
-  } catch {
-    return 'light'
-  }
+    theme = localStorage.getItem('jf_theme') === 'dark' ? 'dark' : 'light'
+  } catch { /* stockage indisponible */ }
+  // Appliqué immédiatement : les composants (graphiques) lisent l'attribut au rendu.
+  document.documentElement.dataset.theme = theme
+  return theme
 }
 
 export default function App() {
@@ -34,10 +36,13 @@ export default function App() {
   const [theme, setTheme] = useState(initialTheme)
   const timer = useRef(null)
 
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme
-    try { localStorage.setItem('jf_theme', theme) } catch { /* stockage indisponible */ }
-  }, [theme])
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    // Attribut posé AVANT le re-rendu React, pour que les graphiques lisent le bon thème.
+    document.documentElement.dataset.theme = next
+    try { localStorage.setItem('jf_theme', next) } catch { /* stockage indisponible */ }
+    setTheme(next)
+  }
 
   const showToast = useCallback((message, isError = false) => {
     setToast({ message, isError })
@@ -98,7 +103,7 @@ export default function App() {
           <div style={{ padding: '0 10px' }}>
             <button
               className="nav"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={toggleTheme}
               title="Basculer le thème"
             >
               <span>{theme === 'dark' ? '☀️' : '🌙'}</span> {theme === 'dark' ? 'Mode clair' : 'Mode sombre'}

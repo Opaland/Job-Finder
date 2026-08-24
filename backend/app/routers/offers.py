@@ -51,7 +51,7 @@ def list_offers(
         query = query.order_by(Offer.collected_at.desc(), Offer.final_score.desc())
     else:
         query = query.order_by(Offer.final_score.desc(), Offer.collected_at.desc())
-    offers = query.offset(offset).limit(min(limit, 500)).all()
+    offers = query.offset(offset).limit(min(limit, 2000)).all()
     return {
         "total": total,
         "items": [OfferSummary.model_validate(o).model_dump() for o in offers],

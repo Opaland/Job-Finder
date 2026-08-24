@@ -89,7 +89,7 @@ function Histogram({ bins, onHover }) {
   const slot = plotW / bins.length
   const barW = Math.min(24, slot - 2)
   const maxIndex = bins.findIndex((b) => b.count === max)
-  const ticks = [0, Math.ceil(max / 2), max]
+  const ticks = [...new Set([0, Math.ceil(max / 2), max])]
   return (
     <svg width="100%" viewBox={`0 0 ${width} ${height}`} role="img">
       {ticks.map((t) => {
@@ -142,7 +142,7 @@ function ActivityChart({ days, onHover }) {
   const line = days.map((d, i) => `${i === 0 ? 'M' : 'L'} ${px(i).toFixed(1)} ${py(d.count).toFixed(1)}`).join(' ')
   const area = `${line} L ${px(days.length - 1)} ${14 + plotH} L ${padL} ${14 + plotH} Z`
   const fmt = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
-  const ticks = [0, Math.ceil(max / 2), max]
+  const ticks = [...new Set([0, Math.ceil(max / 2), max])]
   return (
     <svg
       width="100%" viewBox={`0 0 ${width} ${height}`} role="img"
