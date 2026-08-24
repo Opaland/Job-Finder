@@ -10,6 +10,7 @@ from ..models import OFFER_STATUSES, Offer, Profile, utcnow
 from ..schemas import ManualOffer, OfferDetail, OfferSummary, OfferUpdate
 from ..services.claude_ai import ai_cover_letter, ai_email, ai_gap_analysis, ai_interview_prep, cli_available
 from ..services.enrich import fetch_full_description
+from ..services.journal import log_event
 
 router = APIRouter(prefix="/api/offers", tags=["offres"])
 
@@ -119,6 +120,8 @@ def add_manual_offer(payload: ManualOffer, db: Session = Depends(get_db)):
     offer.status_history = [{"status": "nouvelle", "date": utcnow().isoformat(), "par": "ajout manuel"}]
     db.add(offer)
     db.commit()
+    log_event(db, "ajout", f"Offre ajoutée à la main : « {offer.title} » "
+                           f"({offer.company or 'entreprise inconnue'}), score {offer.final_score:.0f}.", offer.id)
     return offer
 
 
@@ -197,6 +200,8 @@ def update_offer(offer_id: int, update: OfferUpdate, db: Session = Depends(get_d
             history = list(offer.status_history or [])
             history.append({"status": update.status, "date": utcnow().isoformat(), "par": "utilisateur"})
             offer.status_history = history
+            log_event(db, "statut", f"« {offer.title} » ({offer.company or 'entreprise inconnue'}) : "
+                                    f"{offer.status} → {update.status}", offer.id)
             offer.status = update.status
     if update.notes is not None:
         offer.notes = update.notes
@@ -243,6 +248,7 @@ def generate_letter(offer_id: int, db: Session = Depends(get_db)):
         raise HTTPException(502, "La génération a échoué (voir les logs). Réessaie ou édite la lettre manuellement.")
     offer.cover_letter = letter.strip()
     db.commit()
+    log_event(db, "ia", f"Lettre de motivation générée pour « {offer.title} ».", offer.id)
     return offer
 
 
@@ -267,6 +273,7 @@ def generate_gap_analysis(offer_id: int, db: Session = Depends(get_db)):
         raise HTTPException(502, "La génération a échoué (voir les logs). Réessaie dans un instant.")
     offer.gap_analysis = analysis.strip()
     db.commit()
+    log_event(db, "ia", f"Analyse d'écart CV ↔ offre générée pour « {offer.title} ».", offer.id)
     return offer
 
 
@@ -292,6 +299,7 @@ def generate_email(offer_id: int, kind: str = "candidature", db: Session = Depen
     )
     if not email:
         raise HTTPException(502, "La génération a échoué (voir les logs). Réessaie dans un instant.")
+    log_event(db, "ia", f"Email de {kind} généré pour « {offer.title} ».", offer.id)
     return email
 
 
@@ -321,6 +329,7 @@ def generate_interview_prep(offer_id: int, db: Session = Depends(get_db)):
         raise HTTPException(502, "La génération a échoué (voir les logs). Réessaie dans un instant.")
     offer.interview_prep = prep.strip()
     db.commit()
+    log_event(db, "ia", f"Fiche d'entretien générée pour « {offer.title} ».", offer.id)
     return offer
 
 

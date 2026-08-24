@@ -85,7 +85,7 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
   (tri par date de publication, filtre entreprise).
 - [x] **Sprint 18** : santé des sources — historique d'erreurs sur 14 jours,
   retries HTTP avec backoff dans les connecteurs.
-- [ ] **Sprint 19** : journal d'activité (scans, changements de statut,
+- [x] **Sprint 19** : journal d'activité (scans, changements de statut,
   générations IA).
 
 ### EPIC J — Release

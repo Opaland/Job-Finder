@@ -213,6 +213,17 @@ export async function demoRequest(path, options = {}) {
   }
   if (route === '/api/sources') return data.sources
   if (route === '/api/stats') return computeStats()
+  if (route === '/api/journal') {
+    const kind = params_get(query, 'kind')
+    const now = Date.now()
+    const all = [
+      { id: 4, at: new Date(now - 3600e3).toISOString(), kind: 'statut', message: '« Consultant Test Manager » (Cabinet de conseil) : a_postuler → postulee', offer_id: 3 },
+      { id: 3, at: new Date(now - 5400e3).toISOString(), kind: 'ia', message: 'Lettre de motivation générée pour « Test Manager H/F ».', offer_id: 1 },
+      { id: 2, at: new Date(now - 7200e3).toISOString(), kind: 'scan', message: 'Scan quotidien terminé : 3 nouvelle(s) offre(s), 269 déjà connue(s), 0 erreur(s) de source.', offer_id: null },
+      { id: 1, at: new Date(now - 90000e3).toISOString(), kind: 'cv', message: 'CV importé (CV_MORETTI_Cedric.pdf) : 59 compétences détectées, scores recalculés.', offer_id: null },
+    ]
+    return kind ? all.filter((e) => e.kind === kind) : all
+  }
   if (route === '/api/backup') throw new Error(LOCAL_ONLY)
 
   throw new Error(`Endpoint non simulé dans la démo : ${route}`)

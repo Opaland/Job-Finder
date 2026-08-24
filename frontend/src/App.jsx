@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { api, DEMO } from './api.js'
 import Dashboard from './components/Dashboard.jsx'
+import Journal from './components/Journal.jsx'
 import Kanban from './components/Kanban.jsx'
 import Offers from './components/Offers.jsx'
 import ProfilePage from './components/Profile.jsx'
@@ -15,6 +16,7 @@ const PAGES = [
   { id: 'offers', label: 'Offres', icon: '🎯' },
   { id: 'kanban', label: 'Kanban', icon: '🗂️' },
   { id: 'stats', label: 'Statistiques', icon: '📊' },
+  { id: 'journal', label: 'Journal', icon: '📜' },
   { id: 'profile', label: 'Profil & CV', icon: '👤' },
   { id: 'sources', label: 'Sources & réglages', icon: '🔌' },
 ]
@@ -119,6 +121,7 @@ export default function App() {
           {page === 'offers' && <Offers scanning={scanning} />}
           {page === 'kanban' && <Kanban scanning={scanning} />}
           {page === 'stats' && <Stats />}
+          {page === 'journal' && <Journal />}
           {page === 'profile' && <ProfilePage />}
           {page === 'sources' && <Sources />}
         </main>

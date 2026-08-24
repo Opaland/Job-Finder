@@ -136,6 +136,18 @@ class ScanRun(Base):
     error_count: Mapped[int] = mapped_column(Integer, default=0)
 
 
+class ActivityLog(Base):
+    """Journal des événements de l'application (traçabilité)."""
+
+    __tablename__ = "activity_log"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    kind: Mapped[str] = mapped_column(String(30), index=True)
+    message: Mapped[str] = mapped_column(Text)
+    offer_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
 class Digest(Base):
     __tablename__ = "digests"
 

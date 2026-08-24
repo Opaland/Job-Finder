@@ -79,6 +79,7 @@ export const api = {
 
   sources: () => request('/api/sources'),
   stats: () => request('/api/stats'),
+  journal: (kind) => request(`/api/journal${kind ? `?kind=${kind}` : ''}`),
   restore: (file) => {
     if (DEMO) {
       return Promise.reject(new Error("Restauration disponible uniquement dans l'application locale (démo en ligne)."))

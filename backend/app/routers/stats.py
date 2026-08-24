@@ -150,6 +150,21 @@ def stats(db: Session = Depends(get_db)):
     }
 
 
+@router.get("/journal")
+def journal(limit: int = 100, kind: str | None = None, db: Session = Depends(get_db)):
+    """Journal d'activité : les derniers événements de l'application."""
+    from ..models import ActivityLog
+
+    query = db.query(ActivityLog)
+    if kind:
+        query = query.filter(ActivityLog.kind == kind)
+    entries = query.order_by(ActivityLog.id.desc()).limit(min(limit, 500)).all()
+    return [
+        {"id": e.id, "at": e.at.isoformat(), "kind": e.kind, "message": e.message, "offer_id": e.offer_id}
+        for e in entries
+    ]
+
+
 @router.get("/backup")
 def backup():
     """Télécharge une copie cohérente de la base SQLite (API backup, sûre même en cours d'écriture)."""
@@ -231,6 +246,16 @@ async def restore(file: UploadFile):
     # d'une version antérieure de l'application.
     engine.dispose()
     ensure_schema(engine)
+
+    from ..database import SessionLocal
+    from ..services.journal import log_event
+
+    session = SessionLocal()
+    try:
+        log_event(session, "restauration",
+                  f"Base restaurée depuis une sauvegarde ({offer_count} offres) — copie de sécurité : {safety_name}.")
+    finally:
+        session.close()
 
     return {
         "restored": True,

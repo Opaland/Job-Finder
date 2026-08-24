@@ -7,6 +7,7 @@ from ..models import Profile, utcnow
 from ..schemas import ProfileOut, ProfileUpdate
 from ..services import scheduler
 from ..services.cv_parser import extract_skills, extract_text
+from ..services.journal import log_event
 from ..services.scan import rescore_all
 
 router = APIRouter(prefix="/api/profile", tags=["profil"])
@@ -60,6 +61,7 @@ async def upload_cv(file: UploadFile, db: Session = Depends(get_db)):
     profile.skills = extract_skills(text)
     db.commit()
     rescore_all(db)
+    log_event(db, "cv", f"CV importé ({profile.cv_filename}) : {len(profile.skills)} compétences détectées, scores recalculés.")
     return profile
 
 

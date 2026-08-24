@@ -215,6 +215,10 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
         run.new_count = sum(s.get("new", 0) for s in stats.values())
         run.seen_count = sum(s.get("seen", 0) for s in stats.values())
         run.error_count = sum(len(s.get("errors", [])) for s in stats.values())
+        from .journal import log_event
+
+        log_event(db, "scan", f"Scan {trigger} terminé : {run.new_count} nouvelle(s) offre(s), "
+                              f"{run.seen_count} déjà connue(s), {run.error_count} erreur(s) de source.")
         if ai_refined:
             stats["_ia"] = {"label": "Affinage IA (Claude local)", "refined": ai_refined}
             run.source_stats = stats
