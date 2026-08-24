@@ -72,7 +72,7 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
 
 ### EPIC H — Organisation quotidienne
 
-- [ ] **Sprint 12** : prochaines actions datées par offre (relance, entretien…)
+- [x] **Sprint 12** : prochaines actions datées par offre (relance, entretien…)
   + section « À faire aujourd'hui » (tableau de bord et email).
 - [ ] **Sprint 16** : contacts recruteurs par entreprise (nom, email,
   téléphone, notes), rattachés aux offres.

@@ -98,6 +98,28 @@ def offers_to_relaunch(db: Session) -> list[Offer]:
     return result
 
 
+def actions_due(db: Session) -> list[dict]:
+    """Actions datées arrivées à échéance (aujourd'hui inclus), les plus urgentes d'abord."""
+    end_of_today = utcnow().replace(hour=23, minute=59, second=59, microsecond=0)
+    start_of_today = utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    offers = (
+        db.query(Offer)
+        .filter(Offer.next_action_date.isnot(None), Offer.next_action_date <= end_of_today)
+        .order_by(Offer.next_action_date)
+        .all()
+    )
+    return [
+        {
+            **_offer_brief(o),
+            "status": o.status,
+            "action_date": o.next_action_date.isoformat(),
+            "action_note": o.next_action_note or "",
+            "overdue": o.next_action_date < start_of_today,
+        }
+        for o in offers
+    ]
+
+
 def build_digest(db: Session, for_date: str | None = None) -> Digest:
     """Construit (ou reconstruit) le digest du jour."""
     date_str = for_date or utcnow().strftime("%Y-%m-%d")
@@ -141,6 +163,7 @@ def build_digest(db: Session, for_date: str | None = None) -> Digest:
             {**_offer_brief(o), "status": o.status} for o in offers_to_relaunch(db)
         ],
         "gems": [_offer_brief(o) for o in gems(db)],
+        "todo_today": actions_due(db),
         "weekly": {
             "goal": (db.get(Profile, 1).weekly_goal if db.get(Profile, 1) else 5) or 0,
             "sent": applications_this_week(db),
@@ -202,6 +225,14 @@ def digest_html(payload: dict) -> str:
 <html><body style="font-family:Segoe UI,Arial,sans-serif;color:#1f2328;max-width:760px">
 <h2 style="margin-bottom:2px">Job Finder — point du {payload['date']}</h2>
 <p style="color:#57606a;margin-top:0">{scan_line}</p>
+
+{f'''<h3 style="color:#0969da">🗓️ À faire aujourd'hui ({len(payload["todo_today"])})</h3>
+<table style="border-collapse:collapse;width:100%" border="0">{''.join(
+    f"<tr><td style='padding:6px 8px;white-space:nowrap'>{'⚠️ en retard' if a['overdue'] else 'aujourd’hui'}</td>"
+    f"<td style='padding:6px 8px'><b>{a['action_note'] or 'Action prévue'}</b><br>"
+    f"<a href='{a['url']}'>{a['title']}</a> <span style='color:#57606a'>— {a['company']}</span></td></tr>"
+    for a in payload["todo_today"]
+)}</table>''' if payload.get("todo_today") else ''}
 
 {f'''<h3 style="color:#1a7f37">💎 Pépites à regarder en priorité ({len(payload["gems"])})</h3>
 <p style="color:#57606a;margin-top:0">Score ≥ {GEM_SCORE}, pas encore traitées.</p>

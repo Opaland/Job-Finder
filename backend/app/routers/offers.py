@@ -201,6 +201,11 @@ def update_offer(offer_id: int, update: OfferUpdate, db: Session = Depends(get_d
         offer.cover_letter = update.cover_letter
     if update.interview_prep is not None:
         offer.interview_prep = update.interview_prep
+    # Pour la prochaine action, null explicite = effacement.
+    if "next_action_date" in update.model_fields_set:
+        offer.next_action_date = update.next_action_date
+    if "next_action_note" in update.model_fields_set:
+        offer.next_action_note = update.next_action_note
 
     db.commit()
     return offer

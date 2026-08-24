@@ -62,6 +62,32 @@ export default function Dashboard({ scanning, goToOffers }) {
         <div className="stat"><div className="value" style={{ color: '#1a7f37' }}>{counts.entretien || 0}</div><div className="label">Entretiens</div></div>
       </div>
 
+      {p.todo_today?.length > 0 && (
+        <div className="card" style={{ borderColor: '#b6d3f7' }}>
+          <h2 style={{ color: '#0969da' }}>🗓️ À faire aujourd'hui ({p.todo_today.length})</h2>
+          <table className="simple">
+            <tbody>
+              {p.todo_today.map((a) => (
+                <tr key={a.id}>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    {a.overdue
+                      ? <span className="chip offline">⚠️ en retard</span>
+                      : <span className="chip">aujourd'hui</span>}
+                  </td>
+                  <td>
+                    <b>{a.action_note || 'Action prévue'}</b>
+                    <div className="hint">
+                      <a href={a.url} target="_blank" rel="noreferrer">{a.title}</a> — {a.company}
+                    </div>
+                  </td>
+                  <td>{STATUS_LABELS[a.status] || a.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {p.weekly?.goal > 0 && (
         <div className="card">
           <h2>Objectif de la semaine</h2>

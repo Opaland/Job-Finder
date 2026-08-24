@@ -59,6 +59,9 @@ class Offer(Base):
     notes: Mapped[str] = mapped_column(Text, default="")
     cover_letter: Mapped[str] = mapped_column(Text, default="")
     interview_prep: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Prochaine action décidée par l'utilisateur (relance, entretien…), datée.
+    next_action_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    next_action_note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     other_sources: Mapped[list] = mapped_column(JSON, default=list)
 

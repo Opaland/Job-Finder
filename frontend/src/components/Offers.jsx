@@ -198,6 +198,9 @@ export default function Offers({ scanning }) {
                 {offer.contract_type && <span className="chip">{offer.contract_type}</span>}
                 {offer.remote && <span className="chip remote">Télétravail</span>}
                 {!offer.still_online && <span className="chip offline">Plus en ligne ?</span>}
+                {offer.next_action_date && new Date(offer.next_action_date) <= new Date().setHours(23, 59, 59) && (
+                  <span className="chip offline">⏰ action due</span>
+                )}
                 {offer.salary_text && <span className="chip">{offer.salary_text}</span>}
               </div>
             </div>

@@ -65,6 +65,33 @@ def test_digest_sans_relance(db):
     assert digest.payload["to_relaunch"] == []
 
 
+def test_actions_a_faire_aujourdhui(db):
+    """Les actions datées échues (aujourd'hui + retard) remontent ; le futur non."""
+    from app.models import Offer
+
+    def offer_with_action(sid, days_offset, note):
+        return Offer(
+            fingerprint=f"fp-act-{sid}", source="test", source_id=f"act-{sid}",
+            title=f"Offre {sid}", company="ACME", status="postulee", final_score=70,
+            next_action_date=utcnow() + timedelta(days=days_offset),
+            next_action_note=note,
+        )
+
+    db.add_all([
+        offer_with_action("retard", -3, "Relancer par email"),
+        offer_with_action("jour", 0, "Préparer l'entretien"),
+        offer_with_action("futur", 5, "Relance semaine prochaine"),
+    ])
+    db.commit()
+
+    payload = build_digest(db).payload
+    todo = {a["action_note"]: a for a in payload["todo_today"]}
+    assert "Relancer par email" in todo and todo["Relancer par email"]["overdue"] is True
+    assert "Préparer l'entretien" in todo and todo["Préparer l'entretien"]["overdue"] is False
+    assert "Relance semaine prochaine" not in todo
+    assert "faire aujourd" in digest_html(payload).lower()
+
+
 def test_pepites_et_objectif_hebdo(db):
     """Les offres ouvertes >= 85 sont des pépites ; les candidatures de la semaine comptent."""
     from app.models import Offer

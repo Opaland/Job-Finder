@@ -101,6 +101,9 @@ export default function Kanban({ scanning }) {
                     <div style={{ marginTop: 6 }}>
                       <span className="chip" style={{ marginRight: 4 }}>{SOURCE_LABELS[offer.source] || offer.source}</span>
                       {offer.remote && <span className="chip remote">TT</span>}
+                      {offer.next_action_date && new Date(offer.next_action_date) <= new Date().setHours(23, 59, 59) && (
+                        <span className="chip offline">⏰</span>
+                      )}
                     </div>
                   </div>
                 ))}

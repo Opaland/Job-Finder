@@ -240,6 +240,33 @@ export default function OfferDetail({ offerId, onClose }) {
           onBlur={() => prep !== (offer.interview_prep || '') && patch({ interview_prep: prep }, 'Fiche enregistrée.')}
         />
 
+        <div className="section-title">Prochaine action</div>
+        <div className="actions-row" style={{ margin: '4px 0 8px' }}>
+          <input
+            type="date"
+            value={offer.next_action_date ? offer.next_action_date.slice(0, 10) : ''}
+            onChange={(e) => patch(
+              { next_action_date: e.target.value || null },
+              e.target.value ? 'Action planifiée.' : 'Action effacée.',
+            )}
+          />
+          <input
+            type="text"
+            style={{ flex: 1, minWidth: 200 }}
+            placeholder="ex. Relancer par email, préparer l'entretien…"
+            defaultValue={offer.next_action_note || ''}
+            onBlur={(e) => e.target.value !== (offer.next_action_note || '') && patch({ next_action_note: e.target.value || null })}
+          />
+          {offer.next_action_date && (
+            <button
+              className="secondary"
+              onClick={() => patch({ next_action_date: null, next_action_note: null }, 'Action marquée faite.')}
+            >
+              Fait ✓
+            </button>
+          )}
+        </div>
+
         <div className="section-title">Tes notes</div>
         <textarea
           rows={4}

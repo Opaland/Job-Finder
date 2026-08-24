@@ -26,6 +26,7 @@ class OfferSummary(BaseModel):
     final_score: float
     status: str
     favorite: bool
+    next_action_date: datetime | None = None
 
 
 class OfferDetail(OfferSummary):
@@ -35,6 +36,7 @@ class OfferDetail(OfferSummary):
     notes: str
     cover_letter: str
     interview_prep: str | None
+    next_action_note: str | None
     other_sources: list
     status_history: list
     last_seen_at: datetime
@@ -56,6 +58,9 @@ class OfferUpdate(BaseModel):
     favorite: bool | None = None
     cover_letter: str | None = None
     interview_prep: str | None = None
+    # None explicite = effacer l'action (distingué de « non fourni » via model_fields_set).
+    next_action_date: datetime | None = None
+    next_action_note: str | None = None
 
 
 class ProfileOut(BaseModel):
