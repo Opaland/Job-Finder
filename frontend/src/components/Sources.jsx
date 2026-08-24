@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, DEMO } from '../api.js'
 import { useToast } from '../App.jsx'
 
@@ -15,6 +15,8 @@ export default function Sources() {
   const [data, setData] = useState(null)
   const [profile, setProfile] = useState(null)
   const [scans, setScans] = useState([])
+  const [restoring, setRestoring] = useState(false)
+  const restoreRef = useRef(null)
   const showToast = useToast()
 
   const load = async () => {
@@ -166,6 +168,40 @@ export default function Sources() {
           }}
         >
           💾 Télécharger une sauvegarde de la base
+        </button>
+        <input
+          ref={restoreRef}
+          type="file"
+          accept=".db"
+          style={{ display: 'none' }}
+          onChange={async (e) => {
+            const file = e.target.files[0]
+            e.target.value = ''
+            if (!file) return
+            const ok = window.confirm(
+              'Remplacer la base actuelle par cette sauvegarde ?\n\n' +
+              'Une copie de sécurité de la base actuelle sera créée dans le dossier data/ avant le remplacement.',
+            )
+            if (!ok) return
+            setRestoring(true)
+            try {
+              const result = await api.restore(file)
+              showToast(`Base restaurée (${result.offers} offres) — copie de sécurité : ${result.safety_copy}`)
+              load()
+            } catch (err) {
+              showToast(`Restauration impossible : ${err.message}`, true)
+            } finally {
+              setRestoring(false)
+            }
+          }}
+        />
+        <button
+          className="secondary"
+          style={{ marginLeft: 8 }}
+          disabled={restoring}
+          onClick={() => restoreRef.current.click()}
+        >
+          {restoring ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Restauration…</>) : '↩️ Restaurer une sauvegarde…'}
         </button>
       </div>
 

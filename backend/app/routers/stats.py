@@ -1,4 +1,4 @@
-"""Statistiques de la recherche d'emploi + sauvegarde de la base."""
+"""Statistiques de la recherche d'emploi + sauvegarde / restauration de la base."""
 from __future__ import annotations
 
 import sqlite3
@@ -6,13 +6,14 @@ import tempfile
 from datetime import timedelta
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..config import settings
-from ..database import get_db
+from ..database import engine, ensure_schema, get_db
 from ..models import OFFER_STATUSES, Offer, utcnow
+from ..services.scan import scan_status
 
 router = APIRouter(prefix="/api", tags=["statistiques"])
 
@@ -116,3 +117,48 @@ def backup():
         media_type="application/octet-stream",
         headers={"Content-Disposition": f'attachment; filename="jobfinder_sauvegarde_{stamp}.db"'},
     )
+
+
+@router.post("/restore")
+async def restore(file: UploadFile):
+    """Remplace la base par une sauvegarde téléversée (copie de sécurité créée avant)."""
+    if scan_status().get("running"):
+        raise HTTPException(409, "Un scan est en cours : attends qu'il se termine avant de restaurer.")
+
+    content = await file.read()
+    if not content.startswith(b"SQLite format 3\x00"):
+        raise HTTPException(400, "Ce fichier n'est pas une base SQLite — choisis un fichier .db issu du bouton de sauvegarde.")
+
+    # Validation du contenu avant de toucher à quoi que ce soit.
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = tmp.name
+    try:
+        check = sqlite3.connect(tmp_path)
+        try:
+            tables = {row[0] for row in check.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            if not {"offers", "profile"} <= tables:
+                raise HTTPException(400, "Cette base n'est pas une sauvegarde Job Finder (tables offres/profil absentes).")
+            offer_count = check.execute("SELECT COUNT(*) FROM offers").fetchone()[0]
+        except sqlite3.DatabaseError:
+            raise HTTPException(400, "Fichier SQLite illisible ou corrompu — restauration annulée.")
+        finally:
+            check.close()
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+
+    # Copie de sécurité de la base actuelle, puis remplacement et migration
+    # (une sauvegarde d'une ancienne version reçoit les colonnes récentes).
+    db_path = Path(settings.db_path)
+    safety_name = f"avant_restauration_{utcnow().strftime('%Y-%m-%d_%H%M%S')}.db"
+    if db_path.exists():
+        (db_path.parent / safety_name).write_bytes(db_path.read_bytes())
+    engine.dispose()
+    db_path.write_bytes(content)
+    ensure_schema(engine)
+
+    return {
+        "restored": True,
+        "offers": offer_count,
+        "safety_copy": safety_name,
+    }

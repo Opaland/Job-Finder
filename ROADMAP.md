@@ -36,9 +36,30 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
   re-scoring immédiat ; migration automatique de la base (les données existantes
   sont préservées).
 
-### EPIC D — Idées en réserve (non planifié)
+### EPIC D — Fiabilité des données
 
-- Restauration de sauvegarde depuis l'UI.
-- Détection de doublons par similarité de titre (au-delà de l'empreinte exacte).
-- Suivi du délai moyen de réponse par entreprise.
-- Connecteurs supplémentaires (jobboards spécialisés QA).
+- [x] **Sprint 4** : restauration de sauvegarde depuis l'UI (validation du
+  fichier, copie de sécurité automatique, migration de la sauvegarde).
+- [ ] **Sprint 5** : détection de doublons par similarité de titre (fusion au
+  scan des offres de même entreprise aux titres quasi identiques).
+
+### EPIC E — Pilotage avancé
+
+- [ ] **Sprint 6** : réactivité des entreprises — candidatures, réponses,
+  délai moyen et attentes en cours, par entreprise (page Statistiques).
+- [ ] **Sprint 7** : pépites (score ≥ 85 mises en avant dans l'appli et le
+  digest) + objectif hebdomadaire de candidatures avec jauge de progression.
+
+### EPIC F — Personnalisation & finitions
+
+- [ ] **Sprint 8** : requêtes de scan configurables dans le profil (les
+  mots-clés de recherche des connecteurs ne sont plus codés en dur).
+- [ ] **Sprint 9** : mode sombre complet (tokens CSS + pas sombres validés de
+  la palette dataviz).
+- [ ] **Sprint 10** : durcissement final — tests supplémentaires, revue de
+  code globale, documentation et site à jour, tag v2.0.
+
+### Réserve (non planifié)
+
+- Connecteurs supplémentaires (jobboards spécialisés QA) — nécessite de
+  pouvoir tester les accès réseau réels depuis le poste local.

@@ -72,6 +72,20 @@ export const api = {
 
   sources: () => request('/api/sources'),
   stats: () => request('/api/stats'),
+  restore: (file) => {
+    if (DEMO) {
+      return Promise.reject(new Error("Restauration disponible uniquement dans l'application locale (démo en ligne)."))
+    }
+    const form = new FormData()
+    form.append('file', file)
+    return fetch('/api/restore', { method: 'POST', body: form }).then(async (res) => {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.detail || res.statusText)
+      }
+      return res.json()
+    })
+  },
 }
 
 export const STATUS_LABELS = {
