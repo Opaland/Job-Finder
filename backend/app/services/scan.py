@@ -54,6 +54,14 @@ def offer_to_scoring_dict(offer: Offer) -> dict:
     }
 
 
+def rescore_offer(offer: Offer, profile_dict: dict) -> None:
+    """Recalcule score, détail et score final d'une offre (l'avis IA existant est conservé)."""
+    result = score_offer(offer_to_scoring_dict(offer), profile_dict)
+    offer.score = result.score
+    offer.score_breakdown = result.breakdown
+    offer.final_score = combined_score(offer.score, offer.ai_score)
+
+
 def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
     """Exécute un scan complet. Bloquant — à lancer dans un thread/background task."""
     if not _scan_lock.acquire(blocking=False):
@@ -138,10 +146,7 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
                     remote=bool(raw.remote),
                     published_at=raw.published_at,
                 )
-                result_score = score_offer(offer_to_scoring_dict(offer), profile_dict)
-                offer.score = result_score.score
-                offer.score_breakdown = result_score.breakdown
-                offer.final_score = combined_score(offer.score, None)
+                rescore_offer(offer, profile_dict)
                 offer.status_history = [
                     {"status": "nouvelle", "date": utcnow().isoformat(), "par": "scan"}
                 ]
@@ -209,10 +214,7 @@ def rescore_all(db: Session) -> int:
     profile_dict = profile_to_dict(profile)
     count = 0
     for offer in db.query(Offer).all():
-        result = score_offer(offer_to_scoring_dict(offer), profile_dict)
-        offer.score = result.score
-        offer.score_breakdown = result.breakdown
-        offer.final_score = combined_score(offer.score, offer.ai_score)
+        rescore_offer(offer, profile_dict)
         count += 1
     db.commit()
     return count

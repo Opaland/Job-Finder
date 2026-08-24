@@ -87,3 +87,55 @@ def test_extraction_texte_principal():
     assert "Selenium" in text
     assert "Mentions légales" not in text
     assert "var x=1" not in text
+
+
+def test_header_annonce_preserve_mais_bandeau_site_retire():
+    """<header> à l'intérieur de l'annonce = titre du poste (gardé) ; header du body = bandeau (retiré)."""
+    html = """
+    <html><body>
+      <header>Bandeau du site · Connexion · Menu</header>
+      <article>
+        <header><h1>Responsable QA Lyon</h1></header>
+        <p>%s</p>
+      </article>
+    </body></html>
+    """ % ("Contenu détaillé de l'offre avec beaucoup de texte. " * 25)
+    text = extract_main_text(html)
+    assert "Responsable QA Lyon" in text
+    assert "Bandeau du site" not in text
+
+
+def test_enrich_reinitialise_avis_ia(db, monkeypatch):
+    """Après enrichissement, l'avis IA (calculé sur l'ancien extrait) est retiré."""
+    from fastapi.testclient import TestClient
+
+    import app.routers.offers as offers_router
+    from app.database import get_db
+    from app.main import app as fastapi_app
+
+    offer = Offer(
+        fingerprint="fp-enrich", source="test", source_id="enrich-1",
+        title="Test Manager", company="ACME", description="Extrait court.",
+        url="https://example.com/offre", score=60, final_score=45,
+        ai_score=30.0, ai_reason="Description trop vague.",
+    )
+    db.add(offer)
+    db.commit()
+
+    long_text = "Description complète du poste de Test Manager, Selenium, management. " * 10
+    monkeypatch.setattr(offers_router, "fetch_full_description", lambda url: long_text)
+    def override_db():
+        yield db
+
+    fastapi_app.dependency_overrides[get_db] = override_db
+    try:
+        client = TestClient(fastapi_app)
+        resp = client.post(f"/api/offers/{offer.id}/enrich")
+        assert resp.status_code == 200, resp.text
+        data = resp.json()
+        assert data["ai_score"] is None
+        assert data["ai_reason"] == ""
+        assert data["description"].startswith("Description complète")
+        assert data["final_score"] == data["score"]
+    finally:
+        fastapi_app.dependency_overrides.clear()

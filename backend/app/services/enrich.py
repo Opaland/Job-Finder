@@ -13,8 +13,10 @@ from bs4 import BeautifulSoup
 
 from ..connectors.base import DEFAULT_HEADERS
 
-# Balises dont le contenu n'est jamais du texte d'offre.
-NOISE_TAGS = ["script", "style", "nav", "header", "footer", "aside", "form", "noscript", "svg", "iframe", "button"]
+# Balises dont le contenu n'est jamais du texte d'offre. « header » n'y figure
+# pas : dans une annonce HTML5, <header> contient souvent le titre du poste —
+# seul le bandeau de site (header direct du body) est retiré plus bas.
+NOISE_TAGS = ["script", "style", "nav", "footer", "aside", "form", "noscript", "svg", "iframe", "button"]
 
 
 def _clean_text(text: str) -> str:
@@ -30,6 +32,8 @@ def extract_main_text(html: str) -> str:
         tag.decompose()
 
     body = soup.body or soup
+    for banner in body.find_all("header", recursive=False):
+        banner.decompose()
     total = len(body.get_text(" ", strip=True))
     if total == 0:
         return ""

@@ -138,15 +138,14 @@ def enrich_offer(offer_id: int, db: Session = Depends(get_db)):
         raise HTTPException(409, "La description actuelle est déjà aussi complète que la page d'origine.")
 
     offer.description = text
-    # La description conditionne une partie du score : on recalcule.
-    from ..services.scan import offer_to_scoring_dict, profile_to_dict
-    from ..services.scoring import combined_score, score_offer
+    # L'avis IA portait sur l'ancien extrait : on le retire, le prochain scan
+    # (ou la prochaine évaluation) le recalculera sur le texte complet.
+    offer.ai_score = None
+    offer.ai_reason = ""
+    from ..services.scan import profile_to_dict, rescore_offer
 
     profile = db.get(Profile, 1)
-    result = score_offer(offer_to_scoring_dict(offer), profile_to_dict(profile))
-    offer.score = result.score
-    offer.score_breakdown = result.breakdown
-    offer.final_score = combined_score(offer.score, offer.ai_score)
+    rescore_offer(offer, profile_to_dict(profile))
     db.commit()
     return offer
 

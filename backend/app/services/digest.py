@@ -106,7 +106,7 @@ def build_digest(db: Session, for_date: str | None = None) -> Digest:
             {**_offer_brief(o), "status": o.status} for o in to_follow[:15]
         ],
         "to_relaunch": [
-            {**_offer_brief(o), "status": o.status} for o in offers_to_relaunch(db)[:10]
+            {**_offer_brief(o), "status": o.status} for o in offers_to_relaunch(db)
         ],
         "last_scan": {
             "id": last_run.id,

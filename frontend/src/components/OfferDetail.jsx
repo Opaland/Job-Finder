@@ -168,8 +168,20 @@ export default function OfferDetail({ offerId, onClose }) {
               className="secondary"
               onClick={async () => {
                 if (DEMO) { showToast(DEMO_ONLY_MSG, true); return }
-                if (letter !== offer.cover_letter) await patch({ cover_letter: letter })
-                window.open(`/api/offers/${offer.id}/letter.docx`, '_blank')
+                if (letter !== offer.cover_letter) {
+                  try {
+                    setOffer(await api.updateOffer(offer.id, { cover_letter: letter }))
+                  } catch (err) {
+                    showToast(`Lettre non sauvegardée (${err.message}) — export annulé.`, true)
+                    return
+                  }
+                }
+                const link = document.createElement('a')
+                link.href = `/api/offers/${offer.id}/letter.docx`
+                link.download = ''
+                document.body.appendChild(link)
+                link.click()
+                link.remove()
               }}
             >
               Télécharger en Word (.docx)
