@@ -37,6 +37,7 @@ export const api = {
   updateOffer: (id, body) =>
     request(`/api/offers/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   generateLetter: (id) => request(`/api/offers/${id}/letter`, { method: 'POST' }),
+  addManualOffer: (body) => request('/api/offers/manual', { method: 'POST', body: JSON.stringify(body) }),
   enrichOffer: (id) => request(`/api/offers/${id}/enrich`, { method: 'POST' }),
   interviewPrep: (id) => request(`/api/offers/${id}/interview-prep`, { method: 'POST' }),
 
@@ -117,6 +118,7 @@ export const SOURCE_LABELS = {
   wttj: 'Welcome to the Jungle',
   apec: 'APEC',
   hellowork: 'HelloWork',
+  manuelle: 'Ajout manuel',
 }
 
 // Seuil « pépite » — garder aligné avec GEM_SCORE (backend/app/services/digest.py).

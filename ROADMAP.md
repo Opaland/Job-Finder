@@ -63,7 +63,7 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
 
 ### EPIC G — Capture & candidature
 
-- [ ] **Sprint 11** : ajout manuel d'offres — coller une annonce (LinkedIn,
+- [x] **Sprint 11** : ajout manuel d'offres — coller une annonce (LinkedIn,
   Indeed, cooptation…) : parsing heuristique, scoring immédiat, dédoublonnage.
 - [ ] **Sprint 13** : emails de candidature et de relance générés par l'IA
   locale (mailto pré-rempli + copie).

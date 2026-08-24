@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import OFFER_STATUSES, Offer, Profile, utcnow
-from ..schemas import OfferDetail, OfferSummary, OfferUpdate
+from ..schemas import ManualOffer, OfferDetail, OfferSummary, OfferUpdate
 from ..services.claude_ai import ai_cover_letter, ai_interview_prep, cli_available
 from ..services.enrich import fetch_full_description
 
@@ -56,6 +56,65 @@ def list_offers(
         "total": total,
         "items": [OfferSummary.model_validate(o).model_dump() for o in offers],
     }
+
+
+@router.post("/manual", response_model=OfferDetail, status_code=201)
+def add_manual_offer(payload: ManualOffer, db: Session = Depends(get_db)):
+    """Ajoute une offre à la main (annonce collée depuis LinkedIn, Indeed, cooptation…)."""
+    from ..services.enrich import fetch_full_description
+    from ..services.scan import profile_to_dict, rescore_offer
+    from ..services.textutils import fingerprint as make_fp
+    from ..services.textutils import normalize, titles_similar
+
+    text = (payload.raw_text or "").strip()
+    if not text and payload.url:
+        # Rien de collé : on tente de lire la page de l'offre.
+        text = fetch_full_description(payload.url) or ""
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+
+    title = (payload.title or "").strip() or (lines[0][:120] if lines else "")
+    if not title:
+        raise HTTPException(400, "Donne au moins un titre, ou colle le texte de l'annonce (le titre sera pris sur la première ligne).")
+    company = (payload.company or "").strip()
+    if not company and len(lines) > 1 and len(lines[1]) <= 60:
+        company = lines[1]
+
+    lowered = normalize(text + " " + title)
+    contract = ""
+    for label, needle in [("CDI", "cdi"), ("CDD", "cdd"), ("Freelance", "freelance"), ("Intérim", "interim"), ("Alternance", "alternance"), ("Stage", "stage")]:
+        if f" {needle} " in f" {lowered} ":
+            contract = label
+            break
+
+    # Dédoublonnage : empreinte exacte puis similarité de titre (même entreprise).
+    fp = make_fp(title, company)
+    twin = db.query(Offer).filter(Offer.fingerprint == fp).first()
+    if twin is None and len(normalize(company)) >= 3:
+        for other in db.query(Offer).filter(Offer.company.ilike(company)).all():
+            if titles_similar(title, other.title):
+                twin = other
+                break
+    if twin:
+        raise HTTPException(409, f"Cette offre est déjà suivie : « {twin.title} » ({twin.company or 'entreprise inconnue'}, score {twin.final_score:.0f}).")
+
+    offer = Offer(
+        fingerprint=fp,
+        source="manuelle",
+        source_id=f"manuelle-{utcnow().strftime('%Y%m%d%H%M%S%f')}",
+        title=title[:300],
+        company=company[:200],
+        location=(payload.location or "").strip()[:200],
+        description=text,
+        url=(payload.url or "").strip(),
+        contract_type=contract,
+        remote="teletravail" in lowered or "remote" in lowered,
+    )
+    profile = db.get(Profile, 1)
+    rescore_offer(offer, profile_to_dict(profile))
+    offer.status_history = [{"status": "nouvelle", "date": utcnow().isoformat(), "par": "ajout manuel"}]
+    db.add(offer)
+    db.commit()
+    return offer
 
 
 @router.get("/export.xlsx")

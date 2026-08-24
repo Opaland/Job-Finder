@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api", tags=["statistiques"])
 # Libellés servis par les connecteurs eux-mêmes : une seule source de vérité.
 from ..connectors import ALL_CONNECTORS
 
-SOURCE_LABELS = {c.name: c.label for c in ALL_CONNECTORS}
+SOURCE_LABELS = {c.name: c.label for c in ALL_CONNECTORS} | {"manuelle": "Ajout manuel"}
 
 
 def _parse_dt(value):

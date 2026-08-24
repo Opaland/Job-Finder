@@ -113,6 +113,29 @@ export async function demoRequest(path, options = {}) {
   const body = options.body ? JSON.parse(options.body) : {}
 
   if (route === '/api/health') return { ok: true }
+  if (route === '/api/offers/manual' && method === 'POST') {
+    const lines = (body.raw_text || '').split('\n').map((l) => l.trim()).filter(Boolean)
+    const title = (body.title || '').trim() || (lines[0] || '').slice(0, 120)
+    if (!title) throw new Error("Donne au moins un titre, ou colle le texte de l'annonce.")
+    const low = ((body.raw_text || '') + ' ' + title).toLowerCase()
+    // Score simplifié pour la démo (l'appli locale utilise le vrai moteur).
+    const score = /test manager|qa lead|responsable test/.test(low) ? 88 : (/\bqa\b|test/.test(low) ? 62 : 35)
+    const offer = {
+      id: Math.max(0, ...state.offers.map((o) => o.id)) + 1,
+      source: 'manuelle', source_id: `demo-${Date.now()}`,
+      title, company: (body.company || '').trim() || (lines[1] && lines[1].length <= 60 ? lines[1] : ''),
+      location: (body.location || '').trim(), description: body.raw_text || '',
+      url: (body.url || '').trim(), contract_type: /cdi/.test(low) ? 'CDI' : '',
+      salary_text: '', remote: /t[ée]l[ée]travail|remote/.test(low),
+      published_at: null, collected_at: new Date().toISOString(), last_seen_at: new Date().toISOString(),
+      still_online: true, score, ai_score: null, ai_reason: '', final_score: score,
+      score_breakdown: [{ label: 'Démo', points: score, max: 100, detail: 'Score simplifié dans la démo — l’application locale applique le vrai moteur pondéré.' }],
+      status: 'nouvelle', status_history: [{ status: 'nouvelle', date: new Date().toISOString(), par: 'ajout manuel (démo)' }],
+      favorite: false, notes: '', cover_letter: '', interview_prep: null, other_sources: [],
+    }
+    state.offers.push(offer)
+    return offer
+  }
   if (route === '/api/offers' && method === 'GET') return listOffers(query)
 
   const offerMatch = route.match(/^\/api\/offers\/(\d+)$/)

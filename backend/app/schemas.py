@@ -40,6 +40,16 @@ class OfferDetail(OfferSummary):
     last_seen_at: datetime
 
 
+class ManualOffer(BaseModel):
+    """Offre ajoutée à la main (annonce collée)."""
+
+    url: str | None = None
+    title: str | None = None
+    company: str | None = None
+    location: str | None = None
+    raw_text: str | None = None
+
+
 class OfferUpdate(BaseModel):
     status: str | None = None
     notes: str | None = None

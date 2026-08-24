@@ -3,12 +3,69 @@ import { api, DEMO, formatDate, GEM_SCORE, scoreColor, SOURCE_LABELS, STATUS_COL
 import { useToast } from '../App.jsx'
 import OfferDetail from './OfferDetail.jsx'
 
+function AddOfferModal({ onClose, onCreated }) {
+  const [form, setForm] = useState({ url: '', title: '', company: '', location: '', raw_text: '' })
+  const [saving, setSaving] = useState(false)
+  const showToast = useToast()
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
+
+  const submit = async () => {
+    if (!form.title.trim() && !form.raw_text.trim() && !form.url.trim()) {
+      showToast('Colle au moins le texte de l’annonce, ou donne un titre ou une URL.', true)
+      return
+    }
+    setSaving(true)
+    try {
+      const offer = await api.addManualOffer(form)
+      showToast(`Offre ajoutée et scorée : ${Math.round(offer.final_score)}/100.`)
+      onCreated(offer)
+    } catch (err) {
+      showToast(err.message, true)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="drawer-backdrop" onClick={onClose} />
+      <div className="drawer" style={{ width: 'min(560px, 94vw)' }}>
+        <button className="close" onClick={onClose}>✕</button>
+        <h2>Ajouter une offre à la main</h2>
+        <p className="hint">
+          Vue sur LinkedIn, Indeed ou ailleurs ? Colle l'annonce ici : elle sera scorée par rapport
+          à ton CV et suivie comme les autres. Titre et entreprise sont détectés depuis les deux
+          premières lignes si tu les laisses vides.
+        </p>
+        <div className="section-title">Lien de l'offre</div>
+        <input type="text" style={{ width: '100%' }} placeholder="https://…" value={form.url} onChange={(e) => set('url', e.target.value)} />
+        <div className="section-title">Texte de l'annonce (collé)</div>
+        <textarea rows={10} placeholder={'Titre du poste\nEntreprise\nDescription…'} value={form.raw_text} onChange={(e) => set('raw_text', e.target.value)} />
+        <div className="section-title">Titre (optionnel)</div>
+        <input type="text" style={{ width: '100%' }} value={form.title} onChange={(e) => set('title', e.target.value)} />
+        <div className="section-title">Entreprise / Lieu (optionnels)</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input type="text" style={{ flex: 1 }} placeholder="Entreprise" value={form.company} onChange={(e) => set('company', e.target.value)} />
+          <input type="text" style={{ flex: 1 }} placeholder="Lieu" value={form.location} onChange={(e) => set('location', e.target.value)} />
+        </div>
+        <div className="actions-row" style={{ marginTop: 16 }}>
+          <button className="primary" onClick={submit} disabled={saving}>
+            {saving ? (<><span className="spin" />Analyse…</>) : 'Ajouter et scorer'}
+          </button>
+          <button className="secondary" onClick={onClose}>Annuler</button>
+        </div>
+      </div>
+    </>
+  )
+}
+
 export default function Offers({ scanning }) {
   const [data, setData] = useState({ total: 0, items: [] })
   const [filters, setFilters] = useState({
     status: '', source: '', min_score: '', search: '', sort: 'score', favorite: '',
   })
   const [selectedId, setSelectedId] = useState(null)
+  const [showAdd, setShowAdd] = useState(false)
   const [loading, setLoading] = useState(false)
   const showToast = useToast()
 
@@ -91,6 +148,9 @@ export default function Offers({ scanning }) {
           <option value="score">Tri : score</option>
           <option value="date">Tri : date</option>
         </select>
+        <button className="primary" onClick={() => setShowAdd(true)}>
+          + Ajouter une offre
+        </button>
         <button
           className="secondary"
           title="Exporter toutes les offres et leur suivi dans un classeur Excel"
@@ -160,6 +220,13 @@ export default function Offers({ scanning }) {
           </div>
         ))}
       </div>
+
+      {showAdd && (
+        <AddOfferModal
+          onClose={() => setShowAdd(false)}
+          onCreated={(offer) => { setShowAdd(false); load(); setSelectedId(offer.id) }}
+        />
+      )}
 
       {selectedId && (
         <OfferDetail
