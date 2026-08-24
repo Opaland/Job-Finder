@@ -1,0 +1,855 @@
+{
+ "offers": [
+  {
+   "id": 1,
+   "source": "france_travail",
+   "title": "Test Manager H/F",
+   "company": "Éditeur logiciels santé",
+   "location": "Lyon 3e (69)",
+   "description": "Éditeur de logiciels de santé (ISO 13485, IEC 62304) recherche un Test Manager pour piloter une équipe de 6 testeurs. Stratégie risk-based testing, automatisation Selenium/Playwright, tests API KarateDSL, CI/CD GitLab, Jira, Squash TM. Management, pilotage des releases.",
+   "url": "https://candidat.francetravail.fr/offres/exemple",
+   "contract_type": "CDI",
+   "salary_text": "55-65 k EUR",
+   "remote": false,
+   "published_at": null,
+   "collected_at": "2026-08-24T12:25:25.762298",
+   "last_seen_at": "2026-08-24T12:25:25.762306",
+   "still_online": true,
+   "score": 100.0,
+   "score_breakdown": [
+    {
+     "label": "Adéquation du poste",
+     "points": 40,
+     "max": 40,
+     "detail": "Intitulé « test manager » : c'est le métier que tu exerces déjà."
+    },
+    {
+     "label": "Compétences du CV",
+     "points": 25.0,
+     "max": 25,
+     "detail": "11 compétence(s) de ton CV citée(s) : ci/cd, iec 62304, iso 13485, jira, karatedsl, management, playwright, risk-based testing…"
+    },
+    {
+     "label": "Niveau / séniorité",
+     "points": 10,
+     "max": 10,
+     "detail": "Dimension management/pilotage explicite : aligné avec tes 15 ans d'expérience."
+    },
+    {
+     "label": "Localisation",
+     "points": 15,
+     "max": 15,
+     "detail": "Poste dans ta zone (Lyon et alentours)."
+    },
+    {
+     "label": "Contrat",
+     "points": 5,
+     "max": 5,
+     "detail": "CDI : correspond à ta recherche."
+    },
+    {
+     "label": "Secteur",
+     "points": 5,
+     "max": 5,
+     "detail": "Secteur que tu connais déjà : santé, éditeur de logiciels."
+    }
+   ],
+   "ai_score": null,
+   "ai_reason": "",
+   "final_score": 100.0,
+   "status": "nouvelle",
+   "status_history": [
+    {
+     "status": "nouvelle",
+     "date": "2026-08-24T12:25:25.748110",
+     "par": "scan"
+    }
+   ],
+   "favorite": false,
+   "notes": "",
+   "cover_letter": "Madame, Monsieur,\n\nTest Manager avec 15 ans d'expérience en qualité logicielle, dont 7 ans dédiés à l'édition de logiciels de santé en environnement ISO 13485 et IEC 62304, je suis particulièrement intéressé par votre poste de Test Manager. Piloter une équipe de testeurs sur une stratégie risk-based testing, avec automatisation Selenium/Playwright et tests API KarateDSL, correspond exactement à l'expertise que j'ai construite mission après mission dans ce secteur exigeant.\n\nChez Maela, éditeur de logiciels de santé en SaaS, j'ai encadré une équipe de 8 testeurs répartis par squad et endossé le rôle d'Incident Manager en production. J'y ai déployé une stratégie de test interprojets combinant tests API (KarateDSL) et tests IHM (Cucumber/Selenium/Cypress) sur Web et Mobile, industrialisée via GitLab CI/CD. J'ai piloté les mises en production hebdomadaires en conformité ISO 13485, avec Jira Software/Service Desk et Squash TM comme référentiels, et j'ai été référent sur ces deux outils pour l'ensemble des équipes. Résultat concret : -60 % de bugs en production et une dette technique divisée par 2,5 (de 900 à 350 points) — la preuve qu'une gouvernance qualité rigoureuse, associée à une automatisation bien pensée, produit des résultats mesurables.\n\nCette expérience s'inscrit dans un parcours plus large où j'ai toujours occupé ce rôle de bâtisseur de processus de test dans le secteur santé : chez Maincare Solutions, j'ai fait grandir une cellule qualité de 1 à 4 collaborateurs sur un DPI, en environnement Agile/Scrum, avec Risk-Based Testing et Session Based Testing. Plus récemment, chez Softway Medical, j'ai pris la direction fonctionnelle de la QA sur 45 testeurs et 7 sites, en pilotant notamment la conformité IEC 62304 des processus de test automatisés E2E et API — une vision stratégique de la fonction QA que je peux aujourd'hui remettre au service d'une équipe opérationnelle de 6 testeurs, avec toute l'implication terrain que cela suppose.\n\nCe qui me porte dans ce métier, c'est cette conviction que le testeur est le dernier rempart entre le client et l'entreprise, garant que chaque fonctionnalité répond aux attentes des utilisateurs — une responsabilité d'autant plus forte dans le secteur de la santé, où la qualité logicielle est une obligation réglementaire autant qu'un engagement envers les patients et les professionnels de santé.\n\nRejoindre un éditeur de logiciels de santé à Lyon, où je pourrais mettre au service de votre équipe mon expérience du risk-based testing, de l'industrialisation de l'automatisation et du pilotage des releases en environnement normé, est une perspective qui me motive pleinement.\n\nJe serais ravi d'échanger avec vous pour vous expliquer comment mon profil pourrait répondre à vos attentes. Disponible pour un entretien à votre convenance, je reste à votre disposition pour toute information complémentaire.\n\nDans l'attente de vous rencontrer, je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.\n\nCédric Moretti",
+   "other_sources": []
+  },
+  {
+   "id": 4,
+   "source": "apec",
+   "title": "Consultant Test Manager",
+   "company": "Cabinet de conseil",
+   "location": "Paris",
+   "description": "Mission freelance : pilotage de la stratégie de test pour un grand compte bancaire, encadrement d'une équipe de testeurs, reporting qualité, Jira/XRay, Jenkins.",
+   "url": "https://www.apec.fr/exemple",
+   "contract_type": "Freelance",
+   "salary_text": "600 EUR/j",
+   "remote": false,
+   "published_at": null,
+   "collected_at": "2026-08-24T12:25:25.762320",
+   "last_seen_at": "2026-08-24T12:25:25.762322",
+   "still_online": true,
+   "score": 77.7,
+   "score_breakdown": [
+    {
+     "label": "Adéquation du poste",
+     "points": 40,
+     "max": 40,
+     "detail": "Intitulé « test manager » : c'est le métier que tu exerces déjà."
+    },
+    {
+     "label": "Compétences du CV",
+     "points": 16.7,
+     "max": 25,
+     "detail": "4 compétence(s) de ton CV citée(s) : bancaire, jenkins, jira, xray"
+    },
+    {
+     "label": "Niveau / séniorité",
+     "points": 10,
+     "max": 10,
+     "detail": "Dimension management/pilotage explicite : aligné avec tes 15 ans d'expérience."
+    },
+    {
+     "label": "Localisation",
+     "points": 1,
+     "max": 15,
+     "detail": "Poste hors de ta zone géographique, sans télétravail complet."
+    },
+    {
+     "label": "Contrat",
+     "points": 5,
+     "max": 5,
+     "detail": "Mission freelance / portage : correspond à ta recherche."
+    },
+    {
+     "label": "Secteur",
+     "points": 5,
+     "max": 5,
+     "detail": "Secteur que tu connais déjà : bancaire."
+    }
+   ],
+   "ai_score": null,
+   "ai_reason": "",
+   "final_score": 77.7,
+   "status": "postulee",
+   "status_history": [
+    {
+     "status": "nouvelle",
+     "date": "2026-08-24T12:25:25.756027",
+     "par": "scan"
+    }
+   ],
+   "favorite": true,
+   "notes": "Postulé le 22/08 — relance prévue le 29/08. Contact : cabinet, Mme Durand.",
+   "cover_letter": "",
+   "other_sources": []
+  },
+  {
+   "id": 3,
+   "source": "wttj",
+   "title": "QA Engineer confirmé",
+   "company": "Fintech lyonnaise",
+   "location": "Lyon",
+   "description": "Tests exploratoires et automatisés (Cypress), API REST, environnement agile Scrum, Jira. Secteur banque.",
+   "url": "https://www.welcometothejungle.com/exemple",
+   "contract_type": "CDI",
+   "salary_text": "45-52 k EUR",
+   "remote": false,
+   "published_at": null,
+   "collected_at": "2026-08-24T12:25:25.762317",
+   "last_seen_at": "2026-08-24T12:25:25.762318",
+   "still_online": true,
+   "score": 76.6,
+   "score_breakdown": [
+    {
+     "label": "Adéquation du poste",
+     "points": 26,
+     "max": 40,
+     "detail": "Intitulé proche de ton métier (qa engineer)."
+    },
+    {
+     "label": "Compétences du CV",
+     "points": 18.6,
+     "max": 25,
+     "detail": "5 compétence(s) de ton CV citée(s) : agile, api rest, cypress, jira, scrum"
+    },
+    {
+     "label": "Niveau / séniorité",
+     "points": 7,
+     "max": 10,
+     "detail": "Poste senior ou avec une part de pilotage."
+    },
+    {
+     "label": "Localisation",
+     "points": 15,
+     "max": 15,
+     "detail": "Poste dans ta zone (Lyon et alentours)."
+    },
+    {
+     "label": "Contrat",
+     "points": 5,
+     "max": 5,
+     "detail": "CDI : correspond à ta recherche."
+    },
+    {
+     "label": "Secteur",
+     "points": 5,
+     "max": 5,
+     "detail": "Secteur que tu connais déjà : banque."
+    }
+   ],
+   "ai_score": null,
+   "ai_reason": "",
+   "final_score": 76.6,
+   "status": "a_postuler",
+   "status_history": [
+    {
+     "status": "nouvelle",
+     "date": "2026-08-24T12:25:25.754063",
+     "par": "scan"
+    }
+   ],
+   "favorite": false,
+   "notes": "",
+   "cover_letter": "",
+   "other_sources": []
+  },
+  {
+   "id": 2,
+   "source": "jsearch",
+   "title": "QA Lead - Full Remote",
+   "company": "Scale-up SaaS",
+   "location": "France",
+   "description": "[Publiée via LinkedIn]\n\nNous cherchons un QA Lead pour structurer la qualité : stratégie de test, Cypress, Playwright, CI/CD GitHub Actions, management de 3 QA engineers. Full remote.",
+   "url": "https://www.linkedin.com/jobs/exemple",
+   "contract_type": "CDI",
+   "salary_text": "",
+   "remote": true,
+   "published_at": null,
+   "collected_at": "2026-08-24T12:25:25.762312",
+   "last_seen_at": "2026-08-24T12:25:25.762314",
+   "still_online": true,
+   "score": 86.7,
+   "score_breakdown": [
+    {
+     "label": "Adéquation du poste",
+     "points": 40,
+     "max": 40,
+     "detail": "Intitulé « qa lead » : c'est le métier que tu exerces déjà."
+    },
+    {
+     "label": "Compétences du CV",
+     "points": 16.7,
+     "max": 25,
+     "detail": "4 compétence(s) de ton CV citée(s) : ci/cd, cypress, management, playwright"
+    },
+    {
+     "label": "Niveau / séniorité",
+     "points": 10,
+     "max": 10,
+     "detail": "Dimension management/pilotage explicite : aligné avec tes 15 ans d'expérience."
+    },
+    {
+     "label": "Localisation",
+     "points": 13,
+     "max": 15,
+     "detail": "Poste en télétravail complet : compatible avec ta recherche."
+    },
+    {
+     "label": "Contrat",
+     "points": 5,
+     "max": 5,
+     "detail": "CDI : correspond à ta recherche."
+    },
+    {
+     "label": "Secteur",
+     "points": 2,
+     "max": 5,
+     "detail": "Secteur nouveau pour toi (ta recherche reste ouverte à tous les secteurs)."
+    }
+   ],
+   "ai_score": 65.0,
+   "ai_reason": "Le profil est très senior (Test Manager/QA Lead 15 ans) et maîtrise Cypress/Playwright, mais l'offre cible un management plus léger (3 QA engineers) et CI/CD GitHub Actions non mentionné dans le CV. Léger risque de surqualification/décalage de séniorité malgré une forte adéquation technique et méthodologique (stratégie de test, Risk-Based Testing).",
+   "final_score": 75.8,
+   "status": "nouvelle",
+   "status_history": [
+    {
+     "status": "nouvelle",
+     "date": "2026-08-24T12:25:25.751362",
+     "par": "scan"
+    }
+   ],
+   "favorite": false,
+   "notes": "",
+   "cover_letter": "",
+   "other_sources": []
+  },
+  {
+   "id": 5,
+   "source": "hellowork",
+   "title": "Testeur QA junior",
+   "company": "ESN régionale",
+   "location": "Villeurbanne (69)",
+   "description": "Testeur débutant, tests manuels, rédaction de cas de test, Jira.",
+   "url": "https://www.hellowork.com/exemple",
+   "contract_type": "CDI",
+   "salary_text": "",
+   "remote": false,
+   "published_at": null,
+   "collected_at": "2026-08-24T12:25:25.762324",
+   "last_seen_at": "2026-08-24T12:25:25.762325",
+   "still_online": true,
+   "score": 30.0,
+   "score_breakdown": [
+    {
+     "label": "Adéquation du poste",
+     "points": 26,
+     "max": 40,
+     "detail": "Intitulé proche de ton métier (testeur)."
+    },
+    {
+     "label": "Compétences du CV",
+     "points": 8.3,
+     "max": 25,
+     "detail": "1 compétence(s) de ton CV citée(s) : jira"
+    },
+    {
+     "label": "Niveau / séniorité",
+     "points": 0,
+     "max": 10,
+     "detail": "Poste junior / stage / alternance : en dessous de ton niveau."
+    },
+    {
+     "label": "Localisation",
+     "points": 15,
+     "max": 15,
+     "detail": "Poste dans ta zone (Lyon et alentours)."
+    },
+    {
+     "label": "Contrat",
+     "points": 5,
+     "max": 5,
+     "detail": "CDI : correspond à ta recherche."
+    },
+    {
+     "label": "Secteur",
+     "points": 2,
+     "max": 5,
+     "detail": "Secteur nouveau pour toi (ta recherche reste ouverte à tous les secteurs)."
+    },
+    {
+     "label": "Plafond",
+     "points": 0,
+     "max": 0,
+     "detail": "Score plafonné à 30 : poste junior/stage/alternance."
+    }
+   ],
+   "ai_score": null,
+   "ai_reason": "",
+   "final_score": 30.0,
+   "status": "nouvelle",
+   "status_history": [
+    {
+     "status": "nouvelle",
+     "date": "2026-08-24T12:25:25.757747",
+     "par": "scan"
+    }
+   ],
+   "favorite": false,
+   "notes": "",
+   "cover_letter": "",
+   "other_sources": []
+  },
+  {
+   "id": 6,
+   "source": "adzuna",
+   "title": "Développeur Java",
+   "company": "SSII",
+   "location": "Lyon",
+   "description": "Développement Java Spring, microservices.",
+   "url": "https://www.adzuna.fr/exemple",
+   "contract_type": "CDI",
+   "salary_text": "",
+   "remote": false,
+   "published_at": null,
+   "collected_at": "2026-08-24T12:25:25.762327",
+   "last_seen_at": "2026-08-24T12:25:25.762328",
+   "still_online": true,
+   "score": 20.0,
+   "score_breakdown": [
+    {
+     "label": "Adéquation du poste",
+     "points": 0,
+     "max": 40,
+     "detail": "Poste hors du domaine QA/test."
+    },
+    {
+     "label": "Compétences du CV",
+     "points": 0,
+     "max": 25,
+     "detail": "Aucune compétence de ton CV citée dans l'offre."
+    },
+    {
+     "label": "Niveau / séniorité",
+     "points": 4,
+     "max": 10,
+     "detail": "Niveau non précisé dans l'offre."
+    },
+    {
+     "label": "Localisation",
+     "points": 15,
+     "max": 15,
+     "detail": "Poste dans ta zone (Lyon et alentours)."
+    },
+    {
+     "label": "Contrat",
+     "points": 5,
+     "max": 5,
+     "detail": "CDI : correspond à ta recherche."
+    },
+    {
+     "label": "Secteur",
+     "points": 2,
+     "max": 5,
+     "detail": "Secteur nouveau pour toi (ta recherche reste ouverte à tous les secteurs)."
+    },
+    {
+     "label": "Plafond",
+     "points": 0,
+     "max": 0,
+     "detail": "Score plafonné à 20 : poste hors QA/test."
+    }
+   ],
+   "ai_score": null,
+   "ai_reason": "",
+   "final_score": 20.0,
+   "status": "nouvelle",
+   "status_history": [
+    {
+     "status": "nouvelle",
+     "date": "2026-08-24T12:25:25.760440",
+     "par": "scan"
+    }
+   ],
+   "favorite": false,
+   "notes": "",
+   "cover_letter": "",
+   "other_sources": []
+  }
+ ],
+ "profile": {
+  "full_name": "Cédric Moretti",
+  "email": "ced.moretti@gmail.com",
+  "cv_filename": "CV_MORETTI_Cedric.pdf",
+  "cv_text": "Cédric MORETTI\nTest Manager / QA Lead, Transformation IA du Testing\n8 rue des sources, 69530 Brignais · 06 85 90 77 67 · ced.moretti@gmail.com\n\nPROFIL\n15 ans en qualité logicielle, dont 7 ans en édition de logiciels de santé (ISO 13485 / IEC 62304). Je pilote des équipes de test (jusqu'à 20 personnes) et je conçois des plateformes agentic de génération de tests : chez Softway Medical, j'ai co-construit IATS avec une équipe de testeurs, conforme IEC 62304. Expert Risk-Based Testing et industrialisation de l'automatisation (Selenium, Playwright, KarateDSL, REST Assured). Résultat mesurable : -60 % de bugs en production et dette technique divisée par 2,5 (900 → 350 points) chez Maela. Testeur « produit expert » : forte sensibilité fonctionnelle et UX au service de la qualité métier.\n\nEXPÉRIENCES\n\nJanvier 2026 – (8 mois) — Softway Medical · Lyon — Directeur QA (mandat fonctionnel) – Transformation IA & Testing\nDirection fonctionnelle de la QA (rattaché au CPO) chez Softway Medical (éditeur de logiciels de santé, ISO 13485 / IEC 62304, ~1 500 collaborateurs) : gouvernance qualité multi-sites (45 testeurs / 7 sites) et pilotage de la transformation IA du testing.\n- Diagnostic, gouvernance & conformité : rapport d'étonnement (35 entretiens), modèle TCoE hub-and-spoke, pilotage des audits ISO 9001, accompagnement RH de la transformation du métier de testeur avec l'IA\n- Transformation IA : conception et lancement d'IATS (QA Factory), plateforme agentic de génération de tests co-construite avec 7 testeurs, architecture Hub & Spoke, RAG métier, génération de la User Story au test automatisé E2E (Selenium, Playwright) et API (REST Assured), gates qualité et traçabilité IEC 62304\n- Prédictibilité (POC) & données : règles de prédiction du risque release, jeux de données de test pilotés par l'IA (Faker + NLP médical)\n- Résultats : cahier de test généré en ~5 min pour ~0,40 €, pilotage par indicateurs, monitoring Langfuse/FinOps, adoption via UI dédiée, skills en plugins et formation\n\nNovembre 2024 – Novembre 2025 (1 an 1 mois) — coQliQo · Lyon — Responsable test et support\nReconstruction de la fonction Qualité & Support (éditeur retail : Back Office Caisse Web, application mobile, caisse client lourd).\n- Management d'une équipe de 3 personnes au support (N1/N2), refonte des processus, SLA et KPI (Jira / Power BI), comités CORUN client, reporting qualité\n- Politique de test Risk-Based Testing et conformité NF525, tests exploratoires et transverses (Caisse, Back Office Web, Mobile), automatisation du suivi qualité via Power Automate\n- Automatisation des tests API (KarateDSL), collaboration R&D et direction produit (Azure DevOps / Jira)\n\nMars 2022 – Octobre 2024 (2 ans 8 mois) — Maela (Careside) · Lyon — Test Manager / QA Lead\nRefonte et relance de l'activité de test QA d'un éditeur logiciel santé en SaaS.\n- Encadrement d'une équipe de 8 testeurs répartis par squad, développement du Support N2, déploiement de Jira Software/Service Desk/Confluence, rôle d'Incident Manager en production\n- Stratégie de test interprojets SaaS santé (manuel + automatisé), tests API (KarateDSL), IHM (Cucumber/Selenium/Cypress) Web et Mobile (Android/iOS), industrialisation CI/CD GitLab\n- Pilotage des mises en production hebdomadaires, conformité ISO 13485, référent Jira/Squash TM\n- Structuration d'une équipe « Run » avec cycle de livraison hebdomadaire piloté par KPI\n- Résultats : -60 % de bugs en production, dette technique divisée par 2,5 (900 → 350 points)\n\nMars 2021 – Février 2022 (1 an) — Apave · Lyon — Responsable technique qualité performance\nStructuration et pilotage des tests sur un projet de refonte applicative (ESB) multi-sites.\n- Roadmap QA Performance, participation aux CAB, recrutement et management d'une équipe de 20 testeurs (Performance / Automaticien / Analyste)\n- Stratégie de tests manuels et automatisés, interfaces API REST, test automation via KarateDSL et Postman\n- Performance applicative via Dynatrace et Neoload, scripts Python pour le traitement des données API\n\nNovembre 2016 – Février 2021 (4 ans 3 mois) — Maincare Solutions · Lyon — Responsable qualité produit MaincareIC – DPI\nMise en place des processus de test QA dans l'édition de logiciels santé, en environnement Agile/Scrum avec équipe nearshore.\n- Pilotage d'une cellule passée de 1 à 4 collaborateurs, indicateur de risque pour la dette de test (-30 % de retours support)\n- Stratégie de test commune au projet (40 développeurs), Session Based Testing, Risk-Based Testing, interfaces IHM Web et FHIR (Mirth)\n- Déploiement des outils ALM, automatisation des tests IHM avec Selenium, tests de performance, formation des collaborateurs\n\nMai 2015 – Novembre 2016 (1 an 7 mois) — Reputation VIP (Semji) · Lyon — Responsable test et qualité\nPremier testeur de l'entreprise, création de la fonction QA (secteur SEO, Scrum/DevOps).\n- Processus de test, audit interne QA, politique et stratégie de tests manuels et automatisés\n- Couverture IHM Web, API (REST) et Batch, tests automatisés en Gherkin intégrés en CI/CD GitLab\n- Tests exploratoires (QTest Tricentis), priorisation par les risques\n\nJanvier 2011 – Avril 2015 (4 ans 4 mois) — Solutec (SSII) · Saint-Étienne — Analyste QA / Chef de projet (missions Tessi Informatique et Casino IT)\nStructuration QA en secteur bancaire et grande distribution, cycle en V puis Agile/Scrum.\n- Pilotage d'une cellule de 9 collaborateurs, stratégie MoSCoW\n- Tests manuels et automatisés IHM Web et API SOAP (SOAPUI), CI Jenkins, reporting client\n- Chez Casino IT : chaînes de tests de non-régression (QC/QTP), pilotage d'un projet de déploiement métier\n\nFORMATION\n2013 : Certification ISTQB Niveau Fondation\n2008–2010 : Master Chimie informatique, Université Louis Pasteur, Strasbourg\n\nCOMPÉTENCES\n- Test automatisé IHM : Selenium / Cypress / Playwright / Protractor\n- Test automatisé API : Postman / KarateDSL / REST Assured\n- Test de performance : Neoload / JMeter / Dynatrace\n- IA & Testing : agents ReAct, architecture Hub & Spoke, RAG, prédiction de risque release, monitoring Langfuse/FinOps, conformité IEC 62304\n- Reporting : Power BI / Jira\n- Ticketing : Bugzilla / Jira / Azure DevOps — ALM : Squash TM / XRay / QC / Azure DevOps — CI : Jenkins / GitLab CI / Azure DevOps\n- Gouvernance : Risk-Based Testing, TMMi, TCoE — Normes : ISO 13485 / IEC 62304 / ISO 9001 / NF525 — Agile (Scrum / Kanban), MoSCoW\n- Langues : Français (natif), Anglais (technique)\n\nDIVERS\nCourse d'orientation et trail, photographie. Permis B + véhicule. Créateur du blog LyonTesting.fr",
+  "cv_updated_at": "2026-08-24T13:06:46.418634",
+  "letter_template": "Madame, Monsieur,\n\nMon parcours dans le métier du test est celui d'une passion née sur le terrain, bien loin des sentiers battus des formations académiques. Ce qui m'a toujours animé, c'est cette conviction profonde que la qualité logicielle n'est pas une étape optionnelle, mais bien le fondement même de la confiance que les utilisateurs accordent à un produit. Quand une application, qu'elle soit web, mobile ou métier, ne fonctionne pas comme attendu, ce n'est pas seulement une frustration pour l'utilisateur, c'est aussi une occasion manquée pour l'entreprise de briller. C'est cette philosophie qui guide mon travail au quotidien.\n\nMon aventure dans le test a commencé dans le milieu bancaire, où j'ai eu l'opportunité de créer de toutes pièces une cellule d'homologation et de mettre en place un outil référentiel de test. Cette expérience fondatrice m'a appris à maîtriser chaque maillon de la chaîne de validation, mais surtout, elle m'a révélé une passion : celle de construire des processus robustes là où il n'y en avait pas. Partir de rien, explorer, proposer, comparer des stratégies de test, des outils, des métriques, et surtout, éduquer les équipes et les clients à l'importance cruciale du test – voilà ce qui a fait naître en moi une véritable vocation.\n\nChez coQliQo, j'ai rejoint une structure en pleine reconstruction, avec pour mission de relancer et professionnaliser l'activité Qualité et Support dans le domaine de l'édition logicielle pour le Retail. J'ai redéfini entièrement le support N1/N2 (processus, SLA, KPI avec Jira et Power BI), animé des comités clients, et refondu la stratégie de test avec une approche basée sur les risques, conforme à la norme NF525, sur des environnements variés : caisses en magasin, back offices web et applications mobiles.\n\nChez Maela, j'ai repensé entièrement l'activité de test dans le secteur exigeant de la santé, où la qualité est une obligation réglementaire. J'ai coordonné une équipe de huit testeurs, déployé une plateforme d'industrialisation des tests (GitLab CI, KarateDSL pour les API, Cucumber/Selenium/Cypress pour les IHM), endossé le rôle d'Incident Manager et piloté les mises en production hebdomadaires en conformité ISO 13485 — avec, à la clé, -60 % de bugs en production.\n\nPlus récemment, chez Softway Medical, j'ai pris la direction fonctionnelle de la QA (45 testeurs, 7 sites) et piloté la transformation IA du testing : co-construction avec les testeurs d'IATS, une plateforme agentic de génération de tests conforme IEC 62304, de la User Story au test automatisé E2E et API. Cette expérience unique me permet aujourd'hui d'allier gouvernance QA et innovation concrète par l'IA.\n\nCe qui me passionne dans ce métier, c'est cette idée d'être le dernier rempart entre le client et l'entreprise, celui qui garantit que chaque fonctionnalité répondra aux attentes des utilisateurs finaux. Pour moi, le testeur n'est pas un simple exécutant : c'est un acteur clé du projet, au même titre que les développeurs, les chefs de projet ou les Product Owners.\n\nCe qui me motive aujourd'hui, c'est de rejoindre une entreprise où je pourrais mettre cette passion et cette expertise au service de projets ambitieux, où la qualité n'est pas un simple mot mais une véritable culture, intégrée à chaque étape du développement.\n\nJe serais ravi d'échanger avec vous pour vous expliquer comment mon profil et mon expérience pourraient répondre à vos attentes. Disponible pour un entretien à votre convenance, je reste à votre disposition pour toute information complémentaire.\n\nDans l'attente de vous rencontrer, je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.\n\nCédric Moretti\n",
+  "target_titles": [
+   "test manager",
+   "qa manager",
+   "qa lead",
+   "lead qa",
+   "test lead",
+   "responsable test",
+   "responsable qa",
+   "responsable qualité logicielle",
+   "head of qa",
+   "directeur qa",
+   "quality assurance manager",
+   "responsable validation",
+   "coach test",
+   "consultant test manager"
+  ],
+  "skills": [
+   "agile",
+   "azure devops",
+   "banque",
+   "cucumber",
+   "cypress",
+   "dynatrace",
+   "fhir",
+   "gherkin",
+   "gitlab ci",
+   "iec 62304",
+   "iso 13485",
+   "iso 9001",
+   "istqb",
+   "jenkins",
+   "jira",
+   "jmeter",
+   "kanban",
+   "karatedsl",
+   "langfuse",
+   "llm",
+   "neoload",
+   "nf525",
+   "playwright",
+   "postman",
+   "power automate",
+   "power bi",
+   "python",
+   "rag",
+   "rest assured",
+   "retail",
+   "risk-based testing",
+   "sante",
+   "scrum",
+   "selenium",
+   "sql",
+   "squash",
+   "tcoe",
+   "tmmi",
+   "xray"
+  ],
+  "location_label": "Lyon et alentours (Brignais) + full remote",
+  "location_keywords": [
+   "lyon",
+   "brignais",
+   "villeurbanne",
+   "oullins",
+   "saint-genis-laval",
+   "givors",
+   "vienne",
+   "saint-priest",
+   "venissieux",
+   "bron",
+   "ecully",
+   "tassin",
+   "dardilly",
+   "limonest",
+   "meyzieu",
+   "vaulx-en-velin",
+   "caluire",
+   "rillieux",
+   "chassieu",
+   "saint-fons",
+   "irigny",
+   "pierre-benite",
+   "francheville",
+   "craponne",
+   "brindas",
+   "mornant",
+   "rhone",
+   "69"
+  ],
+  "radius_km": 40,
+  "remote_ok": true,
+  "contracts": [
+   "CDI",
+   "Freelance / Portage"
+  ],
+  "min_salary": null,
+  "sector_bonus": [
+   "santé",
+   "e-santé",
+   "médical",
+   "dispositif médical",
+   "éditeur de logiciels",
+   "retail",
+   "banque",
+   "bancaire",
+   "saas"
+  ],
+  "excluded_keywords": [],
+  "scan_hour": "07:30",
+  "sources_enabled": {
+   "france_travail": true,
+   "adzuna": true,
+   "jsearch": true,
+   "wttj": true,
+   "apec": true,
+   "hellowork": true
+  }
+ },
+ "digest": {
+  "id": 1,
+  "date": "2026-08-24",
+  "created_at": "2026-08-24T13:06:46.418634",
+  "email_sent": true,
+  "payload": {
+   "date": "2026-08-24",
+   "new_count": 3,
+   "new_offers": [
+    {
+     "id": 1,
+     "title": "Test Manager H/F",
+     "company": "Éditeur logiciels santé",
+     "location": "Lyon 3e (69)",
+     "contract_type": "CDI",
+     "source": "france_travail",
+     "url": "https://candidat.francetravail.fr/offres/exemple",
+     "final_score": 100.0,
+     "ai_reason": "",
+     "remote": false
+    },
+    {
+     "id": 4,
+     "title": "Consultant Test Manager",
+     "company": "Cabinet de conseil",
+     "location": "Paris",
+     "contract_type": "Freelance",
+     "source": "apec",
+     "url": "https://www.apec.fr/exemple",
+     "final_score": 77.7,
+     "ai_reason": "",
+     "remote": false
+    },
+    {
+     "id": 3,
+     "title": "QA Engineer confirmé",
+     "company": "Fintech lyonnaise",
+     "location": "Lyon",
+     "contract_type": "CDI",
+     "source": "wttj",
+     "url": "https://www.welcometothejungle.com/exemple",
+     "final_score": 76.6,
+     "ai_reason": "",
+     "remote": false
+    }
+   ],
+   "top_overall": [
+    {
+     "id": 1,
+     "title": "Test Manager H/F",
+     "company": "Éditeur logiciels santé",
+     "location": "Lyon 3e (69)",
+     "contract_type": "CDI",
+     "source": "france_travail",
+     "url": "https://candidat.francetravail.fr/offres/exemple",
+     "final_score": 100.0,
+     "ai_reason": "",
+     "remote": false
+    },
+    {
+     "id": 4,
+     "title": "Consultant Test Manager",
+     "company": "Cabinet de conseil",
+     "location": "Paris",
+     "contract_type": "Freelance",
+     "source": "apec",
+     "url": "https://www.apec.fr/exemple",
+     "final_score": 77.7,
+     "ai_reason": "",
+     "remote": false
+    },
+    {
+     "id": 3,
+     "title": "QA Engineer confirmé",
+     "company": "Fintech lyonnaise",
+     "location": "Lyon",
+     "contract_type": "CDI",
+     "source": "wttj",
+     "url": "https://www.welcometothejungle.com/exemple",
+     "final_score": 76.6,
+     "ai_reason": "",
+     "remote": false
+    },
+    {
+     "id": 2,
+     "title": "QA Lead - Full Remote",
+     "company": "Scale-up SaaS",
+     "location": "France",
+     "contract_type": "CDI",
+     "source": "jsearch",
+     "url": "https://www.linkedin.com/jobs/exemple",
+     "final_score": 75.8,
+     "ai_reason": "Le profil est très senior (Test Manager/QA Lead 15 ans) et maîtrise Cypress/Playwright, mais l'offre cible un management plus léger (3 QA engineers) et CI/CD GitHub Actions non mentionné dans le CV. Léger risque de surqualification/décalage de séniorité malgré une forte adéquation technique et méthodologique (stratégie de test, Risk-Based Testing).",
+     "remote": true
+    },
+    {
+     "id": 5,
+     "title": "Testeur QA junior",
+     "company": "ESN régionale",
+     "location": "Villeurbanne (69)",
+     "contract_type": "CDI",
+     "source": "hellowork",
+     "url": "https://www.hellowork.com/exemple",
+     "final_score": 30.0,
+     "ai_reason": "",
+     "remote": false
+    },
+    {
+     "id": 6,
+     "title": "Développeur Java",
+     "company": "SSII",
+     "location": "Lyon",
+     "contract_type": "CDI",
+     "source": "adzuna",
+     "url": "https://www.adzuna.fr/exemple",
+     "final_score": 20.0,
+     "ai_reason": "",
+     "remote": false
+    }
+   ],
+   "status_counts": {
+    "nouvelle": 4,
+    "vue": 0,
+    "a_postuler": 1,
+    "postulee": 1,
+    "relancee": 0,
+    "entretien": 0,
+    "refusee": 0,
+    "fermee": 0
+   },
+   "total_offers": 6,
+   "to_follow": [
+    {
+     "id": 4,
+     "title": "Consultant Test Manager",
+     "company": "Cabinet de conseil",
+     "location": "Paris",
+     "contract_type": "Freelance",
+     "source": "apec",
+     "url": "https://www.apec.fr/exemple",
+     "final_score": 77.7,
+     "ai_reason": "",
+     "remote": false,
+     "status": "postulee"
+    },
+    {
+     "id": 3,
+     "title": "QA Engineer confirmé",
+     "company": "Fintech lyonnaise",
+     "location": "Lyon",
+     "contract_type": "CDI",
+     "source": "wttj",
+     "url": "https://www.welcometothejungle.com/exemple",
+     "final_score": 76.6,
+     "ai_reason": "",
+     "remote": false,
+     "status": "a_postuler"
+    }
+   ],
+   "last_scan": {
+    "id": 42,
+    "finished_at": "2026-08-24T13:06:46.418634",
+    "trigger": "quotidien",
+    "new_count": 3,
+    "error_count": 0,
+    "source_stats": {}
+   }
+  }
+ },
+ "sources": {
+  "sources": [
+   {
+    "name": "france_travail",
+    "label": "France Travail",
+    "needs_key": true,
+    "configured": true,
+    "enabled": true,
+    "last_stats": {
+     "label": "France Travail",
+     "fetched": 212,
+     "new": 2,
+     "seen": 118,
+     "errors": [],
+     "configured": true
+    }
+   },
+   {
+    "name": "adzuna",
+    "label": "Adzuna (agrégateur)",
+    "needs_key": true,
+    "configured": true,
+    "enabled": true,
+    "last_stats": {
+     "label": "Adzuna (agrégateur)",
+     "fetched": 96,
+     "new": 1,
+     "seen": 61,
+     "errors": [],
+     "configured": true
+    }
+   },
+   {
+    "name": "jsearch",
+    "label": "JSearch (LinkedIn / Indeed via Google)",
+    "needs_key": true,
+    "configured": true,
+    "enabled": true,
+    "last_stats": {
+     "label": "JSearch",
+     "fetched": 54,
+     "new": 0,
+     "seen": 37,
+     "errors": [],
+     "configured": true
+    }
+   },
+   {
+    "name": "wttj",
+    "label": "Welcome to the Jungle",
+    "needs_key": false,
+    "configured": true,
+    "enabled": true,
+    "last_stats": {
+     "label": "Welcome to the Jungle",
+     "fetched": 48,
+     "new": 0,
+     "seen": 23,
+     "errors": [],
+     "configured": true
+    }
+   },
+   {
+    "name": "apec",
+    "label": "APEC",
+    "needs_key": false,
+    "configured": true,
+    "enabled": true,
+    "last_stats": {
+     "label": "APEC",
+     "fetched": 39,
+     "new": 0,
+     "seen": 18,
+     "errors": [],
+     "configured": true
+    }
+   },
+   {
+    "name": "hellowork",
+    "label": "HelloWork",
+    "needs_key": false,
+    "configured": true,
+    "enabled": true,
+    "last_stats": {
+     "label": "HelloWork",
+     "fetched": 31,
+     "new": 0,
+     "seen": 12,
+     "errors": [],
+     "configured": true
+    }
+   }
+  ],
+  "ai": {
+   "available": true,
+   "detail": "Session locale Claude Code (CLI « claude »)"
+  },
+  "email": {
+   "configured": true
+  },
+  "next_daily_scan": "2026-08-25T07:30:00.418634"
+ },
+ "scans": [
+  {
+   "id": 42,
+   "started_at": "2026-08-24T13:06:46.418634",
+   "finished_at": "2026-08-24T13:06:46.418634",
+   "trigger": "quotidien",
+   "status": "termine",
+   "source_stats": {},
+   "new_count": 3,
+   "seen_count": 269,
+   "error_count": 0
+  },
+  {
+   "id": 41,
+   "started_at": "2026-08-23T13:06:46.418634",
+   "finished_at": "2026-08-23T13:06:46.418634",
+   "trigger": "quotidien",
+   "status": "termine",
+   "source_stats": {},
+   "new_count": 5,
+   "seen_count": 244,
+   "error_count": 1
+  }
+ ]
+}

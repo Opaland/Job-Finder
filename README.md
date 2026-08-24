@@ -8,6 +8,11 @@ génère des **lettres de motivation adaptées** à chaque offre via la session 
 Règle de conception : **aucune offre n'est jamais fermée automatiquement** — seul toi peux passer une offre
 en « Refusée » ou « Fermée ». Une offre disparue de sa source est simplement marquée « Plus en ligne ? ».
 
+🌐 **Site du projet + démo interactive (données d'exemple)** : https://opaland.github.io/Job-Finder/
+— la démo montre l'interface dans le navigateur ; l'application complète (scans réels, IA, email)
+tourne en local, voir ci-dessous. Le site est déployé automatiquement par GitHub Actions
+(`.github/workflows/pages.yml`).
+
 ---
 
 ## 1. Démarrage rapide (Windows)

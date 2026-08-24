@@ -1,0 +1,69 @@
+# Déploie le site GitHub Pages : page d'accueil (site/) + démo interactive
+# (frontend buildé en mode démo, données d'exemple embarquées).
+# URL : https://opaland.github.io/Job-Finder/
+name: Déploiement GitHub Pages
+
+on:
+  push:
+    branches: [main, claude/confident-ride-weseu3]
+    paths:
+      - 'site/**'
+      - 'frontend/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Installer les dépendances du frontend
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+
+      - name: Builder la démo
+        working-directory: frontend
+        env:
+          VITE_DEMO: '1'
+        run: npx vite build --base=/Job-Finder/demo/ --outDir=dist-demo
+
+      - name: Assembler le site (accueil + démo)
+        run: |
+          mkdir -p _site/demo
+          cp -r site/. _site/
+          cp -r frontend/dist-demo/. _site/demo/
+
+      - name: Configurer GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

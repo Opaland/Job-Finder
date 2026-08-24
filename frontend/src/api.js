@@ -1,6 +1,13 @@
 // Client API — même origine (le backend FastAPI sert le build), proxy Vite en dev.
+// En build "démo" (GitHub Pages), les appels sont simulés avec des données d'exemple.
+
+export const DEMO = import.meta.env.VITE_DEMO === '1'
 
 async function request(path, options = {}) {
+  if (DEMO) {
+    const { demoRequest } = await import('./demoApi.js')
+    return demoRequest(path, options)
+  }
   const res = await fetch(path, {
     headers: { 'Content-Type': 'application/json' },
     ...options,
@@ -34,6 +41,11 @@ export const api = {
   profile: () => request('/api/profile'),
   updateProfile: (body) => request('/api/profile', { method: 'PUT', body: JSON.stringify(body) }),
   uploadCv: (file) => {
+    if (DEMO) {
+      return Promise.reject(
+        new Error("Import de CV disponible uniquement dans l'application locale (démo en ligne)."),
+      )
+    }
     const form = new FormData()
     form.append('file', file)
     return fetch('/api/profile/cv', { method: 'POST', body: form }).then(async (res) => {

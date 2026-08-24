@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { api } from './api.js'
+import { api, DEMO } from './api.js'
 import Dashboard from './components/Dashboard.jsx'
 import Offers from './components/Offers.jsx'
 import ProfilePage from './components/Profile.jsx'
@@ -53,6 +53,12 @@ export default function App() {
 
   return (
     <ToastContext.Provider value={showToast}>
+      {DEMO && (
+        <div className="demo-banner">
+          🎬 Démo en ligne avec des données d'exemple — l'application complète (scans réels, IA, email)
+          tourne en local : <a href="https://github.com/Opaland/Job-Finder#1-démarrage-rapide-windows">guide d'installation</a>
+        </div>
+      )}
       <div className="layout">
         <aside className="sidebar">
           <div className="brand">Job<span>Finder</span></div>

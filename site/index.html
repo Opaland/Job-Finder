@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Finder — Recherche d'emploi QA assistée par IA</title>
+<meta name="description" content="Application locale qui agrège les offres d'emploi QA de 6 sources, les classe selon le CV et génère des lettres de motivation avec Claude.">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;🎯&lt;/text&gt;&lt;/svg&gt;">
+<style>
+  :root {
+    --bg: #0d1526; --panel: #131e33; --border: #24314d;
+    --text: #e6edf3; --muted: #94a3b8; --accent: #58a6ff; --green: #3fb950; --amber: #d29922;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  a { color: var(--accent); }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 0 22px; }
+  header { padding: 64px 0 40px; text-align: center; }
+  h1 { font-size: 42px; letter-spacing: -1px; }
+  h1 span { color: var(--accent); }
+  .tagline { font-size: 19px; color: var(--muted); max-width: 700px; margin: 14px auto 0; }
+  .cta { margin-top: 30px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn { display: inline-block; padding: 13px 26px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 15.5px; }
+  .btn.primary { background: #1f6feb; color: #fff; }
+  .btn.primary:hover { background: #2f7bf0; }
+  .btn.ghost { border: 1px solid var(--border); color: var(--text); background: var(--panel); }
+  .btn.ghost:hover { border-color: var(--accent); }
+  .note { margin-top: 14px; color: var(--muted); font-size: 13.5px; }
+  section { padding: 44px 0; }
+  h2 { font-size: 26px; margin-bottom: 22px; text-align: center; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; }
+  .card .icon { font-size: 26px; }
+  .card h3 { font-size: 16.5px; margin: 8px 0 6px; }
+  .card p { color: var(--muted); font-size: 14px; }
+  .shots img { width: 100%; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 18px; box-shadow: 0 12px 40px rgba(0,0,0,.45); }
+  .steps { counter-reset: step; max-width: 760px; margin: 0 auto; }
+  .step { display: flex; gap: 18px; margin-bottom: 22px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px 22px; }
+  .step::before { counter-increment: step; content: counter(step); flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: #1f6feb; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .step code { background: #0d1526; border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px; font-size: 13px; }
+  .step p { color: var(--muted); font-size: 14px; }
+  .step b { color: var(--text); }
+  .pledge { text-align: center; background: linear-gradient(180deg, #131e33, #0d1526); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .pledge p { max-width: 720px; margin: 0 auto; font-size: 16px; }
+  footer { padding: 34px 0 44px; text-align: center; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <h1>Job<span>Finder</span> 🎯</h1>
+  <p class="tagline">
+    L'application qui cherche à ta place : 6 sources d'offres d'emploi scannées chaque matin,
+    un classement 0-100 calibré sur ton CV, et des lettres de motivation générées par Claude.
+  </p>
+  <div class="cta">
+    <a class="btn primary" href="demo/">▶ Essayer la démo interactive</a>
+    <a class="btn ghost" href="https://github.com/Opaland/Job-Finder#1-démarrage-rapide-windows">📥 Guide d'installation</a>
+    <a class="btn ghost" href="http://127.0.0.1:8000">💻 Ouvrir mon appli locale</a>
+  </div>
+  <p class="note">La démo tourne dans ton navigateur avec des données d'exemple.
+  L'application complète s'installe en local (« Ouvrir mon appli locale » fonctionne si elle est lancée).</p>
+</header>
+
+<section class="wrap">
+  <h2>Ce qu'elle fait pour toi</h2>
+  <div class="grid">
+    <div class="card"><div class="icon">🔎</div><h3>6 sources scannées</h3>
+      <p>France Travail, Adzuna, JSearch (offres LinkedIn / Indeed via Google for Jobs), Welcome to the Jungle, APEC, HelloWork — dédoublonnées automatiquement.</p></div>
+    <div class="card"><div class="icon">🧮</div><h3>Classement selon ton CV</h3>
+      <p>Score 0-100 expliqué critère par critère : adéquation du poste, compétences citées, séniorité, localisation Lyon / remote, contrat, secteur.</p></div>
+    <div class="card"><div class="icon">🤖</div><h3>IA en local, sans clé API</h3>
+      <p>Ta session Claude Code affine le score des meilleures offres et rédige une lettre de motivation adaptée à chaque annonce, à partir de ta lettre type.</p></div>
+    <div class="card"><div class="icon">📬</div><h3>Point quotidien</h3>
+      <p>Scan automatique chaque matin, tableau de bord « état des lieux » et email récapitulatif des nouvelles offres classées.</p></div>
+    <div class="card"><div class="icon">📌</div><h3>Suivi de candidatures</h3>
+      <p>Statuts (à postuler, postulée, relance, entretien…), favoris, notes et historique — piloté par toi seul.</p></div>
+    <div class="card"><div class="icon">🔒</div><h3>Jamais de fermeture auto</h3>
+      <p>Une offre n'est jamais supprimée ni fermée par un scan : si elle disparaît de sa source, elle est simplement marquée « plus en ligne ? ».</p></div>
+  </div>
+</section>
+
+<section class="wrap shots">
+  <h2>L'application</h2>
+  <img src="captures/1_dashboard.png" alt="Tableau de bord : état des lieux et offres classées" loading="lazy">
+  <img src="captures/3_detail.png" alt="Détail d'une offre : pourquoi ce score, lettre de motivation" loading="lazy">
+  <img src="captures/2_offres.png" alt="Liste des offres avec filtres et statuts" loading="lazy">
+</section>
+
+<section class="wrap">
+  <h2>Installation (Windows)</h2>
+  <div class="steps">
+    <div class="step"><div><b>Installe les prérequis</b>
+      <p><a href="https://www.python.org/downloads/">Python 3.11+</a> (coche « Add python.exe to PATH ») et <a href="https://nodejs.org">Node.js LTS</a>.</p></div></div>
+    <div class="step"><div><b>Clone et lance</b>
+      <p><code>git clone https://github.com/Opaland/Job-Finder.git</code> puis
+      <code>git checkout claude/confident-ride-weseu3</code> et double-clique sur <code>start.bat</code> —
+      tout s'installe et l'appli s'ouvre sur <code>http://127.0.0.1:8000</code>.</p></div></div>
+    <div class="step"><div><b>Ajoute tes clés gratuites (~10 min)</b>
+      <p>France Travail, Adzuna et JSearch dans le fichier <code>.env</code> —
+      <a href="https://github.com/Opaland/Job-Finder#3-configurer-les-sources-clés-gratuites">guide pas-à-pas dans le README</a>.
+      Sans elles, seules les sources sans clé sont scannées.</p></div></div>
+  </div>
+</section>
+
+<section class="pledge">
+  <div class="wrap">
+    <p>« L'idée : te mâcher le travail de recherche et ne présenter que les offres les plus pertinentes,
+    sans jamais fermer une offre à ta place. »</p>
+  </div>
+</section>
+
+<footer class="wrap">
+  Job Finder — projet personnel de Cédric Moretti · construit avec Claude Code ·
+  <a href="https://github.com/Opaland/Job-Finder">code source</a>
+</footer>
+
+</body>
+</html>
