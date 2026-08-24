@@ -60,9 +60,11 @@ function AddOfferModal({ onClose, onCreated }) {
 }
 
 export default function Offers({ scanning }) {
+  const PAGE_SIZE = 50
   const [data, setData] = useState({ total: 0, items: [] })
+  const [page, setPage] = useState(0)
   const [filters, setFilters] = useState({
-    status: '', source: '', min_score: '', search: '', sort: 'score', favorite: '',
+    status: '', source: '', min_score: '', search: '', company: '', sort: 'score', favorite: '',
   })
   const [selectedId, setSelectedId] = useState(null)
   const [showAdd, setShowAdd] = useState(false)
@@ -72,7 +74,7 @@ export default function Offers({ scanning }) {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const params = { ...filters, limit: 200 }
+      const params = { ...filters, limit: PAGE_SIZE, offset: page * PAGE_SIZE }
       if (params.favorite === '') delete params.favorite
       setData(await api.offers(params))
     } catch (err) {
@@ -80,12 +82,13 @@ export default function Offers({ scanning }) {
     } finally {
       setLoading(false)
     }
-  }, [filters, showToast])
+  }, [filters, page, showToast])
 
   useEffect(() => { load() }, [load])
   useEffect(() => { if (!scanning) load() }, [scanning]) // rafraîchit à la fin d'un scan
 
-  const setFilter = (key, value) => setFilters((f) => ({ ...f, [key]: value }))
+  const setFilter = (key, value) => { setPage(0); setFilters((f) => ({ ...f, [key]: value })) }
+  const pageCount = Math.max(1, Math.ceil(data.total / PAGE_SIZE))
 
   const updateStatus = async (offer, status) => {
     try {
@@ -144,9 +147,17 @@ export default function Offers({ scanning }) {
           <option value="">Favoris ou non</option>
           <option value="true">★ Favoris</option>
         </select>
+        <input
+          type="text"
+          style={{ maxWidth: 160 }}
+          placeholder="Entreprise…"
+          value={filters.company}
+          onChange={(e) => setFilter('company', e.target.value)}
+        />
         <select value={filters.sort} onChange={(e) => setFilter('sort', e.target.value)}>
           <option value="score">Tri : score</option>
-          <option value="date">Tri : date</option>
+          <option value="date">Tri : date de collecte</option>
+          <option value="published">Tri : date de publication</option>
         </select>
         <button className="primary" onClick={() => setShowAdd(true)}>
           + Ajouter une offre
@@ -223,6 +234,14 @@ export default function Offers({ scanning }) {
           </div>
         ))}
       </div>
+
+      {pageCount > 1 && (
+        <div className="actions-row" style={{ justifyContent: 'center', marginTop: 4 }}>
+          <button className="secondary" disabled={page === 0} onClick={() => setPage(page - 1)}>← Précédent</button>
+          <span className="hint">Page {page + 1} / {pageCount} · {data.total} offres</span>
+          <button className="secondary" disabled={page >= pageCount - 1} onClick={() => setPage(page + 1)}>Suivant →</button>
+        </div>
+      )}
 
       {showAdd && (
         <AddOfferModal

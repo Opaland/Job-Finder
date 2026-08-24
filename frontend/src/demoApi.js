@@ -36,12 +36,20 @@ function listOffers(query) {
       [o.title, o.company, o.description].join(' ').toLowerCase().includes(search),
     )
   }
-  if (params.get('sort') === 'date') {
+  const company = (params.get('company') || '').toLowerCase()
+  if (company) items = items.filter((o) => (o.company || '').toLowerCase().includes(company))
+  const sort = params.get('sort')
+  if (sort === 'date') {
     items.sort((a, b) => (b.collected_at > a.collected_at ? 1 : -1))
+  } else if (sort === 'published') {
+    items.sort((a, b) => ((b.published_at || '') > (a.published_at || '') ? 1 : -1))
   } else {
     items.sort((a, b) => b.final_score - a.final_score)
   }
-  return { total: items.length, items }
+  const total = items.length
+  const offset = Number(params.get('offset') || 0)
+  const limit = Number(params.get('limit') || 100)
+  return { total, items: items.slice(offset, offset + limit) }
 }
 
 const STATUS_ORDER = ['nouvelle', 'vue', 'a_postuler', 'postulee', 'relancee', 'entretien', 'refusee', 'fermee']

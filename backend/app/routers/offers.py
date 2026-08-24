@@ -20,6 +20,7 @@ def list_offers(
     source: str | None = None,
     min_score: float | None = None,
     search: str | None = None,
+    company: str | None = None,
     favorite: bool | None = None,
     remote: bool | None = None,
     sort: str = "score",
@@ -28,6 +29,8 @@ def list_offers(
     db: Session = Depends(get_db),
 ):
     query = db.query(Offer)
+    if company:
+        query = query.filter(Offer.company.ilike(f"%{company}%"))
     if status:
         statuses = [s for s in status.split(",") if s in OFFER_STATUSES]
         if statuses:
@@ -49,6 +52,8 @@ def list_offers(
     total = query.count()
     if sort == "date":
         query = query.order_by(Offer.collected_at.desc(), Offer.final_score.desc())
+    elif sort == "published":
+        query = query.order_by(Offer.published_at.desc().nulls_last(), Offer.final_score.desc())
     else:
         query = query.order_by(Offer.final_score.desc(), Offer.collected_at.desc())
     offers = query.offset(offset).limit(min(limit, 2000)).all()

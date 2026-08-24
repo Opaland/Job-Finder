@@ -67,6 +67,20 @@ def test_stats_repartitions(client):
     assert sum(d["count"] for d in data["per_day"]) == 6  # toutes collectées sous 30 jours
 
 
+def test_pagination_tri_et_filtre_entreprise(client):
+    """Pagination, tri par date de publication et filtre entreprise de la liste."""
+    page1 = client.get("/api/offers?limit=2&offset=0").json()
+    page2 = client.get("/api/offers?limit=2&offset=2").json()
+    assert page1["total"] == 6 and len(page1["items"]) == 2 and len(page2["items"]) == 2
+    assert {o["id"] for o in page1["items"]}.isdisjoint({o["id"] for o in page2["items"]})
+
+    by_company = client.get("/api/offers?company=acm").json()
+    assert by_company["total"] == 6  # toutes chez ACME dans la fixture
+
+    published = client.get("/api/offers?sort=published").json()
+    assert published["total"] == 6  # tri accepté (published_at nul → en fin de liste)
+
+
 def test_reactivite_entreprises(client):
     """La réactivité par entreprise se calcule depuis l'historique des statuts."""
     from app.database import get_db
