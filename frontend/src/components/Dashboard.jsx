@@ -98,6 +98,31 @@ export default function Dashboard({ scanning, goToOffers }) {
         </div>
       </div>
 
+      {p.to_relaunch?.length > 0 && (
+        <div className="card" style={{ borderColor: '#f0b37e' }}>
+          <h2 style={{ color: '#bc4c00' }}>⏰ Candidatures à relancer ({p.to_relaunch.length})</h2>
+          <p className="hint" style={{ marginTop: 0 }}>
+            Postulées ou relancées il y a plus de 7 jours, sans changement depuis.
+          </p>
+          <table className="simple">
+            <tbody>
+              {p.to_relaunch.map((o) => (
+                <tr key={o.id}>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <span className="chip">{STATUS_LABELS[o.status] || o.status}</span>
+                  </td>
+                  <td>
+                    <a href={o.url} target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>{o.title}</a>
+                    <div className="hint">{o.company} — {o.location}</div>
+                  </td>
+                  <td>{Math.round(o.final_score)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {p.to_follow?.length > 0 && (
         <div className="card">
           <h2>Candidatures à suivre</h2>

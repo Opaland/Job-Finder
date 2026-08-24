@@ -72,6 +72,7 @@ export async function demoRequest(path, options = {}) {
   }
 
   if (route.match(/^\/api\/offers\/\d+\/letter$/)) throw new Error(LOCAL_ONLY)
+  if (route.match(/^\/api\/offers\/\d+\/enrich$/)) throw new Error(LOCAL_ONLY)
   if (route === '/api/profile' && method === 'GET') return state.profile
   if (route === '/api/profile' && method === 'PUT') {
     Object.assign(state.profile, body)

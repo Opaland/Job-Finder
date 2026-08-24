@@ -130,9 +130,9 @@
    "status": "postulee",
    "status_history": [
     {
-     "status": "nouvelle",
-     "date": "2026-08-24T12:25:25.756027",
-     "par": "scan"
+     "status": "postulee",
+     "date": "2026-08-16T13:54:01.425415",
+     "par": "utilisateur"
     }
    ],
    "favorite": true,
@@ -723,7 +723,22 @@
     "new_count": 3,
     "error_count": 0,
     "source_stats": {}
-   }
+   },
+   "to_relaunch": [
+    {
+     "id": 4,
+     "title": "Consultant Test Manager",
+     "company": "Cabinet de conseil",
+     "location": "Paris",
+     "contract_type": "Freelance",
+     "source": "apec",
+     "url": "https://www.apec.fr/exemple",
+     "final_score": 77.7,
+     "ai_reason": "",
+     "remote": false,
+     "status": "postulee"
+    }
+   ]
   }
  },
  "sources": {

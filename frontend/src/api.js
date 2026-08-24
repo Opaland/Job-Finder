@@ -37,6 +37,7 @@ export const api = {
   updateOffer: (id, body) =>
     request(`/api/offers/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   generateLetter: (id) => request(`/api/offers/${id}/letter`, { method: 'POST' }),
+  enrichOffer: (id) => request(`/api/offers/${id}/enrich`, { method: 'POST' }),
 
   profile: () => request('/api/profile'),
   updateProfile: (body) => request('/api/profile', { method: 'PUT', body: JSON.stringify(body) }),

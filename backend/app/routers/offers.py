@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+import io
+import re
+
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
@@ -6,6 +9,7 @@ from ..database import get_db
 from ..models import OFFER_STATUSES, Offer, Profile, utcnow
 from ..schemas import OfferDetail, OfferSummary, OfferUpdate
 from ..services.claude_ai import ai_cover_letter, cli_available
+from ..services.enrich import fetch_full_description
 
 router = APIRouter(prefix="/api/offers", tags=["offres"])
 
@@ -115,6 +119,81 @@ def generate_letter(offer_id: int, db: Session = Depends(get_db)):
     offer.cover_letter = letter.strip()
     db.commit()
     return offer
+
+
+@router.post("/{offer_id}/enrich", response_model=OfferDetail)
+def enrich_offer(offer_id: int, db: Session = Depends(get_db)):
+    """Récupère la description complète depuis la page d'origine de l'offre, puis re-score."""
+    offer = db.get(Offer, offer_id)
+    if not offer:
+        raise HTTPException(404, "Offre introuvable")
+    text = fetch_full_description(offer.url)
+    if not text:
+        raise HTTPException(
+            502,
+            "Impossible de récupérer la description depuis le site d'origine "
+            "(page protégée ou indisponible). Ouvre l'offre sur le site via le bouton dédié.",
+        )
+    if len(text) <= len(offer.description or ""):
+        raise HTTPException(409, "La description actuelle est déjà aussi complète que la page d'origine.")
+
+    offer.description = text
+    # La description conditionne une partie du score : on recalcule.
+    from ..services.scan import offer_to_scoring_dict, profile_to_dict
+    from ..services.scoring import combined_score, score_offer
+
+    profile = db.get(Profile, 1)
+    result = score_offer(offer_to_scoring_dict(offer), profile_to_dict(profile))
+    offer.score = result.score
+    offer.score_breakdown = result.breakdown
+    offer.final_score = combined_score(offer.score, offer.ai_score)
+    db.commit()
+    return offer
+
+
+@router.get("/{offer_id}/letter.docx")
+def letter_docx(offer_id: int, db: Session = Depends(get_db)):
+    """Exporte la lettre de motivation de l'offre au format Word."""
+    offer = db.get(Offer, offer_id)
+    if not offer:
+        raise HTTPException(404, "Offre introuvable")
+    if not (offer.cover_letter or "").strip():
+        raise HTTPException(400, "Aucune lettre pour cette offre : génère-la ou écris-la d'abord.")
+
+    from docx import Document
+    from docx.shared import Pt
+
+    profile = db.get(Profile, 1)
+    doc = Document()
+    style = doc.styles["Normal"]
+    style.font.name = "Calibri"
+    style.font.size = Pt(11)
+
+    header = doc.add_paragraph()
+    run = header.add_run(profile.full_name or "")
+    run.bold = True
+    if profile.email:
+        header.add_run(f"\n{profile.email}")
+
+    title = f"Candidature — {offer.title}"
+    if offer.company:
+        title += f" · {offer.company}"
+    doc.add_paragraph(title).runs[0].bold = True
+    doc.add_paragraph("")
+
+    for paragraph in offer.cover_letter.split("\n\n"):
+        if paragraph.strip():
+            doc.add_paragraph(paragraph.strip())
+
+    buffer = io.BytesIO()
+    doc.save(buffer)
+
+    safe_company = re.sub(r"[^A-Za-z0-9_-]+", "_", offer.company or "offre").strip("_") or "offre"
+    return Response(
+        content=buffer.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="lettre_{safe_company}_{offer.id}.docx"'},
+    )
 
 
 @router.get("/meta/statuses")

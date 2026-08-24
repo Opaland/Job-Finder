@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
-import { api, formatDate, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
+import { api, DEMO, formatDate, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
 import { useToast } from '../App.jsx'
+
+const DEMO_ONLY_MSG = "Disponible uniquement dans l'application locale (ceci est la démo en ligne)."
 
 export default function OfferDetail({ offerId, onClose }) {
   const [offer, setOffer] = useState(null)
   const [notes, setNotes] = useState('')
   const [letter, setLetter] = useState('')
   const [generating, setGenerating] = useState(false)
+  const [enriching, setEnriching] = useState(false)
   const showToast = useToast()
 
   useEffect(() => {
@@ -122,6 +125,29 @@ export default function OfferDetail({ offerId, onClose }) {
         )}
 
         <div className="section-title">Description</div>
+        {(offer.description || '').length < 400 && (
+          <div className="actions-row" style={{ margin: '4px 0 8px' }}>
+            <button
+              className="secondary"
+              disabled={enriching}
+              onClick={async () => {
+                if (DEMO) { showToast(DEMO_ONLY_MSG, true); return }
+                setEnriching(true)
+                try {
+                  const updated = await api.enrichOffer(offer.id)
+                  setOffer(updated)
+                  showToast('Description complète récupérée — score recalculé.')
+                } catch (err) {
+                  showToast(err.message, true)
+                } finally {
+                  setEnriching(false)
+                }
+              }}
+            >
+              {enriching ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Récupération…</>) : 'Récupérer la description complète depuis le site'}
+            </button>
+          </div>
+        )}
         <div className="desc">{offer.description || 'Description non récupérée — ouvre l’offre sur le site d’origine.'}</div>
 
         <div className="section-title">Lettre de motivation adaptée</div>
@@ -135,6 +161,18 @@ export default function OfferDetail({ offerId, onClose }) {
               onClick={() => { navigator.clipboard.writeText(letter); showToast('Lettre copiée dans le presse-papiers.') }}
             >
               Copier la lettre
+            </button>
+          )}
+          {letter && (
+            <button
+              className="secondary"
+              onClick={async () => {
+                if (DEMO) { showToast(DEMO_ONLY_MSG, true); return }
+                if (letter !== offer.cover_letter) await patch({ cover_letter: letter })
+                window.open(`/api/offers/${offer.id}/letter.docx`, '_blank')
+              }}
+            >
+              Télécharger en Word (.docx)
             </button>
           )}
         </div>

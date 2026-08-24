@@ -39,6 +39,33 @@ def _offer_brief(offer: Offer) -> dict:
     }
 
 
+# Une candidature « postulée » ou « relancée » sans changement depuis ce délai
+# est signalée comme à relancer.
+RELAUNCH_AFTER_DAYS = 7
+
+
+def _last_status_change(offer: Offer) -> datetime | None:
+    history = offer.status_history or []
+    if not history:
+        return None
+    try:
+        return datetime.fromisoformat(history[-1]["date"])
+    except (KeyError, ValueError, TypeError):
+        return None
+
+
+def offers_to_relaunch(db: Session) -> list[Offer]:
+    """Candidatures envoyées restées sans suite depuis RELAUNCH_AFTER_DAYS jours."""
+    cutoff = utcnow() - timedelta(days=RELAUNCH_AFTER_DAYS)
+    result = []
+    for offer in db.query(Offer).filter(Offer.status.in_(["postulee", "relancee"])).all():
+        changed = _last_status_change(offer)
+        if changed is not None and changed <= cutoff:
+            result.append(offer)
+    result.sort(key=lambda o: -o.final_score)
+    return result
+
+
 def build_digest(db: Session, for_date: str | None = None) -> Digest:
     """Construit (ou reconstruit) le digest du jour."""
     date_str = for_date or utcnow().strftime("%Y-%m-%d")
@@ -77,6 +104,9 @@ def build_digest(db: Session, for_date: str | None = None) -> Digest:
         "total_offers": db.query(func.count(Offer.id)).scalar() or 0,
         "to_follow": [
             {**_offer_brief(o), "status": o.status} for o in to_follow[:15]
+        ],
+        "to_relaunch": [
+            {**_offer_brief(o), "status": o.status} for o in offers_to_relaunch(db)[:10]
         ],
         "last_scan": {
             "id": last_run.id,
@@ -141,6 +171,10 @@ def digest_html(payload: dict) -> str:
 
 <h3>Top 10 des offres ouvertes</h3>
 <table style="border-collapse:collapse;width:100%" border="0">{rows(payload.get('top_overall', []))}</table>
+
+{f'''<h3 style="color:#bc4c00">Candidatures à relancer ({len(payload["to_relaunch"])})</h3>
+<p style="color:#57606a;margin-top:0">Postulées ou relancées il y a plus de {RELAUNCH_AFTER_DAYS} jours, sans changement depuis.</p>
+<table style="border-collapse:collapse;width:100%" border="0">{rows(payload["to_relaunch"])}</table>''' if payload.get("to_relaunch") else ''}
 
 <h3>État des lieux</h3>
 <p>{counts_html}</p>
