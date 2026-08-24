@@ -3,10 +3,13 @@ import { api, DEMO } from '../api.js'
 import { useToast } from '../App.jsx'
 
 // Palette dataviz validée (une seule teinte : magnitude → bleu séquentiel).
-const BLUE = '#2a78d6'
-const INK_MUTED = '#898781'
-const GRID = '#e1e0d9'
-const BASELINE = '#c3c2b7'
+// Les pas sombres viennent de la même palette, choisis pour la surface sombre.
+function pal() {
+  const dark = typeof document !== 'undefined' && document.documentElement.dataset.theme === 'dark'
+  return dark
+    ? { BLUE: '#3987e5', INK_MUTED: '#8b949e', INK2: '#c3c2b7', GRID: '#30363d', BASELINE: '#484f58', RING: '#161b22' }
+    : { BLUE: '#2a78d6', INK_MUTED: '#898781', INK2: '#52514e', GRID: '#e1e0d9', BASELINE: '#c3c2b7', RING: '#ffffff' }
+}
 
 function Tooltip({ tip }) {
   if (!tip) return null
@@ -35,6 +38,7 @@ function colPath(x, y, width, height) {
 }
 
 function HBarChart({ items, onHover }) {
+  const { BLUE, INK_MUTED, INK2, GRID, BASELINE, RING } = pal()
   const max = Math.max(1, ...items.map((d) => d.count))
   const rowH = 30
   const barH = 18
@@ -54,7 +58,7 @@ function HBarChart({ items, onHover }) {
             onMouseMove={(e) => onHover({ x: e.clientX, y: e.clientY, text: `${d.label} : ${d.count} offre${d.count > 1 ? 's' : ''}` })}
             onMouseLeave={() => onHover(null)}
           >
-            <text x={labelW - 8} y={y + barH / 2 + 4} textAnchor="end" fontSize="12.5" fill="#52514e">
+            <text x={labelW - 8} y={y + barH / 2 + 4} textAnchor="end" fontSize="12.5" fill={INK2}>
               {d.label}
             </text>
             {d.count > 0 ? (
@@ -62,7 +66,7 @@ function HBarChart({ items, onHover }) {
             ) : (
               <line x1={labelW} y1={y + barH / 2} x2={labelW + 4} y2={y + barH / 2} stroke={BASELINE} strokeWidth="2" />
             )}
-            <text x={labelW + Math.max(bw, 4) + 6} y={y + barH / 2 + 4} fontSize="12" fill="#52514e" style={{ fontVariantNumeric: 'tabular-nums' }}>
+            <text x={labelW + Math.max(bw, 4) + 6} y={y + barH / 2 + 4} fontSize="12" fill={INK2} style={{ fontVariantNumeric: 'tabular-nums' }}>
               {d.count}
             </text>
           </g>
@@ -74,6 +78,7 @@ function HBarChart({ items, onHover }) {
 }
 
 function Histogram({ bins, onHover }) {
+  const { BLUE, INK_MUTED, INK2, GRID, BASELINE, RING } = pal()
   const max = Math.max(1, ...bins.map((b) => b.count))
   const width = 560
   const height = 180
@@ -109,7 +114,7 @@ function Histogram({ bins, onHover }) {
             <rect x={padL + i * slot} y={12} width={slot} height={plotH} fill="transparent" />
             {b.count > 0 && <path d={colPath(x, y, barW, Math.max(h, 4))} fill={BLUE} />}
             {i === maxIndex && b.count > 0 && (
-              <text x={x + barW / 2} y={y - 5} textAnchor="middle" fontSize="11.5" fill="#52514e" style={{ fontVariantNumeric: 'tabular-nums' }}>{b.count}</text>
+              <text x={x + barW / 2} y={y - 5} textAnchor="middle" fontSize="11.5" fill={INK2} style={{ fontVariantNumeric: 'tabular-nums' }}>{b.count}</text>
             )}
             <text x={padL + i * slot + slot / 2} y={height - 6} textAnchor="middle" fontSize="10.5" fill={INK_MUTED}>
               {b.label}
@@ -123,6 +128,7 @@ function Histogram({ bins, onHover }) {
 }
 
 function ActivityChart({ days, onHover }) {
+  const { BLUE, INK_MUTED, INK2, GRID, BASELINE, RING } = pal()
   const max = Math.max(1, ...days.map((d) => d.count))
   const width = 560
   const height = 170
@@ -160,10 +166,10 @@ function ActivityChart({ days, onHover }) {
       {hoverI != null && (
         <>
           <line x1={px(hoverI)} y1={14} x2={px(hoverI)} y2={14 + plotH} stroke={BASELINE} strokeWidth="1" />
-          <circle cx={px(hoverI)} cy={py(days[hoverI].count)} r="4" fill={BLUE} stroke="#fff" strokeWidth="2" />
+          <circle cx={px(hoverI)} cy={py(days[hoverI].count)} r="4" fill={BLUE} stroke={RING} strokeWidth="2" />
         </>
       )}
-      <circle cx={px(days.length - 1)} cy={py(days[days.length - 1].count)} r="4" fill={BLUE} stroke="#fff" strokeWidth="2" />
+      <circle cx={px(days.length - 1)} cy={py(days[days.length - 1].count)} r="4" fill={BLUE} stroke={RING} strokeWidth="2" />
       <text x={padL} y={height - 4} fontSize="10.5" fill={INK_MUTED}>{fmt(days[0].date)}</text>
       <text x={width - 12} y={height - 4} textAnchor="end" fontSize="10.5" fill={INK_MUTED}>{fmt(days[days.length - 1].date)}</text>
       <line x1={padL} y1={14 + plotH} x2={width - 12} y2={14 + plotH} stroke={BASELINE} strokeWidth="1" />
@@ -177,6 +183,7 @@ const STATUS_FR = {
 }
 
 export default function Stats() {
+  const { BLUE } = pal()
   const [data, setData] = useState(null)
   const [tip, setTip] = useState(null)
   const showToast = useToast()

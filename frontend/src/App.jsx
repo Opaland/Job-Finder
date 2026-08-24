@@ -19,11 +19,25 @@ const PAGES = [
   { id: 'sources', label: 'Sources & réglages', icon: '🔌' },
 ]
 
+function initialTheme() {
+  try {
+    return localStorage.getItem('jf_theme') === 'dark' ? 'dark' : 'light'
+  } catch {
+    return 'light'
+  }
+}
+
 export default function App() {
   const [page, setPage] = useState('dashboard')
   const [toast, setToast] = useState(null)
   const [scanning, setScanning] = useState(false)
+  const [theme, setTheme] = useState(initialTheme)
   const timer = useRef(null)
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    try { localStorage.setItem('jf_theme', theme) } catch { /* stockage indisponible */ }
+  }, [theme])
 
   const showToast = useCallback((message, isError = false) => {
     setToast({ message, isError })
@@ -79,6 +93,15 @@ export default function App() {
           <div style={{ padding: '14px 10px' }}>
             <button className="primary" style={{ width: '100%' }} onClick={startScan} disabled={scanning}>
               {scanning ? (<><span className="spin" />Scan en cours…</>) : 'Lancer un scan'}
+            </button>
+          </div>
+          <div style={{ padding: '0 10px' }}>
+            <button
+              className="nav"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              title="Basculer le thème"
+            >
+              <span>{theme === 'dark' ? '☀️' : '🌙'}</span> {theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
             </button>
           </div>
           <div className="footer">

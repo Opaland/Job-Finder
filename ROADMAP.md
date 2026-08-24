@@ -54,7 +54,7 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
 
 - [x] **Sprint 8** : requêtes de scan configurables dans le profil (les
   mots-clés de recherche des connecteurs ne sont plus codés en dur).
-- [ ] **Sprint 9** : mode sombre complet (tokens CSS + pas sombres validés de
+- [x] **Sprint 9** : mode sombre complet (tokens CSS + pas sombres validés de
   la palette dataviz).
 - [ ] **Sprint 10** : durcissement final — tests supplémentaires, revue de
   code globale, documentation et site à jour, tag v2.0.
