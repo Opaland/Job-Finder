@@ -76,7 +76,7 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
   + section « À faire aujourd'hui » (tableau de bord et email).
 - [x] **Sprint 16** : contacts recruteurs par entreprise (nom, email,
   téléphone, notes), rattachés aux offres.
-- [ ] **Sprint 17** : focus du jour — 3 actions suggérées (pépite à traiter,
+- [x] **Sprint 17** : focus du jour — 3 actions suggérées (pépite à traiter,
   relance due, action datée).
 
 ### EPIC I — Fiabilité & visibilité

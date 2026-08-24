@@ -62,6 +62,32 @@ export default function Dashboard({ scanning, goToOffers }) {
         <div className="stat"><div className="value" style={{ color: '#1a7f37' }}>{counts.entretien || 0}</div><div className="label">Entretiens</div></div>
       </div>
 
+      {p.focus?.length > 0 && (
+        <div className="card" style={{ borderLeft: '4px solid #1f6feb' }}>
+          <h2>🎯 Focus du jour</h2>
+          <table className="simple">
+            <tbody>
+              {p.focus.map((f, i) => (
+                <tr key={f.id}>
+                  <td style={{ whiteSpace: 'nowrap', fontWeight: 700, color: '#1f6feb' }}>{i + 1}.</td>
+                  <td>
+                    <b>{f.label}</b>
+                    <div className="hint">
+                      <a href={f.url} target="_blank" rel="noreferrer">{f.title}</a> — {f.company}
+                    </div>
+                  </td>
+                  <td>
+                    <span className="score-badge" style={{ background: scoreColor(f.final_score), minWidth: 38, height: 26, fontSize: 13 }}>
+                      {Math.round(f.final_score)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {p.todo_today?.length > 0 && (
         <div className="card" style={{ borderColor: '#b6d3f7' }}>
           <h2 style={{ color: '#0969da' }}>🗓️ À faire aujourd'hui ({p.todo_today.length})</h2>

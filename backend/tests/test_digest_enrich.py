@@ -92,6 +92,28 @@ def test_actions_a_faire_aujourdhui(db):
     assert "faire aujourd" in digest_html(payload).lower()
 
 
+def test_focus_du_jour(db):
+    """Le focus priorise action échue > pépite > relance, sans doublon d'offre."""
+    from app.models import Offer
+
+    db.add_all([
+        Offer(fingerprint="fp-f1", source="test", source_id="f1", title="Action due",
+              company="A", status="postulee", final_score=60,
+              next_action_date=utcnow() - timedelta(days=1), next_action_note="Rappeler la RH"),
+        Offer(fingerprint="fp-f2", source="test", source_id="f2", title="Pépite ouverte",
+              company="B", status="nouvelle", final_score=93),
+        Offer(fingerprint="fp-f3", source="test", source_id="f3", title="Vieille candidature",
+              company="C", status="postulee", final_score=70,
+              status_history=[{"status": "postulee", "date": (utcnow() - timedelta(days=10)).isoformat(), "par": "u"}]),
+    ])
+    db.commit()
+
+    focus = build_digest(db).payload["focus"]
+    assert [f["type"] for f in focus] == ["action", "pepite", "relance"]
+    assert focus[0]["label"].startswith("En retard")
+    assert len({f["id"] for f in focus}) == len(focus)
+
+
 def test_pepites_et_objectif_hebdo(db):
     """Les offres ouvertes >= 85 sont des pépites ; les candidatures de la semaine comptent."""
     from app.models import Offer

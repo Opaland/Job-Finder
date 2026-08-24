@@ -120,6 +120,49 @@ def actions_due(db: Session) -> list[dict]:
     ]
 
 
+def daily_focus(db: Session) -> list[dict]:
+    """Les 3 actions du jour qui comptent, par priorité décroissante.
+
+    1. L'action datée échue la plus ancienne · 2. La meilleure pépite non
+    traitée · 3. La relance due la plus ancienne · 4. À défaut, postuler à la
+    meilleure offre en attente. Une même offre n'apparaît qu'une fois.
+    """
+    focus: list[dict] = []
+    used: set[int] = set()
+
+    def push(kind: str, label: str, brief: dict):
+        if brief["id"] in used or len(focus) >= 3:
+            return
+        used.add(brief["id"])
+        focus.append({"type": kind, "label": label, **brief})
+
+    for action in actions_due(db):
+        note = action["action_note"] or "Action prévue"
+        prefix = "En retard : " if action["overdue"] else "Aujourd'hui : "
+        push("action", prefix + note, action)
+        if len(focus) >= 3:
+            return focus
+
+    for gem in gems(db)[:1]:
+        brief = _offer_brief(gem)
+        push("pepite", f"Étudie cette pépite (score {brief['final_score']:.0f})", brief)
+
+    for offer in offers_to_relaunch(db)[:1]:
+        push("relance", "Relance cette candidature restée sans réponse", _offer_brief(offer))
+
+    if len(focus) < 3:
+        best_waiting = (
+            db.query(Offer)
+            .filter(Offer.status.in_(["a_postuler", "vue", "nouvelle"]))
+            .order_by(Offer.final_score.desc())
+            .first()
+        )
+        if best_waiting:
+            push("objectif", "Avance vers ton objectif : postule à cette offre", _offer_brief(best_waiting))
+
+    return focus
+
+
 def build_digest(db: Session, for_date: str | None = None) -> Digest:
     """Construit (ou reconstruit) le digest du jour."""
     date_str = for_date or utcnow().strftime("%Y-%m-%d")
@@ -164,6 +207,7 @@ def build_digest(db: Session, for_date: str | None = None) -> Digest:
         ],
         "gems": [_offer_brief(o) for o in gems(db)],
         "todo_today": actions_due(db),
+        "focus": daily_focus(db),
         "weekly": {
             "goal": (db.get(Profile, 1).weekly_goal if db.get(Profile, 1) else 5) or 0,
             "sent": applications_this_week(db),
@@ -225,6 +269,13 @@ def digest_html(payload: dict) -> str:
 <html><body style="font-family:Segoe UI,Arial,sans-serif;color:#1f2328;max-width:760px">
 <h2 style="margin-bottom:2px">Job Finder — point du {payload['date']}</h2>
 <p style="color:#57606a;margin-top:0">{scan_line}</p>
+
+{f'''<h3>🎯 Focus du jour</h3>
+<ol style="margin-top:4px">{''.join(
+    f"<li style='margin-bottom:6px'><b>{f['label']}</b><br>"
+    f"<a href='{f['url']}'>{f['title']}</a> <span style='color:#57606a'>— {f['company']}</span></li>"
+    for f in payload["focus"]
+)}</ol>''' if payload.get("focus") else ''}
 
 {f'''<h3 style="color:#0969da">🗓️ À faire aujourd'hui ({len(payload["todo_today"])})</h3>
 <table style="border-collapse:collapse;width:100%" border="0">{''.join(
