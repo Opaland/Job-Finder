@@ -1,0 +1,20 @@
+# Données locales (base SQLite, CV importés) — ne jamais versionner
+data/
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+venv/
+.venv/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+
+# Divers
+.DS_Store
+*.log

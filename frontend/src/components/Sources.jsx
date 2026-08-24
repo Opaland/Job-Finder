@@ -1,0 +1,170 @@
+import { useEffect, useState } from 'react'
+import { api } from '../api.js'
+import { useToast } from '../App.jsx'
+
+const KEY_HELP = {
+  france_travail: 'Clés gratuites sur francetravail.io → FT_CLIENT_ID / FT_CLIENT_SECRET dans .env (voir README §3.1)',
+  adzuna: 'Clés gratuites sur developer.adzuna.com → ADZUNA_APP_ID / ADZUNA_APP_KEY dans .env (README §3.2)',
+  jsearch: 'Clé gratuite sur rapidapi.com (API JSearch) → RAPIDAPI_KEY dans .env (README §3.3) — couvre LinkedIn et Indeed',
+  wttj: 'Sans clé. En cas d’erreur 4xx, mettre à jour WTTJ_ALGOLIA_API_KEY dans .env (README §3.4)',
+  apec: 'Sans clé (service non officiel du site apec.fr) — peut casser si le site change',
+  hellowork: 'Sans clé (lecture du site) — peut casser si le site change',
+}
+
+export default function Sources() {
+  const [data, setData] = useState(null)
+  const [profile, setProfile] = useState(null)
+  const [scans, setScans] = useState([])
+  const showToast = useToast()
+
+  const load = async () => {
+    try {
+      const [src, prof, history] = await Promise.all([api.sources(), api.profile(), api.scans(8)])
+      setData(src)
+      setProfile(prof)
+      setScans(history)
+    } catch (err) {
+      showToast(err.message, true)
+    }
+  }
+
+  useEffect(() => { load() }, [])
+
+  if (!data || !profile) return <p>Chargement…</p>
+
+  const toggleSource = async (name, enabled) => {
+    const sources_enabled = { ...(profile.sources_enabled || {}), [name]: enabled }
+    try {
+      setProfile(await api.updateProfile({ sources_enabled }))
+      showToast(enabled ? 'Source activée.' : 'Source désactivée (elle ne sera plus scannée).')
+      load()
+    } catch (err) {
+      showToast(err.message, true)
+    }
+  }
+
+  const testEmail = async () => {
+    try {
+      await api.testEmail()
+      showToast('Email de test envoyé — vérifie ta boîte.')
+    } catch (err) {
+      showToast(err.message, true)
+    }
+  }
+
+  const sendDigest = async () => {
+    try {
+      await api.sendDigestEmail()
+      showToast('Digest du jour envoyé par email.')
+    } catch (err) {
+      showToast(err.message, true)
+    }
+  }
+
+  return (
+    <div>
+      <h1>Sources & réglages</h1>
+      <p className="page-sub">État des connecteurs, de l'IA locale et de l'email quotidien.</p>
+
+      <div className="card">
+        <h2>Sources d'offres</h2>
+        <table className="simple">
+          <thead>
+            <tr><th>Source</th><th>État</th><th>Dernier scan</th><th>Activée</th></tr>
+          </thead>
+          <tbody>
+            {data.sources.map((s) => {
+              const stats = s.last_stats
+              return (
+                <tr key={s.name}>
+                  <td>
+                    <b>{s.label}</b>
+                    <div className="hint">{KEY_HELP[s.name]}</div>
+                  </td>
+                  <td>
+                    {s.needs_key
+                      ? (s.configured ? <span className="ok">Clé OK</span> : <span className="ko">Clé manquante</span>)
+                      : <span className="ok">Sans clé</span>}
+                  </td>
+                  <td>
+                    {stats ? (
+                      <>
+                        {stats.fetched ?? 0} récupérée(s), {stats.new ?? 0} nouvelle(s)
+                        {stats.errors?.length > 0 && (
+                          <div className="error-text">{stats.errors[0]}</div>
+                        )}
+                      </>
+                    ) : <span className="hint">—</span>}
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={s.enabled}
+                      onChange={(e) => toggleSource(s.name, e.target.checked)}
+                    />
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+        <p className="hint">
+          LinkedIn et Indeed interdisent la collecte directe : leurs offres arrivent via JSearch
+          (Google for Jobs) et Adzuna. Prochain scan quotidien :{' '}
+          {data.next_daily_scan ? new Date(data.next_daily_scan).toLocaleString('fr-FR') : '—'}.
+        </p>
+      </div>
+
+      <div className="card">
+        <h2>IA locale (session Claude Code)</h2>
+        <p style={{ marginTop: 0 }}>
+          {data.ai.available ? <span className="ok">Disponible</span> : <span className="warn">Indisponible</span>}
+          {' — '}{data.ai.detail}
+        </p>
+        <p className="hint">
+          Quand elle est disponible, l'IA affine le score des meilleures offres et génère les lettres
+          de motivation adaptées. Sans elle, le classement par règles fonctionne normalement.
+        </p>
+      </div>
+
+      <div className="card">
+        <h2>Email quotidien</h2>
+        <p style={{ marginTop: 0 }}>
+          {data.email.configured
+            ? <span className="ok">SMTP configuré</span>
+            : <span className="warn">Non configuré</span>}
+          {!data.email.configured && (
+            <span className="hint"> — renseigne SMTP_USER, SMTP_PASSWORD et DIGEST_EMAIL_TO dans le fichier .env (README §4)</span>
+          )}
+        </p>
+        <div className="actions-row">
+          <button className="secondary" onClick={testEmail}>Envoyer un email de test</button>
+          <button className="secondary" onClick={sendDigest}>Envoyer le digest du jour maintenant</button>
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>Historique des scans</h2>
+        {scans.length === 0 && <p className="hint">Aucun scan pour l'instant.</p>}
+        {scans.length > 0 && (
+          <table className="simple">
+            <thead>
+              <tr><th>Date</th><th>Type</th><th>Nouvelles</th><th>Déjà connues</th><th>Erreurs</th></tr>
+            </thead>
+            <tbody>
+              {scans.map((s) => (
+                <tr key={s.id}>
+                  <td>{new Date(s.started_at).toLocaleString('fr-FR')}</td>
+                  <td>{s.trigger}</td>
+                  <td>{s.new_count}</td>
+                  <td>{s.seen_count}</td>
+                  <td className={s.error_count ? 'warn' : ''}>{s.error_count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  )
+}

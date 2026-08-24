@@ -1,0 +1,21 @@
+Madame, Monsieur,
+
+Mon parcours dans le métier du test est celui d'une passion née sur le terrain, bien loin des sentiers battus des formations académiques. Ce qui m'a toujours animé, c'est cette conviction profonde que la qualité logicielle n'est pas une étape optionnelle, mais bien le fondement même de la confiance que les utilisateurs accordent à un produit. Quand une application, qu'elle soit web, mobile ou métier, ne fonctionne pas comme attendu, ce n'est pas seulement une frustration pour l'utilisateur, c'est aussi une occasion manquée pour l'entreprise de briller. C'est cette philosophie qui guide mon travail au quotidien.
+
+Mon aventure dans le test a commencé dans le milieu bancaire, où j'ai eu l'opportunité de créer de toutes pièces une cellule d'homologation et de mettre en place un outil référentiel de test. Cette expérience fondatrice m'a appris à maîtriser chaque maillon de la chaîne de validation, mais surtout, elle m'a révélé une passion : celle de construire des processus robustes là où il n'y en avait pas. Partir de rien, explorer, proposer, comparer des stratégies de test, des outils, des métriques, et surtout, éduquer les équipes et les clients à l'importance cruciale du test – voilà ce qui a fait naître en moi une véritable vocation.
+
+Chez coQliQo, j'ai rejoint une structure en pleine reconstruction, avec pour mission de relancer et professionnaliser l'activité Qualité et Support dans le domaine de l'édition logicielle pour le Retail. J'ai redéfini entièrement le support N1/N2 (processus, SLA, KPI avec Jira et Power BI), animé des comités clients, et refondu la stratégie de test avec une approche basée sur les risques, conforme à la norme NF525, sur des environnements variés : caisses en magasin, back offices web et applications mobiles.
+
+Chez Maela, j'ai repensé entièrement l'activité de test dans le secteur exigeant de la santé, où la qualité est une obligation réglementaire. J'ai coordonné une équipe de huit testeurs, déployé une plateforme d'industrialisation des tests (GitLab CI, KarateDSL pour les API, Cucumber/Selenium/Cypress pour les IHM), endossé le rôle d'Incident Manager et piloté les mises en production hebdomadaires en conformité ISO 13485 — avec, à la clé, -60 % de bugs en production.
+
+Plus récemment, chez Softway Medical, j'ai pris la direction fonctionnelle de la QA (45 testeurs, 7 sites) et piloté la transformation IA du testing : co-construction avec les testeurs d'IATS, une plateforme agentic de génération de tests conforme IEC 62304, de la User Story au test automatisé E2E et API. Cette expérience unique me permet aujourd'hui d'allier gouvernance QA et innovation concrète par l'IA.
+
+Ce qui me passionne dans ce métier, c'est cette idée d'être le dernier rempart entre le client et l'entreprise, celui qui garantit que chaque fonctionnalité répondra aux attentes des utilisateurs finaux. Pour moi, le testeur n'est pas un simple exécutant : c'est un acteur clé du projet, au même titre que les développeurs, les chefs de projet ou les Product Owners.
+
+Ce qui me motive aujourd'hui, c'est de rejoindre une entreprise où je pourrais mettre cette passion et cette expertise au service de projets ambitieux, où la qualité n'est pas un simple mot mais une véritable culture, intégrée à chaque étape du développement.
+
+Je serais ravi d'échanger avec vous pour vous expliquer comment mon profil et mon expérience pourraient répondre à vos attentes. Disponible pour un entretien à votre convenance, je reste à votre disposition pour toute information complémentaire.
+
+Dans l'attente de vous rencontrer, je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.
+
+Cédric Moretti
