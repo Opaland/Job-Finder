@@ -40,6 +40,7 @@ export const api = {
   addManualOffer: (body) => request('/api/offers/manual', { method: 'POST', body: JSON.stringify(body) }),
   enrichOffer: (id) => request(`/api/offers/${id}/enrich`, { method: 'POST' }),
   interviewPrep: (id) => request(`/api/offers/${id}/interview-prep`, { method: 'POST' }),
+  generateEmail: (id, kind) => request(`/api/offers/${id}/email?kind=${kind}`, { method: 'POST' }),
 
   profile: () => request('/api/profile'),
   updateProfile: (body) => request('/api/profile', { method: 'PUT', body: JSON.stringify(body) }),

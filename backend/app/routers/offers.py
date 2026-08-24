@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import OFFER_STATUSES, Offer, Profile, utcnow
 from ..schemas import ManualOffer, OfferDetail, OfferSummary, OfferUpdate
-from ..services.claude_ai import ai_cover_letter, ai_interview_prep, cli_available
+from ..services.claude_ai import ai_cover_letter, ai_email, ai_interview_prep, cli_available
 from ..services.enrich import fetch_full_description
 
 router = APIRouter(prefix="/api/offers", tags=["offres"])
@@ -239,6 +239,31 @@ def generate_letter(offer_id: int, db: Session = Depends(get_db)):
     offer.cover_letter = letter.strip()
     db.commit()
     return offer
+
+
+@router.post("/{offer_id}/email")
+def generate_email(offer_id: int, kind: str = "candidature", db: Session = Depends(get_db)):
+    """Génère un email de candidature ou de relance via la session locale Claude Code."""
+    if kind not in ("candidature", "relance"):
+        raise HTTPException(400, "Type d'email inconnu : utilise « candidature » ou « relance ».")
+    offer = db.get(Offer, offer_id)
+    if not offer:
+        raise HTTPException(404, "Offre introuvable")
+    if not cli_available():
+        raise HTTPException(
+            503,
+            "CLI Claude Code introuvable sur ce poste. Vérifie que la commande « claude » "
+            "fonctionne dans un terminal.",
+        )
+    profile = db.get(Profile, 1)
+    email = ai_email(
+        {"title": offer.title, "company": offer.company, "description": offer.description},
+        profile.cv_text,
+        kind,
+    )
+    if not email:
+        raise HTTPException(502, "La génération a échoué (voir les logs). Réessaie dans un instant.")
+    return email
 
 
 @router.post("/{offer_id}/interview-prep", response_model=OfferDetail)

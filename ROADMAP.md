@@ -65,7 +65,7 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
 
 - [x] **Sprint 11** : ajout manuel d'offres — coller une annonce (LinkedIn,
   Indeed, cooptation…) : parsing heuristique, scoring immédiat, dédoublonnage.
-- [ ] **Sprint 13** : emails de candidature et de relance générés par l'IA
+- [x] **Sprint 13** : emails de candidature et de relance générés par l'IA
   locale (mailto pré-rempli + copie).
 - [ ] **Sprint 14** : analyse d'écart CV ↔ offre par l'IA (compétences
   manquantes, conseils ATS), stockée sur l'offre.

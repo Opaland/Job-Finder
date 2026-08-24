@@ -162,6 +162,7 @@ export async function demoRequest(path, options = {}) {
   if (route.match(/^\/api\/offers\/\d+\/letter$/)) throw new Error(LOCAL_ONLY)
   if (route.match(/^\/api\/offers\/\d+\/enrich$/)) throw new Error(LOCAL_ONLY)
   if (route.match(/^\/api\/offers\/\d+\/interview-prep$/)) throw new Error(LOCAL_ONLY)
+  if (route.match(/^\/api\/offers\/\d+\/email$/)) throw new Error(LOCAL_ONLY)
   if (route === '/api/profile/scoring-defaults') {
     // Copie des défauts du backend (source : backend/app/services/scoring.py).
     return { titre: 40, competences: 25, seniorite: 10, localisation: 15, contrat: 5, secteur: 5 }

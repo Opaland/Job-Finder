@@ -94,6 +94,47 @@ Barème : 90-100 = poste identique à son métier actuel (Test Manager/QA Lead) 
     return (max(0.0, min(100.0, score)), reason)
 
 
+def ai_email(offer: dict, cv_text: str, kind: str) -> dict | None:
+    """Génère un email de candidature ou de relance. Renvoie {"objet", "corps"} ou None."""
+    if not cli_available():
+        return None
+    if kind == "relance":
+        consigne = (
+            "un EMAIL DE RELANCE courtois et bref (5 à 8 phrases) : rappelle la candidature "
+            "envoyée pour ce poste, réaffirme l'intérêt avec UN argument fort tiré du CV, "
+            "propose un échange téléphonique, sans jamais paraître insistant"
+        )
+    else:
+        consigne = (
+            "un EMAIL DE CANDIDATURE bref (6 à 10 phrases) accompagnant le CV et la lettre en "
+            "pièces jointes : accroche personnalisée sur le poste, deux arguments forts tirés "
+            "du CV (avec chiffres), disponibilité pour un entretien"
+        )
+    prompt = f"""Tu aides Cédric Moretti (Test Manager / QA Lead, 15 ans d'expérience, Lyon) à candidater.
+
+Son CV (résumé) :
+---
+{cv_text[:5000]}
+---
+
+L'offre visée :
+Titre : {offer.get('title', '')}
+Entreprise : {offer.get('company', '')}
+Description : {offer.get('description', '')[:4000]}
+
+Rédige {consigne}. Ton professionnel et direct, en français, signé « Cédric Moretti ».
+
+Réponds UNIQUEMENT avec un objet JSON de la forme :
+{{"objet": "<objet de l'email>", "corps": "<corps de l'email avec sauts de ligne \\n>"}}"""
+    result = _run_claude(prompt, timeout=240)
+    if not result:
+        return None
+    data = _extract_json(result)
+    if not data or "objet" not in data or "corps" not in data:
+        return None
+    return {"objet": str(data["objet"])[:200], "corps": str(data["corps"])}
+
+
 def ai_interview_prep(offer: dict, cv_text: str) -> str | None:
     """Génère une fiche de préparation d'entretien pour l'offre. None si IA indisponible."""
     if not cli_available():

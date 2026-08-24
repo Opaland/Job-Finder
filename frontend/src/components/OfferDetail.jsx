@@ -12,7 +12,23 @@ export default function OfferDetail({ offerId, onClose }) {
   const [generating, setGenerating] = useState(false)
   const [prepGenerating, setPrepGenerating] = useState(false)
   const [enriching, setEnriching] = useState(false)
+  const [emailDraft, setEmailDraft] = useState(null)
+  const [emailGenerating, setEmailGenerating] = useState(null)
   const showToast = useToast()
+
+  const generateEmail = async (kind) => {
+    if (DEMO) { showToast(DEMO_ONLY_MSG, true); return }
+    setEmailGenerating(kind)
+    try {
+      const email = await api.generateEmail(offerId, kind)
+      setEmailDraft({ kind, ...email })
+      showToast(`Email de ${kind} généré — copie-le ou ouvre-le dans ton client mail.`)
+    } catch (err) {
+      showToast(err.message, true)
+    } finally {
+      setEmailGenerating(null)
+    }
+  }
 
   useEffect(() => {
     api.offer(offerId).then((o) => {
@@ -198,6 +214,37 @@ export default function OfferDetail({ offerId, onClose }) {
           onChange={(e) => setLetter(e.target.value)}
           onBlur={() => letter !== offer.cover_letter && patch({ cover_letter: letter }, 'Lettre enregistrée.')}
         />
+
+        <div className="section-title">Emails</div>
+        <div className="actions-row" style={{ margin: '4px 0 8px' }}>
+          <button className="secondary" disabled={emailGenerating !== null} onClick={() => generateEmail('candidature')}>
+            {emailGenerating === 'candidature' ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Rédaction…</>) : '✉️ Email de candidature'}
+          </button>
+          <button className="secondary" disabled={emailGenerating !== null} onClick={() => generateEmail('relance')}>
+            {emailGenerating === 'relance' ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Rédaction…</>) : '🔁 Email de relance'}
+          </button>
+        </div>
+        {emailDraft && (
+          <div className="desc" style={{ maxHeight: 'none' }}>
+            <b>Objet : {emailDraft.objet}</b>
+            {'\n\n'}{emailDraft.corps}
+            {'\n'}
+            <div className="actions-row" style={{ marginTop: 10 }}>
+              <button
+                className="secondary"
+                onClick={() => {
+                  navigator.clipboard.writeText(`Objet : ${emailDraft.objet}\n\n${emailDraft.corps}`)
+                  showToast('Email copié dans le presse-papiers.')
+                }}
+              >
+                Copier
+              </button>
+              <a href={`mailto:?subject=${encodeURIComponent(emailDraft.objet)}&body=${encodeURIComponent(emailDraft.corps)}`}>
+                <button className="secondary">Ouvrir dans mon client mail</button>
+              </a>
+            </div>
+          </div>
+        )}
 
         <div className="section-title">Préparation d'entretien</div>
         <div className="actions-row" style={{ margin: '4px 0 8px' }}>
