@@ -13,7 +13,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from ..config import settings
-from .base import Connector, ConnectorResult, RawOffer, dedupe_raw
+from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, profile_queries
 
 SEARCH_URL = "https://jsearch.p.rapidapi.com/search"
 
@@ -69,11 +69,13 @@ class JSearchConnector(Connector):
             "X-RapidAPI-Key": settings.rapidapi_key,
             "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
         }
+        # 4 requêtes max par scan pour rester dans le quota gratuit RapidAPI.
+        keywords = profile_queries(profile)
         queries = [
-            {"query": "test manager Lyon", "country": "fr", "date_posted": "month"},
-            {"query": "QA lead Lyon", "country": "fr", "date_posted": "month"},
-            {"query": "responsable test QA France", "country": "fr", "date_posted": "month", "remote_jobs_only": "true"},
-            {"query": "test manager France remote", "country": "fr", "date_posted": "month", "remote_jobs_only": "true"},
+            {"query": f"{kw} Lyon", "country": "fr", "date_posted": "month"} for kw in keywords[:2]
+        ] + [
+            {"query": f"{kw} France remote", "country": "fr", "date_posted": "month", "remote_jobs_only": "true"}
+            for kw in keywords[:2]
         ]
         with self.client() as client:
             for query in queries:

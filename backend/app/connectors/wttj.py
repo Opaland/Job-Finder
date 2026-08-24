@@ -11,7 +11,7 @@ publique peut changer. Si le connecteur ne renvoie rien :
 from __future__ import annotations
 
 from ..config import settings
-from .base import Connector, ConnectorResult, RawOffer, dedupe_raw
+from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, profile_queries
 
 # Clé de recherche publique observée sur le site (peut changer, cf. docstring).
 DEFAULT_PUBLIC_KEY = "02f0dd12736ad34acd7018e12a3b1f47"
@@ -62,11 +62,12 @@ class WTTJConnector(Connector):
             "X-Algolia-API-Key": self._api_key(),
             "Content-Type": "application/json",
         }
+        keywords = profile_queries(profile)
+        radius_m = profile.get("radius_km", 40) * 1000
         searches = [
-            {"query": "test manager", "aroundLatLng": "45.7578,4.8320", "aroundRadius": profile.get("radius_km", 40) * 1000},
-            {"query": "QA", "aroundLatLng": "45.7578,4.8320", "aroundRadius": profile.get("radius_km", 40) * 1000},
-            {"query": "QA lead", "filters": "remote:fulltime"},
-            {"query": "test manager", "filters": "remote:fulltime"},
+            {"query": kw, "aroundLatLng": "45.7578,4.8320", "aroundRadius": radius_m} for kw in keywords[:3]
+        ] + [
+            {"query": kw, "filters": "remote:fulltime"} for kw in keywords[:2]
         ]
         requests_payload = {
             "requests": [

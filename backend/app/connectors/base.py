@@ -41,6 +41,16 @@ class ConnectorResult:
     errors: list[str] = field(default_factory=list)
 
 
+# Requêtes par défaut, utilisées quand le profil n'en définit pas.
+DEFAULT_QUERIES = ["test manager", "QA", "responsable test", "testeur", "quality assurance"]
+
+
+def profile_queries(profile: dict) -> list[str]:
+    """Requêtes de scan du profil, ou les défauts si rien n'est configuré."""
+    queries = [q.strip() for q in (profile.get("search_queries") or []) if isinstance(q, str) and q.strip()]
+    return queries or list(DEFAULT_QUERIES)
+
+
 class Connector:
     """Interface d'un connecteur. `name` est l'identifiant technique, `label` le nom affiché."""
 

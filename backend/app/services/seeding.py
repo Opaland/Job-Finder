@@ -45,6 +45,7 @@ def ensure_profile(db: Session) -> Profile:
         excluded_keywords=data.get("excluded_keywords", []),
         scan_hour=data.get("scan_hour", "07:30"),
         sources_enabled=data.get("sources_enabled", {}),
+        search_queries=data.get("search_queries"),
     )
     db.add(profile)
     db.commit()

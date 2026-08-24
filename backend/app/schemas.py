@@ -71,6 +71,7 @@ class ProfileOut(BaseModel):
     sources_enabled: dict
     scoring_weights: dict | None
     weekly_goal: int
+    search_queries: list | None
 
 
 class ProfileUpdate(BaseModel):
@@ -91,6 +92,7 @@ class ProfileUpdate(BaseModel):
     sources_enabled: dict | None = None
     scoring_weights: dict[str, float] | None = None
     weekly_goal: int | None = None
+    search_queries: list[str] | None = None
 
     @field_validator("scoring_weights")
     @classmethod

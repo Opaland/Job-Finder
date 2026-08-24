@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from ..config import settings
-from .base import Connector, ConnectorResult, RawOffer, dedupe_raw
+from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, profile_queries
 
 BASE_URL = "https://api.adzuna.com/v1/api/jobs/fr/search/{page}"
 
@@ -56,13 +56,9 @@ class AdzunaConnector(Connector):
             return result
 
         radius = int(profile.get("radius_km", 40))
-        queries = [
-            {"what": "test manager", "where": "Lyon", "distance": radius},
-            {"what": "QA", "where": "Lyon", "distance": radius},
-            {"what": "responsable test", "where": "Lyon", "distance": radius},
-            {"what": "QA lead télétravail"},
-            {"what": "test manager télétravail"},
-        ]
+        keywords = profile_queries(profile)
+        queries = [{"what": kw, "where": "Lyon", "distance": radius} for kw in keywords[:4]]
+        queries += [{"what": f"{kw} télétravail"} for kw in keywords[:2]]
         with self.client() as client:
             for query in queries:
                 params = {

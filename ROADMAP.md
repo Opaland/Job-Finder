@@ -52,7 +52,7 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
 
 ### EPIC F — Personnalisation & finitions
 
-- [ ] **Sprint 8** : requêtes de scan configurables dans le profil (les
+- [x] **Sprint 8** : requêtes de scan configurables dans le profil (les
   mots-clés de recherche des connecteurs ne sont plus codés en dur).
 - [ ] **Sprint 9** : mode sombre complet (tokens CSS + pas sombres validés de
   la palette dataviz).

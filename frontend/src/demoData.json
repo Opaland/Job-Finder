@@ -556,7 +556,14 @@
    "apec": true,
    "hellowork": true
   },
-  "weekly_goal": 5
+  "weekly_goal": 5,
+  "search_queries": [
+   "test manager",
+   "QA",
+   "responsable test",
+   "testeur",
+   "quality assurance"
+  ]
  },
  "digest": {
   "id": 1,

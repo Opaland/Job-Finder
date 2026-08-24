@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from ..config import settings
-from .base import Connector, ConnectorResult, RawOffer, dedupe_raw
+from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, profile_queries
 
 TOKEN_URL = "https://entreprise.francetravail.fr/connexion/oauth2/access_token?realm=%2Fpartenaire"
 SEARCH_URL = "https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search"
@@ -71,7 +71,7 @@ class FranceTravailConnector(Connector):
             result.errors.append("Clés FT_CLIENT_ID / FT_CLIENT_SECRET absentes du .env")
             return result
 
-        keywords = ["test manager", "QA", "responsable test", "testeur", "quality assurance"]
+        keywords = profile_queries(profile)
         with self.client() as client:
             try:
                 token = self._token(client)
@@ -85,8 +85,8 @@ class FranceTravailConnector(Connector):
             for kw in keywords:
                 queries.append({"motsCles": kw, "departement": "69", "range": "0-149"})
             # Full remote : recherche nationale avec le mot-clé télétravail.
-            for kw in ["test manager télétravail", "QA télétravail"]:
-                queries.append({"motsCles": kw, "range": "0-149"})
+            for kw in keywords[:2]:
+                queries.append({"motsCles": f"{kw} télétravail", "range": "0-149"})
 
             for params in queries:
                 try:

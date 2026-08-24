@@ -13,7 +13,7 @@ from urllib.parse import quote_plus
 
 from bs4 import BeautifulSoup
 
-from .base import Connector, ConnectorResult, RawOffer, dedupe_raw
+from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, profile_queries
 
 SEARCH_URL = "https://www.hellowork.com/fr-fr/emploi/recherche.html?k={kw}&l={loc}"
 OFFER_RE = re.compile(r"/fr-fr/emplois/(\d+)\.html")
@@ -67,13 +67,8 @@ class HelloWorkConnector(Connector):
 
     def fetch(self, profile: dict) -> ConnectorResult:
         result = ConnectorResult()
-        searches = [
-            ("test manager", "Lyon"),
-            ("QA", "Lyon"),
-            ("responsable test", "Lyon"),
-            ("test manager", "Télétravail"),
-            ("QA lead", "Télétravail"),
-        ]
+        keywords = profile_queries(profile)
+        searches = [(kw, "Lyon") for kw in keywords[:3]] + [(kw, "Télétravail") for kw in keywords[:2]]
         with self.client() as client:
             for kw, loc in searches:
                 try:

@@ -73,6 +73,7 @@ export default function ProfilePage() {
         scan_hour: profile.scan_hour,
         scoring_weights: profile.scoring_weights || null,
         weekly_goal: profile.weekly_goal ?? 5,
+        search_queries: profile.search_queries || [],
       }
       setProfile(await api.updateProfile(body))
       showToast('Profil enregistré — les scores des offres ont été recalculés.')
@@ -139,6 +140,20 @@ export default function ProfilePage() {
           Les offres dont le titre correspond à l'un de ces intitulés obtiennent la note maximale d'adéquation.
         </p>
         <TagEditor values={profile.target_titles || []} onChange={(v) => set('target_titles', v)} placeholder="Ajouter un intitulé…" />
+      </div>
+
+      <div className="card">
+        <h2>Requêtes de scan</h2>
+        <p className="hint" style={{ marginTop: 0 }}>
+          Les recherches envoyées à chaque site d'emploi lors d'un scan (autour de Lyon + variantes
+          télétravail automatiques). Chaque source applique sa propre limite de requêtes ; les
+          premières de la liste sont prioritaires. Vide = requêtes QA par défaut.
+        </p>
+        <TagEditor
+          values={profile.search_queries || []}
+          onChange={(v) => set('search_queries', v)}
+          placeholder="Ajouter une requête (ex. « test automation »)…"
+        />
       </div>
 
       <div className="card">

@@ -20,6 +20,7 @@
     "retail", "banque", "bancaire", "saas"
   ],
   "excluded_keywords": [],
+  "search_queries": ["test manager", "QA", "responsable test", "testeur", "quality assurance"],
   "sources_enabled": {
     "france_travail": true,
     "adzuna": true,

@@ -7,7 +7,7 @@ toute erreur est simplement remontée dans les statistiques du scan.
 from __future__ import annotations
 
 from ..config import settings  # noqa: F401  (pas de clé nécessaire, import gardé pour homogénéité)
-from .base import Connector, ConnectorResult, RawOffer, dedupe_raw
+from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, profile_queries
 
 SEARCH_URL = "https://www.apec.fr/cms/webservices/rechercheOffre"
 DETAIL_URL = "https://www.apec.fr/candidat/recherche-emplois.html/emplois/detail-offre/{id}"
@@ -50,7 +50,8 @@ class ApecConnector(Connector):
     def fetch(self, profile: dict) -> ConnectorResult:
         result = ConnectorResult()
         payloads = []
-        for kw in ["test manager", "QA lead", "responsable test", "quality assurance"]:
+        keywords = profile_queries(profile)
+        for kw in keywords[:4]:
             payloads.append(
                 {
                     "activeFiltre": True,
@@ -65,7 +66,7 @@ class ApecConnector(Connector):
         payloads.append(
             {
                 "activeFiltre": True,
-                "motsCles": "test manager télétravail",
+                "motsCles": f"{keywords[0]} télétravail",
                 "pagination": {"range": 50, "startIndex": 0},
                 "sorts": [{"type": "DATE", "direction": "DESCENDING"}],
             }
