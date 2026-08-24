@@ -21,7 +21,7 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
 
 ### EPIC B — Candidature augmentée
 
-- [ ] **Sprint 2** : tableau Kanban du pipeline — colonnes par statut, cartes
+- [x] **Sprint 2** : tableau Kanban du pipeline — colonnes par statut, cartes
   glissées-déposées (le statut reste modifié uniquement par l'utilisateur),
   disponible aussi dans la démo.
 - [ ] **Sprint 3 (part. 1)** : préparation d'entretien par l'IA locale — fiche

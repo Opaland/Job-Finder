@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { api, DEMO } from './api.js'
 import Dashboard from './components/Dashboard.jsx'
+import Kanban from './components/Kanban.jsx'
 import Offers from './components/Offers.jsx'
 import ProfilePage from './components/Profile.jsx'
 import Sources from './components/Sources.jsx'
@@ -12,6 +13,7 @@ export const useToast = () => useContext(ToastContext)
 const PAGES = [
   { id: 'dashboard', label: 'Tableau de bord', icon: '🏠' },
   { id: 'offers', label: 'Offres', icon: '🎯' },
+  { id: 'kanban', label: 'Pipeline', icon: '🗂️' },
   { id: 'stats', label: 'Statistiques', icon: '📊' },
   { id: 'profile', label: 'Profil & CV', icon: '👤' },
   { id: 'sources', label: 'Sources & réglages', icon: '🔌' },
@@ -87,6 +89,7 @@ export default function App() {
         <main className="content">
           {page === 'dashboard' && <Dashboard scanning={scanning} goToOffers={() => setPage('offers')} />}
           {page === 'offers' && <Offers scanning={scanning} />}
+          {page === 'kanban' && <Kanban scanning={scanning} />}
           {page === 'stats' && <Stats />}
           {page === 'profile' && <ProfilePage />}
           {page === 'sources' && <Sources />}
