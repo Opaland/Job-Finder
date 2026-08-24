@@ -70,6 +70,7 @@ class ProfileOut(BaseModel):
     scan_hour: str
     sources_enabled: dict
     scoring_weights: dict | None
+    weekly_goal: int
 
 
 class ProfileUpdate(BaseModel):
@@ -89,6 +90,7 @@ class ProfileUpdate(BaseModel):
     scan_hour: str | None = None
     sources_enabled: dict | None = None
     scoring_weights: dict[str, float] | None = None
+    weekly_goal: int | None = None
 
     @field_validator("scoring_weights")
     @classmethod

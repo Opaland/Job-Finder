@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from ..models import Digest, Offer, ScanRun, utcnow
+from ..models import Digest, Offer, Profile, ScanRun, utcnow
 from .emailer import send_email, smtp_configured
 
 logger = logging.getLogger("jobfinder.digest")
@@ -42,6 +42,38 @@ def _offer_brief(offer: Offer) -> dict:
 # Une candidature « postulée » ou « relancée » sans changement depuis ce délai
 # est signalée comme à relancer.
 RELAUNCH_AFTER_DAYS = 7
+
+# Une « pépite » : offre ouverte non traitée dont le score atteint ce seuil.
+GEM_SCORE = 85
+
+
+def gems(db: Session) -> list[Offer]:
+    """Les meilleures offres pas encore traitées — à regarder en priorité."""
+    return (
+        db.query(Offer)
+        .filter(Offer.final_score >= GEM_SCORE, Offer.status.in_(["nouvelle", "vue", "a_postuler"]))
+        .order_by(Offer.final_score.desc())
+        .limit(10)
+        .all()
+    )
+
+
+def applications_this_week(db: Session) -> int:
+    """Nombre d'offres postulées depuis lundi (d'après l'historique des statuts)."""
+    now = utcnow()
+    monday = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+    count = 0
+    for offer in db.query(Offer).filter(Offer.status.notin_(["nouvelle", "vue", "a_postuler"])).all():
+        for entry in offer.status_history or []:
+            if entry.get("status") != "postulee":
+                continue
+            try:
+                if datetime.fromisoformat(entry["date"]) >= monday:
+                    count += 1
+                    break
+            except (KeyError, ValueError, TypeError):
+                continue
+    return count
 
 
 def _last_status_change(offer: Offer) -> datetime | None:
@@ -108,6 +140,11 @@ def build_digest(db: Session, for_date: str | None = None) -> Digest:
         "to_relaunch": [
             {**_offer_brief(o), "status": o.status} for o in offers_to_relaunch(db)
         ],
+        "gems": [_offer_brief(o) for o in gems(db)],
+        "weekly": {
+            "goal": (db.get(Profile, 1).weekly_goal if db.get(Profile, 1) else 5) or 0,
+            "sent": applications_this_week(db),
+        },
         "last_scan": {
             "id": last_run.id,
             "finished_at": last_run.finished_at.isoformat() if last_run and last_run.finished_at else None,
@@ -165,6 +202,12 @@ def digest_html(payload: dict) -> str:
 <html><body style="font-family:Segoe UI,Arial,sans-serif;color:#1f2328;max-width:760px">
 <h2 style="margin-bottom:2px">Job Finder — point du {payload['date']}</h2>
 <p style="color:#57606a;margin-top:0">{scan_line}</p>
+
+{f'''<h3 style="color:#1a7f37">💎 Pépites à regarder en priorité ({len(payload["gems"])})</h3>
+<p style="color:#57606a;margin-top:0">Score ≥ {GEM_SCORE}, pas encore traitées.</p>
+<table style="border-collapse:collapse;width:100%" border="0">{rows(payload["gems"])}</table>''' if payload.get("gems") else ''}
+
+{f'''<p><b>Objectif de la semaine :</b> {payload["weekly"]["sent"]} / {payload["weekly"]["goal"]} candidature(s) envoyée(s){' ✅' if payload["weekly"]["sent"] >= payload["weekly"]["goal"] > 0 else ''}</p>''' if payload.get("weekly", {}).get("goal") else ''}
 
 <h3>Nouvelles offres ({payload['new_count']})</h3>
 <table style="border-collapse:collapse;width:100%" border="0">{rows(payload.get('new_offers', []))}</table>

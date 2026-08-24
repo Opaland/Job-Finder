@@ -72,6 +72,7 @@ export default function ProfilePage() {
         sector_bonus: profile.sector_bonus,
         scan_hour: profile.scan_hour,
         scoring_weights: profile.scoring_weights || null,
+        weekly_goal: profile.weekly_goal ?? 5,
       }
       setProfile(await api.updateProfile(body))
       showToast('Profil enregistré — les scores des offres ont été recalculés.')
@@ -172,6 +173,12 @@ export default function ProfilePage() {
 
           <label>Heure du scan quotidien</label>
           <input type="time" value={profile.scan_hour} onChange={(e) => set('scan_hour', e.target.value)} style={{ width: 120 }} />
+
+          <label>Objectif de candidatures / semaine</label>
+          <input
+            type="number" min="0" max="50" value={profile.weekly_goal ?? 5} style={{ width: 100 }}
+            onChange={(e) => set('weekly_goal', Math.max(0, Number(e.target.value) || 0))}
+          />
         </div>
       </div>
 

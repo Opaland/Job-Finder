@@ -65,6 +65,30 @@ def test_digest_sans_relance(db):
     assert digest.payload["to_relaunch"] == []
 
 
+def test_pepites_et_objectif_hebdo(db):
+    """Les offres ouvertes >= 85 sont des pépites ; les candidatures de la semaine comptent."""
+    from app.models import Offer
+
+    gem = Offer(fingerprint="fp-gem", source="test", source_id="gem",
+                title="Test Manager idéal", company="ACME", status="nouvelle", final_score=92)
+    pas_gem = Offer(fingerprint="fp-bof", source="test", source_id="bof",
+                    title="Offre moyenne", company="ACME", status="nouvelle", final_score=60)
+    gem_traitee = Offer(fingerprint="fp-traitee", source="test", source_id="traitee",
+                        title="Déjà postulée", company="ACME", status="postulee", final_score=95,
+                        status_history=[{"status": "postulee", "date": utcnow().isoformat(), "par": "utilisateur"}])
+    db.add_all([gem, pas_gem, gem_traitee])
+    db.commit()
+
+    payload = build_digest(db).payload
+    gem_titles = [g["title"] for g in payload["gems"]]
+    assert "Test Manager idéal" in gem_titles
+    assert "Offre moyenne" not in gem_titles
+    assert "Déjà postulée" not in gem_titles  # déjà traitée : plus une pépite
+    # Postulée aujourd'hui (donc cette semaine) → compte dans l'objectif.
+    assert payload["weekly"]["sent"] >= 1
+    assert payload["weekly"]["goal"] == 5  # défaut du profil
+
+
 def test_extraction_texte_principal():
     html = """
     <html><head><script>var x=1;</script><style>.a{}</style></head>

@@ -555,7 +555,8 @@
    "wttj": true,
    "apec": true,
    "hellowork": true
-  }
+  },
+  "weekly_goal": 5
  },
  "digest": {
   "id": 1,
@@ -738,7 +739,25 @@
      "remote": false,
      "status": "postulee"
     }
-   ]
+   ],
+   "gems": [
+    {
+     "id": 1,
+     "title": "Test Manager H/F",
+     "company": "Éditeur logiciels santé",
+     "location": "Lyon 3e (69)",
+     "contract_type": "CDI",
+     "source": "france_travail",
+     "url": "https://candidat.francetravail.fr/offres/exemple",
+     "final_score": 100.0,
+     "ai_reason": "",
+     "remote": false
+    }
+   ],
+   "weekly": {
+    "goal": 5,
+    "sent": 1
+   }
   }
  },
  "sources": {

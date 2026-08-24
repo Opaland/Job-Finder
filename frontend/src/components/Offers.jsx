@@ -124,7 +124,12 @@ export default function Offers({ scanning }) {
               {Math.round(offer.final_score)}
             </span>
             <div>
-              <div className="title">{offer.title}</div>
+              <div className="title">
+                {offer.final_score >= 85 && !['postulee', 'relancee', 'entretien', 'refusee', 'fermee'].includes(offer.status) && (
+                  <span title="Pépite : score ≥ 85, pas encore traitée">💎 </span>
+                )}
+                {offer.title}
+              </div>
               <div className="meta">
                 {offer.company || 'Entreprise non précisée'} · {offer.location || 'Lieu non précisé'} · {formatDate(offer.published_at || offer.collected_at)}
               </div>

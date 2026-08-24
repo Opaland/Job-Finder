@@ -93,6 +93,8 @@ class Profile(Base):
     sources_enabled: Mapped[dict] = mapped_column(JSON, default=dict)
     # Pondérations du score (voir services/scoring.py DEFAULT_WEIGHTS) ; None = défauts.
     scoring_weights: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # Objectif de candidatures envoyées par semaine (jauge du tableau de bord).
+    weekly_goal: Mapped[int] = mapped_column(Integer, default=5, server_default="5")
 
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 

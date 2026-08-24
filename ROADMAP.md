@@ -47,7 +47,7 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
 
 - [x] **Sprint 6** : réactivité des entreprises — candidatures, réponses,
   délai moyen et attentes en cours, par entreprise (page Statistiques).
-- [ ] **Sprint 7** : pépites (score ≥ 85 mises en avant dans l'appli et le
+- [x] **Sprint 7** : pépites (score ≥ 85 mises en avant dans l'appli et le
   digest) + objectif hebdomadaire de candidatures avec jauge de progression.
 
 ### EPIC F — Personnalisation & finitions
