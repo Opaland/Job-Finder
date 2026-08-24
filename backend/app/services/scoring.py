@@ -173,10 +173,14 @@ def score_offer(offer: dict, profile: dict) -> ScoreResult:
     res = ScoreResult()
     weights = {**DEFAULT_WEIGHTS, **{k: v for k, v in (profile.get("scoring_weights") or {}).items() if k in DEFAULT_WEIGHTS}}
     total_weight = sum(weights.values()) or 1
+    # Chaque critère est ramené à sa part sur 100 : le détail affiché somme
+    # toujours au score final, quel que soit le total des pondérations.
+    scale = 100.0 / total_weight
 
     def add_weighted(key: str, label: str, pts: float, why: str):
-        scaled = pts * weights[key] / _BASE_MAX[key] if _BASE_MAX[key] else 0
-        res.add(label, scaled, weights[key], why)
+        share = weights[key] * scale
+        scaled = pts * share / _BASE_MAX[key] if _BASE_MAX[key] else 0
+        res.add(label, scaled, round(share, 1), why)
 
     title_norm = normalize(offer.get("title", ""))
     desc_norm = normalize(offer.get("description", ""))
@@ -209,9 +213,6 @@ def score_offer(offer: dict, profile: dict) -> ScoreResult:
 
     pts, why = _sector_score(full_norm, profile.get("sector_bonus", []))
     add_weighted("secteur", "Secteur", pts, why)
-
-    # Ramène le total sur 100 quel que soit le total des pondérations.
-    res.score = res.score * 100.0 / total_weight
 
     # Plafonds : hors QA ou junior, l'offre reste listée mais ne peut pas être bien classée.
     if qa_score == 0:

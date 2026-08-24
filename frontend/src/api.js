@@ -59,6 +59,7 @@ export const api = {
     })
   },
   rescore: () => request('/api/profile/rescore', { method: 'POST' }),
+  scoringDefaults: () => request('/api/profile/scoring-defaults'),
 
   startScan: () => request('/api/scans', { method: 'POST' }),
   scanStatus: () => request('/api/scans/status'),

@@ -29,17 +29,19 @@ function TagEditor({ values, onChange, placeholder }) {
   )
 }
 
-const WEIGHT_FIELDS = [
-  ['titre', 'Adéquation du poste', 40],
-  ['competences', 'Compétences du CV', 25],
-  ['seniorite', 'Niveau / séniorité', 10],
-  ['localisation', 'Localisation', 15],
-  ['contrat', 'Contrat', 5],
-  ['secteur', 'Secteur', 5],
+// Libellés des critères ; les valeurs par défaut viennent de l'API (source unique : le backend).
+const WEIGHT_LABELS = [
+  ['titre', 'Adéquation du poste'],
+  ['competences', 'Compétences du CV'],
+  ['seniorite', 'Niveau / séniorité'],
+  ['localisation', 'Localisation'],
+  ['contrat', 'Contrat'],
+  ['secteur', 'Secteur'],
 ]
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState(null)
+  const [weightDefaults, setWeightDefaults] = useState(null)
   const [saving, setSaving] = useState(false)
   const [showCv, setShowCv] = useState(false)
   const fileRef = useRef(null)
@@ -47,6 +49,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     api.profile().then(setProfile).catch((err) => showToast(err.message, true))
+    api.scoringDefaults().then(setWeightDefaults).catch(() => {})
   }, [showToast])
 
   if (!profile) return <p>Chargement…</p>
@@ -178,33 +181,39 @@ export default function ProfilePage() {
           Le poids de chaque critère dans le classement. Le total est libre : le score est
           toujours ramené sur 100. Enregistrer recalcule toutes les offres.
         </p>
-        <div className="form-grid" style={{ maxWidth: 480 }}>
-          {WEIGHT_FIELDS.map(([key, label, def]) => {
-            const weights = profile.scoring_weights || {}
-            const value = weights[key] ?? def
-            return (
-              <Fragment key={key}>
-                <label>{label}</label>
-                <div>
-                  <input
-                    type="number" min="0" max="100" value={value} style={{ width: 80 }}
-                    onChange={(e) => set('scoring_weights', {
-                      ...Object.fromEntries(WEIGHT_FIELDS.map(([k, , d]) => [k, weights[k] ?? d])),
-                      [key]: Math.max(0, Number(e.target.value) || 0),
-                    })}
-                  />
-                  <span className="hint" style={{ marginLeft: 8 }}>défaut : {def}</span>
-                </div>
-              </Fragment>
-            )
-          })}
-        </div>
-        <p className="hint">
-          Total actuel :{' '}
-          <b>{WEIGHT_FIELDS.reduce((sum, [k, , d]) => sum + ((profile.scoring_weights || {})[k] ?? d), 0)}</b>
-          {' '}· <button className="secondary" style={{ padding: '3px 10px', fontSize: 12 }}
-            onClick={() => set('scoring_weights', null)}>Revenir aux défauts</button>
-        </p>
+        {!weightDefaults && <p className="hint">Chargement des pondérations…</p>}
+        {weightDefaults && (
+          <>
+            <div className="form-grid" style={{ maxWidth: 480 }}>
+              {WEIGHT_LABELS.map(([key, label]) => {
+                const weights = profile.scoring_weights || {}
+                const def = weightDefaults[key] ?? 0
+                const value = weights[key] ?? def
+                return (
+                  <Fragment key={key}>
+                    <label>{label}</label>
+                    <div>
+                      <input
+                        type="number" min="0" max="100" value={value} style={{ width: 80 }}
+                        onChange={(e) => set('scoring_weights', {
+                          ...Object.fromEntries(WEIGHT_LABELS.map(([k]) => [k, weights[k] ?? (weightDefaults[k] ?? 0)])),
+                          [key]: Math.max(0, Number(e.target.value) || 0),
+                        })}
+                      />
+                      <span className="hint" style={{ marginLeft: 8 }}>défaut : {def}</span>
+                    </div>
+                  </Fragment>
+                )
+              })}
+            </div>
+            <p className="hint">
+              Total actuel :{' '}
+              <b>{WEIGHT_LABELS.reduce((sum, [k]) => sum + ((profile.scoring_weights || {})[k] ?? (weightDefaults[k] ?? 0)), 0)}</b>
+              {' '}· <button className="secondary" style={{ padding: '3px 10px', fontSize: 12 }}
+                onClick={() => set('scoring_weights', null)}>Revenir aux défauts</button>
+            </p>
+          </>
+        )}
       </div>
 
       <div className="card">

@@ -67,6 +67,15 @@ def test_total_libre_ramene_sur_100(profile):
     )
 
 
+def test_detail_somme_au_score(profile):
+    """Le « Pourquoi ce score ? » somme toujours au score affiché, même pondéré."""
+    heavy = dict(profile, scoring_weights={**DEFAULT_WEIGHTS, "localisation": 45})
+    res = score_offer(OFFER_LYON, heavy)
+    entries = [b for b in res.breakdown if b["max"]]
+    assert sum(e["max"] for e in entries) == pytest.approx(100, abs=0.5)
+    assert sum(e["points"] for e in entries) == pytest.approx(res.score, abs=0.5)
+
+
 def test_migration_ajoute_les_colonnes(tmp_path):
     """Une base d'une version antérieure (colonnes manquantes) est migrée sans perte."""
     db_path = tmp_path / "ancienne.db"

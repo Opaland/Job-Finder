@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class OfferSummary(BaseModel):
@@ -88,7 +88,14 @@ class ProfileUpdate(BaseModel):
     excluded_keywords: list | None = None
     scan_hour: str | None = None
     sources_enabled: dict | None = None
-    scoring_weights: dict | None = None
+    scoring_weights: dict[str, float] | None = None
+
+    @field_validator("scoring_weights")
+    @classmethod
+    def _poids_positifs(cls, value):
+        if value is None:
+            return None
+        return {k: max(0.0, v) for k, v in value.items()}
 
 
 class ScanRunOut(BaseModel):

@@ -68,3 +68,11 @@ def rescore(db: Session = Depends(get_db)):
     """Recalcule le score de toutes les offres avec le profil actuel."""
     count = rescore_all(db)
     return {"rescored": count}
+
+
+@router.get("/scoring-defaults")
+def scoring_defaults():
+    """Pondérations par défaut du moteur de score (source unique : services/scoring.py)."""
+    from ..services.scoring import DEFAULT_WEIGHTS
+
+    return DEFAULT_WEIGHTS
