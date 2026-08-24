@@ -83,7 +83,7 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
 
 - [x] **Sprint 15** : pagination et tris avancés de la liste des offres
   (tri par date de publication, filtre entreprise).
-- [ ] **Sprint 18** : santé des sources — historique d'erreurs sur 14 jours,
+- [x] **Sprint 18** : santé des sources — historique d'erreurs sur 14 jours,
   retries HTTP avec backoff dans les connecteurs.
 - [ ] **Sprint 19** : journal d'activité (scans, changements de statut,
   générations IA).

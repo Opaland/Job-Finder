@@ -782,7 +782,79 @@
      "seen": 118,
      "errors": [],
      "configured": true
-    }
+    },
+    "history": [
+     {
+      "date": "11/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "12/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "13/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "14/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "15/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "16/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "17/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "18/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "19/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "20/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "21/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "22/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "23/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "24/08 07:30",
+      "ok": true,
+      "new": 2
+     }
+    ]
    },
    {
     "name": "adzuna",
@@ -797,7 +869,79 @@
      "seen": 61,
      "errors": [],
      "configured": true
-    }
+    },
+    "history": [
+     {
+      "date": "11/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "12/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "13/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "14/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "15/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "16/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "17/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "18/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "19/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "20/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "21/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "22/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "23/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "24/08 07:30",
+      "ok": true,
+      "new": 2
+     }
+    ]
    },
    {
     "name": "jsearch",
@@ -812,7 +956,79 @@
      "seen": 37,
      "errors": [],
      "configured": true
-    }
+    },
+    "history": [
+     {
+      "date": "11/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "12/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "13/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "14/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "15/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "16/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "17/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "18/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "19/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "20/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "21/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "22/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "23/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "24/08 07:30",
+      "ok": true,
+      "new": 2
+     }
+    ]
    },
    {
     "name": "wttj",
@@ -827,7 +1043,79 @@
      "seen": 23,
      "errors": [],
      "configured": true
-    }
+    },
+    "history": [
+     {
+      "date": "11/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "12/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "13/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "14/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "15/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "16/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "17/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "18/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "19/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "20/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "21/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "22/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "23/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "24/08 07:30",
+      "ok": true,
+      "new": 2
+     }
+    ]
    },
    {
     "name": "apec",
@@ -842,7 +1130,79 @@
      "seen": 18,
      "errors": [],
      "configured": true
-    }
+    },
+    "history": [
+     {
+      "date": "11/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "12/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "13/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "14/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "15/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "16/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "17/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "18/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "19/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "20/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "21/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "22/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "23/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "24/08 07:30",
+      "ok": true,
+      "new": 2
+     }
+    ]
    },
    {
     "name": "hellowork",
@@ -857,7 +1217,79 @@
      "seen": 12,
      "errors": [],
      "configured": true
-    }
+    },
+    "history": [
+     {
+      "date": "11/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "12/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "13/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "14/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "15/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "16/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "17/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "18/08 07:30",
+      "ok": false,
+      "new": 0
+     },
+     {
+      "date": "19/08 07:30",
+      "ok": false,
+      "new": 0
+     },
+     {
+      "date": "20/08 07:30",
+      "ok": true,
+      "new": 2
+     },
+     {
+      "date": "21/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "22/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "23/08 07:30",
+      "ok": true,
+      "new": 0
+     },
+     {
+      "date": "24/08 07:30",
+      "ok": true,
+      "new": 2
+     }
+    ]
    }
   ],
   "ai": {

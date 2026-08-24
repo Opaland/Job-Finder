@@ -72,7 +72,7 @@ export default function Sources() {
         <h2>Sources d'offres</h2>
         <table className="simple">
           <thead>
-            <tr><th>Source</th><th>État</th><th>Dernier scan</th><th>Activée</th></tr>
+            <tr><th>Source</th><th>État</th><th>Dernier scan</th><th>Historique</th><th>Activée</th></tr>
           </thead>
           <tbody>
             {data.sources.map((s) => {
@@ -95,6 +95,29 @@ export default function Sources() {
                         {stats.errors?.length > 0 && (
                           <div className="error-text">{stats.errors[0]}</div>
                         )}
+                      </>
+                    ) : <span className="hint">—</span>}
+                  </td>
+                  <td>
+                    {s.history?.length ? (
+                      <>
+                        <div style={{ display: 'flex', gap: 2 }}>
+                          {s.history.map((h, i) => (
+                            <span
+                              key={i}
+                              title={`${h.date} — ${h.ok ? `OK (${h.new} nouvelle·s)` : 'erreur'}`}
+                              style={{
+                                width: 9, height: 16, borderRadius: 2,
+                                background: h.ok ? '#0ca30c' : '#d03b3b',
+                              }}
+                            />
+                          ))}
+                        </div>
+                        <span className="hint">
+                          {s.history.filter((h) => !h.ok).length
+                            ? `${s.history.filter((h) => !h.ok).length} erreur·s / ${s.history.length} scans`
+                            : `${s.history.length} scans OK`}
+                        </span>
                       </>
                     ) : <span className="hint">—</span>}
                   </td>

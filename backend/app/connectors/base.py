@@ -65,7 +65,12 @@ class Connector:
         raise NotImplementedError
 
     def client(self) -> httpx.Client:
-        return httpx.Client(headers=DEFAULT_HEADERS, timeout=30, follow_redirects=True)
+        # retries=2 : nouvelles tentatives sur les erreurs de CONNEXION uniquement
+        # (jamais sur un 4xx/5xx reçu, pour ne pas aggraver un blocage anti-robot).
+        transport = httpx.HTTPTransport(retries=2)
+        return httpx.Client(
+            headers=DEFAULT_HEADERS, timeout=30, follow_redirects=True, transport=transport
+        )
 
 
 def dedupe_raw(offers: list[RawOffer]) -> list[RawOffer]:

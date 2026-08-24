@@ -16,8 +16,28 @@ def list_sources(db: Session = Depends(get_db)):
     """État de chaque source : configurée ? activée ? statistiques du dernier scan."""
     profile = db.get(Profile, 1)
     enabled = (profile.sources_enabled or {}) if profile else {}
-    last_run = db.query(ScanRun).filter(ScanRun.status == "termine").order_by(ScanRun.id.desc()).first()
-    stats = last_run.source_stats if last_run else {}
+    runs = (
+        db.query(ScanRun)
+        .filter(ScanRun.status == "termine")
+        .order_by(ScanRun.id.desc())
+        .limit(14)
+        .all()
+    )
+    stats = runs[0].source_stats if runs else {}
+
+    def history(name: str) -> list[dict]:
+        """Ok/erreur de la source sur les derniers scans (du plus ancien au plus récent)."""
+        entries = []
+        for run in reversed(runs):
+            source_stat = (run.source_stats or {}).get(name)
+            if not source_stat or source_stat.get("skipped"):
+                continue
+            entries.append({
+                "date": run.started_at.strftime("%d/%m %H:%M"),
+                "ok": not source_stat.get("errors"),
+                "new": source_stat.get("new", 0),
+            })
+        return entries
 
     return {
         "sources": [
@@ -28,6 +48,7 @@ def list_sources(db: Session = Depends(get_db)):
                 "configured": c.is_configured(),
                 "enabled": enabled.get(c.name, True),
                 "last_stats": stats.get(c.name),
+                "history": history(c.name),
             }
             for c in ALL_CONNECTORS
         ],

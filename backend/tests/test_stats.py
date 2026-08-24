@@ -108,6 +108,30 @@ def test_reactivite_entreprises(client):
     assert companies["Silencieuse SARL"]["pending_days"] == 12
 
 
+def test_historique_sante_des_sources(client):
+    """L'historique ok/erreur par source se construit depuis les derniers scans."""
+    from app.database import get_db
+    from app.models import ScanRun
+
+    db = next(iter(fastapi_app.dependency_overrides[get_db]()))
+    db.add_all([
+        ScanRun(status="termine", trigger="quotidien", source_stats={
+            "france_travail": {"label": "FT", "fetched": 10, "new": 2, "errors": []},
+            "hellowork": {"label": "HW", "fetched": 0, "new": 0, "errors": ["panne"]},
+            "wttj": {"label": "W", "skipped": True},
+        }),
+        ScanRun(status="termine", trigger="quotidien", source_stats={
+            "france_travail": {"label": "FT", "fetched": 12, "new": 0, "errors": []},
+        }),
+    ])
+    db.commit()
+
+    sources = {s["name"]: s for s in client.get("/api/sources").json()["sources"]}
+    assert [h["ok"] for h in sources["france_travail"]["history"]] == [True, True]
+    assert [h["ok"] for h in sources["hellowork"]["history"]] == [False]
+    assert sources["wttj"]["history"] == []  # scan sauté : pas compté
+
+
 def test_stats_base_vide(tmp_path):
     from fastapi.testclient import TestClient
 
