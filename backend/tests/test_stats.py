@@ -1,0 +1,90 @@
+"""Tests de l'endpoint statistiques."""
+from datetime import timedelta
+
+import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from app.database import Base, get_db
+from app.main import app as fastapi_app
+from app.models import Offer, Profile, utcnow
+
+
+@pytest.fixture()
+def client(tmp_path):
+    from fastapi.testclient import TestClient
+
+    engine = create_engine(f"sqlite:///{tmp_path}/test.db")
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine, expire_on_commit=False)
+    db = Session()
+    db.add(Profile(id=1, cv_text="cv", sources_enabled={}))
+
+    def add(status, score, source="france_travail", days_ago=0):
+        add.n += 1
+        db.add(Offer(
+            fingerprint=f"fp{add.n}", source=source, source_id=str(add.n),
+            title=f"Offre {add.n}", company="ACME", status=status,
+            score=score, final_score=score,
+            collected_at=utcnow() - timedelta(days=days_ago),
+        ))
+    add.n = 0
+    add("nouvelle", 92)
+    add("vue", 75, source="adzuna")
+    add("postulee", 88)
+    add("entretien", 95)
+    add("refusee", 40, days_ago=10)
+    add("fermee", 15, days_ago=20)
+    db.commit()
+
+    def override_db():
+        yield db
+
+    fastapi_app.dependency_overrides[get_db] = override_db
+    yield TestClient(fastapi_app)
+    fastapi_app.dependency_overrides.clear()
+    db.close()
+
+
+def test_stats_totaux(client):
+    data = client.get("/api/stats").json()
+    t = data["totals"]
+    assert t["offers"] == 6
+    assert t["sent"] == 3           # postulée + entretien + refusée
+    assert t["interviews"] == 1
+    assert t["response_rate"] == 67  # 2 réponses / 3 envoyées
+    assert t["new_7d"] == 4
+
+
+def test_stats_repartitions(client):
+    data = client.get("/api/stats").json()
+    by_status = {s["status"]: s["count"] for s in data["by_status"]}
+    assert by_status["nouvelle"] == 1 and by_status["entretien"] == 1
+    by_source = {s["source"]: s["count"] for s in data["by_source"]}
+    assert by_source["france_travail"] == 5 and by_source["adzuna"] == 1
+    assert sum(b["count"] for b in data["score_bins"]) == 6
+    assert len(data["per_day"]) == 30
+    assert sum(d["count"] for d in data["per_day"]) == 6  # toutes collectées sous 30 jours
+
+
+def test_stats_base_vide(tmp_path):
+    from fastapi.testclient import TestClient
+
+    engine = create_engine(f"sqlite:///{tmp_path}/vide.db")
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine, expire_on_commit=False)
+    db = Session()
+    db.add(Profile(id=1, sources_enabled={}))
+    db.commit()
+
+    def override_db():
+        yield db
+
+    fastapi_app.dependency_overrides[get_db] = override_db
+    try:
+        data = TestClient(fastapi_app).get("/api/stats").json()
+        assert data["totals"]["response_rate"] is None
+        assert data["totals"]["avg_top20"] is None
+    finally:
+        fastapi_app.dependency_overrides.clear()
+        db.close()

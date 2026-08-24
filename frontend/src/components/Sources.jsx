@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api } from '../api.js'
+import { api, DEMO } from '../api.js'
 import { useToast } from '../App.jsx'
 
 const KEY_HELP = {
@@ -141,6 +141,32 @@ export default function Sources() {
           <button className="secondary" onClick={testEmail}>Envoyer un email de test</button>
           <button className="secondary" onClick={sendDigest}>Envoyer le digest du jour maintenant</button>
         </div>
+      </div>
+
+      <div className="card">
+        <h2>Sauvegarde</h2>
+        <p className="hint" style={{ marginTop: 0 }}>
+          Toutes tes données (offres, statuts, notes, lettres) vivent dans une base locale
+          (<code>data/jobfinder.db</code>). Télécharge une copie régulièrement — pour restaurer,
+          remplace le fichier par ta sauvegarde, application arrêtée.
+        </p>
+        <button
+          className="secondary"
+          onClick={() => {
+            if (DEMO) {
+              showToast("Sauvegarde disponible uniquement dans l'application locale (démo en ligne).", true)
+              return
+            }
+            const link = document.createElement('a')
+            link.href = '/api/backup'
+            link.download = ''
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+          }}
+        >
+          💾 Télécharger une sauvegarde de la base
+        </button>
       </div>
 
       <div className="card">

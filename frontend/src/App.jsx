@@ -4,13 +4,15 @@ import Dashboard from './components/Dashboard.jsx'
 import Offers from './components/Offers.jsx'
 import ProfilePage from './components/Profile.jsx'
 import Sources from './components/Sources.jsx'
+import Stats from './components/Stats.jsx'
 
 const ToastContext = createContext(() => {})
 export const useToast = () => useContext(ToastContext)
 
 const PAGES = [
-  { id: 'dashboard', label: 'Tableau de bord', icon: '📊' },
+  { id: 'dashboard', label: 'Tableau de bord', icon: '🏠' },
   { id: 'offers', label: 'Offres', icon: '🎯' },
+  { id: 'stats', label: 'Statistiques', icon: '📊' },
   { id: 'profile', label: 'Profil & CV', icon: '👤' },
   { id: 'sources', label: 'Sources & réglages', icon: '🔌' },
 ]
@@ -85,6 +87,7 @@ export default function App() {
         <main className="content">
           {page === 'dashboard' && <Dashboard scanning={scanning} goToOffers={() => setPage('offers')} />}
           {page === 'offers' && <Offers scanning={scanning} />}
+          {page === 'stats' && <Stats />}
           {page === 'profile' && <ProfilePage />}
           {page === 'sources' && <Sources />}
         </main>

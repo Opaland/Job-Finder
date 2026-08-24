@@ -69,6 +69,7 @@ export const api = {
   testEmail: () => request('/api/digests/test-email', { method: 'POST' }),
 
   sources: () => request('/api/sources'),
+  stats: () => request('/api/stats'),
 }
 
 export const STATUS_LABELS = {

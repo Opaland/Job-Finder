@@ -44,6 +44,54 @@ function listOffers(query) {
   return { total: items.length, items }
 }
 
+const STATUS_ORDER = ['nouvelle', 'vue', 'a_postuler', 'postulee', 'relancee', 'entretien', 'refusee', 'fermee']
+const SOURCE_FR = {
+  france_travail: 'France Travail', adzuna: 'Adzuna', jsearch: 'LinkedIn / Indeed',
+  wttj: 'Welcome to the Jungle', apec: 'APEC', hellowork: 'HelloWork',
+}
+
+function computeStats() {
+  const offers = state.offers
+  const counts = {}
+  offers.forEach((o) => { counts[o.status] = (counts[o.status] || 0) + 1 })
+  const sent = ['postulee', 'relancee', 'entretien', 'refusee'].reduce((n, s) => n + (counts[s] || 0), 0)
+  const responses = (counts.entretien || 0) + (counts.refusee || 0)
+  const open = offers.filter((o) => !['refusee', 'fermee'].includes(o.status))
+  const top20 = open.map((o) => o.final_score).sort((a, b) => b - a).slice(0, 20)
+
+  const bySource = {}
+  offers.forEach((o) => { bySource[o.source] = (bySource[o.source] || 0) + 1 })
+
+  const bins = Array.from({ length: 10 }, () => 0)
+  offers.forEach((o) => { bins[Math.min(9, Math.floor(o.final_score / 10))] += 1 })
+
+  const perDay = []
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000)
+    const key = d.toISOString().slice(0, 10)
+    // Petit historique plausible pour la démo : quelques collectes réparties.
+    const count = i === 0 ? offers.length - 3 : ([3, 9, 15, 22].includes(i) ? 1 : 0)
+    perDay.push({ date: key, count: Math.max(0, count) })
+  }
+
+  return {
+    totals: {
+      offers: offers.length,
+      new_7d: offers.length - 2,
+      sent,
+      interviews: counts.entretien || 0,
+      response_rate: sent ? Math.round((100 * responses) / sent) : null,
+      avg_top20: top20.length ? Math.round((top20.reduce((a, b) => a + b, 0) / top20.length) * 10) / 10 : null,
+    },
+    by_status: STATUS_ORDER.map((s) => ({ status: s, count: counts[s] || 0 })),
+    by_source: Object.entries(bySource)
+      .map(([source, count]) => ({ source, label: SOURCE_FR[source] || source, count }))
+      .sort((a, b) => b.count - a.count),
+    score_bins: bins.map((count, i) => ({ label: i < 9 ? `${i * 10}-${i * 10 + 9}` : '90-100', count })),
+    per_day: perDay,
+  }
+}
+
 export async function demoRequest(path, options = {}) {
   const [route, query] = path.split('?')
   const method = (options.method || 'GET').toUpperCase()
@@ -86,6 +134,8 @@ export async function demoRequest(path, options = {}) {
   if (route === '/api/digests') return [data.digest]
   if (route.startsWith('/api/digests/')) throw new Error(LOCAL_ONLY)
   if (route === '/api/sources') return data.sources
+  if (route === '/api/stats') return computeStats()
+  if (route === '/api/backup') throw new Error(LOCAL_ONLY)
 
   throw new Error(`Endpoint non simulé dans la démo : ${route}`)
 }
