@@ -9,6 +9,7 @@ export default function OfferDetail({ offerId, onClose }) {
   const [notes, setNotes] = useState('')
   const [letter, setLetter] = useState('')
   const [prep, setPrep] = useState('')
+  const [actionNote, setActionNote] = useState('')
   const [gapGenerating, setGapGenerating] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [prepGenerating, setPrepGenerating] = useState(false)
@@ -44,6 +45,7 @@ export default function OfferDetail({ offerId, onClose }) {
       setNotes(o.notes || '')
       setLetter(o.cover_letter || '')
       setPrep(o.interview_prep || '')
+      setActionNote(o.next_action_note || '')
       loadContacts(o.company)
       if (o.status === 'nouvelle') {
         api.updateOffer(o.id, { status: 'vue' }).then(setOffer).catch(() => {})
@@ -382,13 +384,14 @@ export default function OfferDetail({ offerId, onClose }) {
             type="text"
             style={{ flex: 1, minWidth: 200 }}
             placeholder="ex. Relancer par email, préparer l'entretien…"
-            defaultValue={offer.next_action_note || ''}
-            onBlur={(e) => e.target.value !== (offer.next_action_note || '') && patch({ next_action_note: e.target.value || null })}
+            value={actionNote}
+            onChange={(e) => setActionNote(e.target.value)}
+            onBlur={() => actionNote !== (offer.next_action_note || '') && patch({ next_action_note: actionNote || null })}
           />
           {offer.next_action_date && (
             <button
               className="secondary"
-              onClick={() => patch({ next_action_date: null, next_action_note: null }, 'Action marquée faite.')}
+              onClick={() => { setActionNote(''); patch({ next_action_date: null, next_action_note: null }, 'Action marquée faite.') }}
             >
               Fait ✓
             </button>

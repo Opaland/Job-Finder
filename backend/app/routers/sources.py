@@ -16,11 +16,16 @@ def list_sources(db: Session = Depends(get_db)):
     """État de chaque source : configurée ? activée ? statistiques du dernier scan."""
     profile = db.get(Profile, 1)
     enabled = (profile.sources_enabled or {}) if profile else {}
+    from datetime import timedelta
+
+    from ..models import utcnow
+
+    # Fenêtre de 14 jours (bornée à 60 scans pour rester lisible).
     runs = (
         db.query(ScanRun)
-        .filter(ScanRun.status == "termine")
+        .filter(ScanRun.status == "termine", ScanRun.started_at >= utcnow() - timedelta(days=14))
         .order_by(ScanRun.id.desc())
-        .limit(14)
+        .limit(60)
         .all()
     )
     stats = runs[0].source_stats if runs else {}

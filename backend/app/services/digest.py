@@ -120,13 +120,23 @@ def actions_due(db: Session) -> list[dict]:
     ]
 
 
-def daily_focus(db: Session) -> list[dict]:
+def daily_focus(
+    db: Session,
+    todo: list[dict] | None = None,
+    gem_list: list[Offer] | None = None,
+    relaunch: list[Offer] | None = None,
+) -> list[dict]:
     """Les 3 actions du jour qui comptent, par priorité décroissante.
 
     1. L'action datée échue la plus ancienne · 2. La meilleure pépite non
     traitée · 3. La relance due la plus ancienne · 4. À défaut, postuler à la
     meilleure offre en attente. Une même offre n'apparaît qu'une fois.
+    Les listes déjà calculées par l'appelant sont réutilisées telles quelles.
     """
+    todo = actions_due(db) if todo is None else todo
+    gem_list = gems(db) if gem_list is None else gem_list
+    relaunch = offers_to_relaunch(db) if relaunch is None else relaunch
+
     focus: list[dict] = []
     used: set[int] = set()
 
@@ -136,18 +146,18 @@ def daily_focus(db: Session) -> list[dict]:
         used.add(brief["id"])
         focus.append({"type": kind, "label": label, **brief})
 
-    for action in actions_due(db):
+    for action in todo:
         note = action["action_note"] or "Action prévue"
         prefix = "En retard : " if action["overdue"] else "Aujourd'hui : "
         push("action", prefix + note, action)
         if len(focus) >= 3:
             return focus
 
-    for gem in gems(db)[:1]:
+    for gem in gem_list[:1]:
         brief = _offer_brief(gem)
         push("pepite", f"Étudie cette pépite (score {brief['final_score']:.0f})", brief)
 
-    for offer in offers_to_relaunch(db)[:1]:
+    for offer in relaunch[:1]:
         push("relance", "Relance cette candidature restée sans réponse", _offer_brief(offer))
 
     if len(focus) < 3:
@@ -191,6 +201,10 @@ def build_digest(db: Session, for_date: str | None = None) -> Digest:
         .order_by(Offer.final_score.desc())
         .all()
     )
+    # Calculées une seule fois, réutilisées par le payload ET le focus du jour.
+    todo = actions_due(db)
+    gem_list = gems(db)
+    relaunch = offers_to_relaunch(db)
 
     payload = {
         "date": date_str,
@@ -203,11 +217,11 @@ def build_digest(db: Session, for_date: str | None = None) -> Digest:
             {**_offer_brief(o), "status": o.status} for o in to_follow[:15]
         ],
         "to_relaunch": [
-            {**_offer_brief(o), "status": o.status} for o in offers_to_relaunch(db)
+            {**_offer_brief(o), "status": o.status} for o in relaunch
         ],
-        "gems": [_offer_brief(o) for o in gems(db)],
-        "todo_today": actions_due(db),
-        "focus": daily_focus(db),
+        "gems": [_offer_brief(o) for o in gem_list],
+        "todo_today": todo,
+        "focus": daily_focus(db, todo=todo, gem_list=gem_list, relaunch=relaunch),
         "weekly": {
             "goal": (db.get(Profile, 1).weekly_goal if db.get(Profile, 1) else 5) or 0,
             "sent": applications_this_week(db),

@@ -67,7 +67,6 @@ def list_offers(
 @router.post("/manual", response_model=OfferDetail, status_code=201)
 def add_manual_offer(payload: ManualOffer, db: Session = Depends(get_db)):
     """Ajoute une offre à la main (annonce collée depuis LinkedIn, Indeed, cooptation…)."""
-    from ..services.enrich import fetch_full_description
     from ..services.scan import profile_to_dict, rescore_offer
     from ..services.textutils import fingerprint as make_fp
     from ..services.textutils import normalize, titles_similar
@@ -193,6 +192,7 @@ def update_offer(offer_id: int, update: OfferUpdate, db: Session = Depends(get_d
     if not offer:
         raise HTTPException(404, "Offre introuvable")
 
+    status_change = None
     if update.status is not None:
         if update.status not in OFFER_STATUSES:
             raise HTTPException(400, f"Statut inconnu : {update.status}")
@@ -200,8 +200,7 @@ def update_offer(offer_id: int, update: OfferUpdate, db: Session = Depends(get_d
             history = list(offer.status_history or [])
             history.append({"status": update.status, "date": utcnow().isoformat(), "par": "utilisateur"})
             offer.status_history = history
-            log_event(db, "statut", f"« {offer.title} » ({offer.company or 'entreprise inconnue'}) : "
-                                    f"{offer.status} → {update.status}", offer.id)
+            status_change = (offer.status, update.status)
             offer.status = update.status
     if update.notes is not None:
         offer.notes = update.notes
@@ -218,6 +217,9 @@ def update_offer(offer_id: int, update: OfferUpdate, db: Session = Depends(get_d
         offer.next_action_note = update.next_action_note
 
     db.commit()
+    if status_change:
+        log_event(db, "statut", f"« {offer.title} » ({offer.company or 'entreprise inconnue'}) : "
+                                f"{status_change[0]} → {status_change[1]}", offer.id)
     return offer
 
 

@@ -90,7 +90,7 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
 
 ### EPIC J — Release
 
-- [ ] **Sprint 20** : durcissement, revue de code globale, doc/site/démo à
+- [x] **Sprint 20** : durcissement, revue de code globale, doc/site/démo à
   jour, CHANGELOG, v2.1.
 
 ### Réserve (non planifié)

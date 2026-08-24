@@ -11,7 +11,7 @@ en « Refusée » ou « Fermée ». Une offre disparue de sa source est simpleme
 🌐 **Site du projet + démo interactive (données d'exemple)** : https://opaland.github.io/Job-Finder/
 — la démo montre l'interface dans le navigateur ; l'application complète (scans réels, IA, email)
 tourne en local, voir ci-dessous. Le site est déployé automatiquement par GitHub Actions
-(`.github/workflows/pages.yml`).
+(`.github/workflows/pages.yml`). Historique des versions : [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

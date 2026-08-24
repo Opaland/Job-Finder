@@ -70,8 +70,13 @@ def update_contact(contact_id: int, payload: ContactUpdate, db: Session = Depend
     contact = db.get(Contact, contact_id)
     if not contact:
         raise HTTPException(404, "Contact introuvable")
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(contact, field, value)
+    data = payload.model_dump(exclude_unset=True)
+    if "name" in data and not (data["name"] or "").strip():
+        raise HTTPException(400, "Le nom du contact ne peut pas être vide.")
+    for field, value in data.items():
+        if value is None:
+            continue
+        setattr(contact, field, value.strip() if field != "notes" else value)
     db.commit()
     return contact
 
