@@ -1,0 +1,21 @@
+# Service systemd — Job Finder tourne en permanence (scan quotidien inclus).
+# Installé automatiquement par deploiement/installer-linux.sh.
+[Unit]
+Description=Job Finder - recherche d'emploi QA (API, interface et scan quotidien)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__UTILISATEUR__
+WorkingDirectory=__DOSSIER__/backend
+Environment=TZ=Europe/Paris
+Environment=PYTHONUNBUFFERED=1
+# 0.0.0.0 : accessible depuis le réseau LOCAL (PC, téléphone).
+# Réseau local uniquement : l'application n'a aucune authentification.
+ExecStart=__DOSSIER__/backend/venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

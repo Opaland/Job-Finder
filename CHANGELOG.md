@@ -2,6 +2,9 @@
 
 ## v2.3 — Tourner 24/7 : tâche planifiée et Docker
 
+- `deploiement/installer-linux.sh` : installation en une commande sur
+  Raspberry Pi ou vieux PC recyclé (environnement Python, build de l'interface,
+  service systemd qui redémarre avec la machine) — sans Docker.
 - `installer-tache-quotidienne.bat` : enregistre la tâche Windows du scan
   quotidien avec **réveil du PC en veille** à 07h25 et rattrapage si le PC
   était éteint — le scan et l'email partent sans intervention.

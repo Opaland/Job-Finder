@@ -266,6 +266,32 @@ redirection de port sur la box. Pour ne l'ouvrir qu'au NAS lui-même, remplacer
   ```
   L'authentification est conservée dans `./claude` entre les redémarrages.
 
+**Sur un Raspberry Pi ou un vieux PC recyclé — sans Docker**
+
+Plus léger que Docker sur une petite machine, et c'est une commande :
+
+```bash
+git clone https://github.com/Opaland/Job-Finder.git
+cd Job-Finder
+sudo bash deploiement/installer-linux.sh
+```
+
+Le script installe l'environnement Python, construit l'interface, crée `.env`
+et enregistre un service systemd : l'application redémarre avec la machine et
+le scan de 07:30 tourne dedans. Ensuite :
+
+| | |
+|---|---|
+| État du service | `systemctl status job-finder` |
+| Journal en direct | `journalctl -u job-finder -f` |
+| Mise à jour | `git pull && sudo bash deploiement/installer-linux.sh` |
+| Arrêt | `sudo systemctl stop job-finder` |
+
+Prérequis : Python 3.11+ et Node (Raspberry Pi OS Bookworm 64 bits et Debian 12
+les ont déjà : `sudo apt install -y python3-venv nodejs npm`). Sur un Pi,
+préférer un SSD USB à une carte micro-SD : la base est écrite tous les jours et
+les cartes s'usent vite.
+
 Une même base ne doit être utilisée que par **une seule instance** : soit le NAS,
 soit `start.bat` sur le PC — jamais les deux en même temps sur un dossier
 partagé (SQLite ne supporte pas l'accès concurrent via SMB). Pour passer du PC

@@ -22,7 +22,7 @@ VITE_DEMO=1 npx vite build --base=/Job-Finder/demo/ --outDir=dist-demo   # build
 Planificateur de tâches ; `installer-tache-quotidienne.bat` enregistre la tâche quotidienne
 (modèle `tache-quotidienne.xml`, réveil du PC en veille à 07h25).
 
-`Dockerfile` + `docker-compose.yml` : déploiement NAS Synology (README §9). L'image reproduit
+`deploiement/installer-linux.sh` + `job-finder.service` : installation sans Docker sur Raspberry Pi / vieux PC (venv, build, service systemd). `Dockerfile` + `docker-compose.yml` : déploiement NAS Synology x86 (README §9). L'image reproduit
 l'arborescence du dépôt (`/app/backend`, `/app/frontend/dist`, `/app/data` en volume) — `config.py`
 déduit la racine depuis `backend/app/`, ne pas casser cette hiérarchie. Sans la CLI `claude` dans
 l'image (défaut), les routes IA renvoient leur 503 français et le scan saute l'affinage.
