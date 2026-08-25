@@ -10,16 +10,18 @@ from .textutils import contains_word, normalize
 SKILL_TAXONOMY = [
     # Automatisation IHM / E2E
     "selenium", "playwright", "cypress", "protractor", "cucumber", "gherkin", "robot framework",
+    "appium", "accessibilite", "rgaa", "wcag",
     # API / intégration
     "karatedsl", "karate", "rest assured", "postman", "soapui", "api rest", "soap", "graphql",
     # Performance
-    "jmeter", "neoload", "gatling", "dynatrace", "locust",
+    "jmeter", "neoload", "gatling", "dynatrace", "locust", "k6",
     # Gestion de test / ALM
     "squash", "xray", "qtest", "alm", "quality center", "testrail", "zephyr", "squash tm",
     # Ticketing / pilotage
     "jira", "azure devops", "confluence", "redmine", "bugzilla", "power bi", "power automate",
     # CI/CD & outillage
     "jenkins", "gitlab ci", "gitlab", "github actions", "ci/cd", "docker", "git",
+    "kubernetes", "terraform", "sonarqube",
     # Langages / data
     "python", "sql", "java", "javascript", "typescript",
     # Méthodo & normes

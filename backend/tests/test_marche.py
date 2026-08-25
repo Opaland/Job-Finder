@@ -108,3 +108,64 @@ def test_entreprise_vide_regroupee(client, db):
     db.add(Offer(fingerprint="fp-x", source="manuelle", source_id="x", title="QA", company="", final_score=50.0))
     db.commit()
     assert qui_recrute(db)["entreprises"][0]["entreprise"] == "Entreprise non précisée"
+
+
+# --- Sprint 27 : manques récurrents repérés par l'IA ------------------------
+
+def test_manques_recurrents(client, db):
+    from app.models import Offer, Profile
+    from app.services.marche import manques_recurrents
+    profile = db.get(Profile, 1)
+    profile.skills = ["selenium"]
+    db.commit()
+    for i, analyse in enumerate([
+        "Le CV couvre Selenium mais Playwright et k6 manquent.",
+        "Il faudrait ajouter Playwright pour ce poste.",
+        None,
+    ]):
+        db.add(Offer(fingerprint=f"fp-g{i}", source="manuelle", source_id=f"g{i}",
+                     title="QA", company="ACME", final_score=70.0, gap_analysis=analyse))
+    db.commit()
+
+    resultat = manques_recurrents(db)
+    assert resultat["analyses"] == 2                    # l'offre sans analyse est ignorée
+    manques = {m["competence"]: m["citee_dans"] for m in resultat["manques"]}
+    assert manques["playwright"] == 2
+    assert manques["k6"] == 1
+    assert "selenium" not in manques                    # déjà au CV : pas un manque
+
+
+# --- Sprint 28 : fraîcheur et annonces fantômes -----------------------------
+
+def test_tranches_de_fraicheur_et_fantomes(client, db):
+    from datetime import timedelta
+
+    from app.models import Offer, local_now
+    from app.services.marche import fraicheur
+    maintenant = local_now()
+    cas = [
+        ("f1", maintenant - timedelta(days=2), True, "nouvelle"),
+        ("f2", maintenant - timedelta(days=20), True, "vue"),
+        ("f3", maintenant - timedelta(days=45), True, "nouvelle"),
+        ("f4", maintenant - timedelta(days=120), True, "nouvelle"),   # fantôme
+        ("f5", maintenant - timedelta(days=200), False, "nouvelle"),  # ancienne mais hors ligne
+        ("f6", None, True, "nouvelle"),
+        ("f7", maintenant - timedelta(days=300), True, "refusee"),    # close : ignorée
+    ]
+    for source_id, publiee, en_ligne, statut in cas:
+        db.add(Offer(fingerprint=f"fp-{source_id}", source="manuelle", source_id=source_id,
+                     title="QA", company="ACME", final_score=60.0,
+                     published_at=publiee, still_online=en_ligne, status=statut))
+    db.commit()
+
+    resultat = fraicheur(db)
+    tranches = {t["tranche"]: t["offres"] for t in resultat["tranches"]}
+    assert tranches["0-7"] == 1
+    assert tranches["8-30"] == 1
+    assert tranches["31-60"] == 1
+    assert tranches["60+"] == 2          # f4 et f5
+    assert tranches["inconnue"] == 1
+    # Seule une offre ancienne ET toujours en ligne est signalée fantôme.
+    fantomes = [f["source_id"] if "source_id" in f else f["jours"] for f in resultat["fantomes"]]
+    assert len(resultat["fantomes"]) == 1
+    assert resultat["fantomes"][0]["jours"] >= 120

@@ -122,13 +122,13 @@ chaque jour.
 
 ### EPIC M — Comprendre le marché
 
-- [ ] **Sprint 25** : compétences les plus demandées dans les offres collectées
+- [x] **Sprint 25** : compétences les plus demandées dans les offres collectées
   (classement, et lesquelles manquent au CV).
-- [ ] **Sprint 26** : entreprises qui recrutent le plus + fourchettes de salaire
+- [x] **Sprint 26** : entreprises qui recrutent le plus + fourchettes de salaire
   observées par intitulé de poste.
-- [ ] **Sprint 27** : synthèse des analyses d'écart IA — les manques qui
+- [x] **Sprint 27** : synthèse des analyses d'écart IA — les manques qui
   reviennent, pour orienter formation et CV.
-- [ ] **Sprint 28** : fraîcheur des offres et repérage des annonces fantômes
+- [x] **Sprint 28** : fraîcheur des offres et repérage des annonces fantômes
   (republiées en boucle depuis des mois).
 
 ### EPIC N — Preuves et administratif

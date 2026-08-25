@@ -89,6 +89,8 @@ export const api = {
 
   marketSkills: () => request('/api/market/skills'),
   marketCompanies: () => request('/api/market/companies'),
+  marketGaps: () => request('/api/market/gaps'),
+  marketFreshness: () => request('/api/market/freshness'),
 
   sources: () => request('/api/sources'),
   stats: () => request('/api/stats'),

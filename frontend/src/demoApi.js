@@ -305,6 +305,27 @@ export async function demoRequest(path, options = {}) {
       offres_avec_salaire: 3,
     }
   }
+  if (route === '/api/market/gaps') {
+    return { analyses: 1, manques: [{ competence: 'github actions', citee_dans: 1 }, { competence: 'k6', citee_dans: 1 }] }
+  }
+  if (route === '/api/market/freshness') {
+    const jours = (o) => Math.floor((Date.now() - new Date(o.published_at || o.collected_at)) / 86400000)
+    const ouvertes = state.offers.filter((o) => !['refusee', 'fermee'].includes(o.status))
+    const tranches = { '0-7': 0, '8-30': 0, '31-60': 0, '60+': 0, inconnue: 0 }
+    const fantomes = []
+    ouvertes.forEach((o) => {
+      if (!o.published_at) { tranches.inconnue += 1; return }
+      const j = jours(o)
+      if (j <= 7) tranches['0-7'] += 1
+      else if (j <= 30) tranches['8-30'] += 1
+      else if (j <= 60) tranches['31-60'] += 1
+      else { tranches['60+'] += 1; fantomes.push({ id: o.id, title: o.title, company: o.company, url: o.url, final_score: o.final_score, jours: j, status: o.status }) }
+    })
+    return {
+      tranches: Object.entries(tranches).map(([tranche, offres]) => ({ tranche, offres })),
+      seuil_fantome_jours: 60, fantomes,
+    }
+  }
   if (route === '/api/stats') return computeStats()
   if (route === '/api/journal') {
     const kind = params_get(query, 'kind')

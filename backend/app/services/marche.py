@@ -11,7 +11,7 @@ import re
 
 from sqlalchemy.orm import Session
 
-from ..models import Offer, Profile
+from ..models import STATUTS_CLOS, Offer, Profile, local_now
 from .cv_parser import SKILL_TAXONOMY
 from .textutils import canonical_title, contains_word, normalize
 
@@ -153,4 +153,81 @@ def qui_recrute(db: Session, limite: int = 20) -> dict:
         "entreprises": entreprises[:limite],
         "salaires": salaires[:limite],
         "offres_avec_salaire": avec_salaire,
+    }
+
+
+# --- Ce que l'IA a repéré comme manquant ------------------------------------
+
+def manques_recurrents(db: Session, limite: int = 15) -> dict:
+    """Compétences citées comme manquantes dans les analyses d'écart de l'IA.
+
+    L'IA écrit ces analyses en texte libre : on ne cherche donc pas à
+    l'interpréter, on compte les compétences de la taxonomie qui apparaissent
+    dans une analyse ALORS qu'elles sont absentes du CV.
+    """
+    profile = db.get(Profile, 1)
+    du_cv = {normalize(s) for s in (profile.skills or [])} if profile else set()
+
+    compteur: dict[str, int] = {}
+    analyses = 0
+    for (analyse,) in db.query(Offer.gap_analysis).filter(Offer.gap_analysis.isnot(None)).all():
+        texte = normalize(analyse or "")
+        if not texte:
+            continue
+        analyses += 1
+        for competence in SKILL_TAXONOMY:
+            if any(competence in s or s in competence for s in du_cv):
+                continue
+            if contains_word(texte, competence):
+                compteur[competence] = compteur.get(competence, 0) + 1
+
+    return {
+        "analyses": analyses,
+        "manques": [
+            {"competence": c, "citee_dans": n}
+            for c, n in sorted(compteur.items(), key=lambda kv: (-kv[1], kv[0]))
+        ][:limite],
+    }
+
+
+# --- Fraîcheur et annonces fantômes -----------------------------------------
+
+# Au-delà de ce délai depuis la publication, une offre encore en ligne est
+# probablement republiée en boucle (ESN qui entretient un vivier).
+FANTOME_APRES_JOURS = 60
+
+
+def fraicheur(db: Session, limite: int = 20) -> dict:
+    """Répartition des offres ouvertes par ancienneté + annonces suspectes."""
+    maintenant = local_now()
+    tranches = {"0-7": 0, "8-30": 0, "31-60": 0, "60+": 0, "inconnue": 0}
+    fantomes = []
+
+    for oid, titre, entreprise, publiee, collectee, en_ligne, statut, score, url in db.query(
+        Offer.id, Offer.title, Offer.company, Offer.published_at, Offer.collected_at,
+        Offer.still_online, Offer.status, Offer.final_score, Offer.url,
+    ).filter(Offer.status.notin_(STATUTS_CLOS)).all():
+        if publiee is None:
+            tranches["inconnue"] += 1
+            continue
+        jours = (maintenant - publiee).days
+        if jours <= 7:
+            tranches["0-7"] += 1
+        elif jours <= 30:
+            tranches["8-30"] += 1
+        elif jours <= 60:
+            tranches["31-60"] += 1
+        else:
+            tranches["60+"] += 1
+            if en_ligne:
+                fantomes.append({
+                    "id": oid, "title": titre, "company": entreprise, "url": url,
+                    "final_score": score, "jours": jours, "status": statut,
+                })
+
+    fantomes.sort(key=lambda f: -f["jours"])
+    return {
+        "tranches": [{"tranche": t, "offres": n} for t, n in tranches.items()],
+        "seuil_fantome_jours": FANTOME_APRES_JOURS,
+        "fantomes": fantomes[:limite],
     }
