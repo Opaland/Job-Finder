@@ -41,6 +41,7 @@ class OfferDetail(OfferSummary):
     next_action_note: str | None
     other_sources: list
     interviews: list
+    letter_versions: list
     status_history: list
     last_seen_at: datetime
 

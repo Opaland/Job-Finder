@@ -144,7 +144,7 @@ export async function demoRequest(path, options = {}) {
       still_online: true, score, ai_score: null, ai_reason: '', final_score: score,
       score_breakdown: [{ label: 'Démo', points: score, max: 100, detail: 'Score simplifié dans la démo — l’application locale applique le vrai moteur pondéré.' }],
       status: 'nouvelle', status_history: [{ status: 'nouvelle', date: new Date().toISOString(), par: 'ajout manuel (démo)' }],
-      favorite: false, notes: '', cover_letter: '', interview_prep: null, interviews: [], other_sources: [],
+      favorite: false, notes: '', cover_letter: '', interview_prep: null, interviews: [], letter_versions: [], checklist: {}, other_sources: [],
     }
     state.offers.push(offer)
     return offer
@@ -166,7 +166,15 @@ export async function demoRequest(path, options = {}) {
       if (body.checklist !== undefined) offer.checklist = { ...(offer.checklist || {}), ...body.checklist }
       if (body.notes !== undefined) offer.notes = body.notes
       if (body.favorite !== undefined) offer.favorite = body.favorite
-      if (body.cover_letter !== undefined) offer.cover_letter = body.cover_letter
+      if (body.cover_letter !== undefined && body.cover_letter !== offer.cover_letter) {
+        if ((offer.cover_letter || '').trim()) {
+          offer.letter_versions = [
+            { date: new Date().toISOString(), texte: offer.cover_letter, par: 'édition manuelle' },
+            ...(offer.letter_versions || []),
+          ].slice(0, 10)
+        }
+        offer.cover_letter = body.cover_letter
+      }
       if (body.interview_prep !== undefined) offer.interview_prep = body.interview_prep
       if ('next_action_date' in body) offer.next_action_date = body.next_action_date
       if ('next_action_note' in body) offer.next_action_note = body.next_action_note
@@ -200,6 +208,21 @@ export async function demoRequest(path, options = {}) {
     const offer = offerById(interviewDel[1])
     if (!offer) throw new Error('Offre introuvable')
     offer.interviews = (offer.interviews || []).filter((_, i) => i !== Number(interviewDel[2]))
+    return offer
+  }
+
+  const restore = route.match(/^\/api\/offers\/(\d+)\/letter\/restore\/(\d+)$/)
+  if (restore && method === 'POST') {
+    const offer = offerById(restore[1])
+    if (!offer) throw new Error('Offre introuvable')
+    const versions = offer.letter_versions || []
+    const voulue = versions[Number(restore[2])]
+    if (!voulue) throw new Error("Cette version de lettre n'existe plus.")
+    offer.letter_versions = [
+      { date: new Date().toISOString(), texte: offer.cover_letter || '', par: 'avant restauration' },
+      ...versions,
+    ]
+    offer.cover_letter = voulue.texte
     return offer
   }
 

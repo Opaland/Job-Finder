@@ -111,13 +111,13 @@ chaque jour.
 
 ### EPIC L — Entretiens et suivi de candidature
 
-- [ ] **Sprint 21** : entretiens datés par offre (date, format, interlocuteur),
+- [x] **Sprint 21** : entretiens datés par offre (date, format, interlocuteur),
   carte « Prochains entretiens » sur le tableau de bord.
-- [ ] **Sprint 22** : compte-rendu d'entretien structuré (déroulé, ressenti,
+- [x] **Sprint 22** : compte-rendu d'entretien structuré (déroulé, ressenti,
   suite annoncée) et relance calée sur la suite annoncée.
-- [ ] **Sprint 23** : checklist de candidature par offre (CV adapté, lettre
+- [x] **Sprint 23** : checklist de candidature par offre (CV adapté, lettre
   prête, envoyée, relancée) avec avancement visible dans la liste.
-- [ ] **Sprint 24** : historique des lettres générées — comparer et restaurer
+- [x] **Sprint 24** : historique des lettres générées — comparer et restaurer
   une version précédente.
 
 ### EPIC M — Comprendre le marché

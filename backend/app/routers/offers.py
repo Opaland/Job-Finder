@@ -229,7 +229,8 @@ def update_offer(offer_id: int, update: OfferUpdate, db: Session = Depends(get_d
         offer.notes = update.notes
     if update.favorite is not None:
         offer.favorite = update.favorite
-    if update.cover_letter is not None:
+    if update.cover_letter is not None and update.cover_letter != offer.cover_letter:
+        _archiver_lettre(offer, "édition manuelle")
         offer.cover_letter = update.cover_letter
     if update.interview_prep is not None:
         offer.interview_prep = update.interview_prep
@@ -276,9 +277,25 @@ def generate_letter(offer_id: int, db: Session = Depends(get_db)):
         aide_503=", ou édite la lettre manuellement",
         aide_502="Réessaie ou édite la lettre manuellement.",
     )
+    _archiver_lettre(offer, "version précédente")
     offer.cover_letter = letter.strip()
     db.commit()
     log_event(db, "ia", f"Lettre de motivation générée pour « {offer.title} ».", offer.id)
+    return offer
+
+
+@router.post("/{offer_id}/letter/restore/{index}", response_model=OfferDetail)
+def restore_letter(offer_id: int, index: int, db: Session = Depends(get_db)):
+    """Remet une version précédente de la lettre (l'actuelle est archivée)."""
+    offer = _offre(db, offer_id)
+    versions = list(offer.letter_versions or [])
+    if not 0 <= index < len(versions):
+        raise HTTPException(404, "Cette version de lettre n'existe plus.")
+    voulue = versions[index].get("texte", "")
+    _archiver_lettre(offer, "avant restauration")
+    offer.cover_letter = voulue
+    db.commit()
+    log_event(db, "ia", f"Version précédente de la lettre restaurée pour « {offer.title} ».", offer.id)
     return offer
 
 
@@ -343,6 +360,22 @@ def enrich_offer(offer_id: int, db: Session = Depends(get_db)):
     rescore_offer(offer, profile_to_dict(profile))
     db.commit()
     return offer
+
+
+# Nombre de versions de lettre conservées par offre (les plus récentes).
+MAX_VERSIONS_LETTRE = 10
+
+
+def _archiver_lettre(offer: Offer, par: str) -> None:
+    """Range la lettre actuelle dans l'historique avant de la remplacer."""
+    actuelle = (offer.cover_letter or "").strip()
+    if not actuelle:
+        return
+    versions = list(offer.letter_versions or [])
+    if versions and versions[0].get("texte", "").strip() == actuelle:
+        return  # rien de neuf à archiver
+    versions.insert(0, {"date": local_now().isoformat(), "texte": actuelle, "par": par})
+    offer.letter_versions = versions[:MAX_VERSIONS_LETTRE]
 
 
 def _offre(db: Session, offer_id: int) -> Offer:

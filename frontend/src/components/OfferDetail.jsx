@@ -209,6 +209,31 @@ export default function OfferDetail({ offerId, onClose }) {
           onBlur={() => letter !== offer.cover_letter && patch({ cover_letter: letter }, 'Lettre enregistrée.')}
         />
 
+        {(offer.letter_versions || []).length > 0 && (
+          <details style={{ margin: '6px 0 4px' }}>
+            <summary className="hint" style={{ cursor: 'pointer' }}>
+              Versions précédentes de la lettre ({offer.letter_versions.length})
+            </summary>
+            {offer.letter_versions.map((v, i) => (
+              <div key={i} className="card" style={{ padding: 10, marginTop: 6 }}>
+                <div className="actions-row" style={{ marginBottom: 6 }}>
+                  <span className="hint">{formatDate(v.date)} · {v.par}</span>
+                  <button className="secondary" style={{ padding: '2px 8px', fontSize: 13 }}
+                    onClick={async () => {
+                      try {
+                        const maj = await api.restoreLetter(offer.id, i)
+                        setOffer(maj)
+                        setLetter(maj.cover_letter || '')
+                        showToast('Version restaurée — la lettre en cours a été archivée.')
+                      } catch (err) { showToast(err.message, true) }
+                    }}>Restaurer</button>
+                </div>
+                <div className="desc" style={{ maxHeight: 160 }}>{v.texte}</div>
+              </div>
+            ))}
+          </details>
+        )}
+
         <div className="section-title">Adéquation CV ↔ offre</div>
         <div className="actions-row" style={{ margin: '4px 0 8px' }}>
           <button

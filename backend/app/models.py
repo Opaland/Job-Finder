@@ -98,6 +98,9 @@ class Offer(Base):
     # Analyse d'écart CV ↔ offre générée par l'IA (compétences manquantes, conseils ATS).
     gap_analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Versions successives de la lettre : [{date, texte, par}] (la plus récente en tête).
+    letter_versions: Mapped[list] = mapped_column(JSON, default=list)
+
     # Checklist de candidature : {cv_adapte, lettre_prete, envoyee, relancee} -> bool.
     checklist: Mapped[dict] = mapped_column(JSON, default=dict)
 

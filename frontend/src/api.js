@@ -37,6 +37,7 @@ export const api = {
   updateOffer: (id, body) =>
     request(`/api/offers/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   generateLetter: (id) => request(`/api/offers/${id}/letter`, { method: 'POST' }),
+  restoreLetter: (id, index) => request(`/api/offers/${id}/letter/restore/${index}`, { method: 'POST' }),
   addManualOffer: (body) => request('/api/offers/manual', { method: 'POST', body: JSON.stringify(body) }),
   enrichOffer: (id) => request(`/api/offers/${id}/enrich`, { method: 'POST' }),
   interviewPrep: (id) => request(`/api/offers/${id}/interview-prep`, { method: 'POST' }),
