@@ -38,3 +38,9 @@ jobs:
       - name: Build
         working-directory: frontend
         run: npm run build
+
+      # Même vérification que scripts/verif.sh : une route non simulée dans
+      # demoApi.js ne doit pas casser la démo GitHub Pages.
+      - name: Build démo
+        working-directory: frontend
+        run: VITE_DEMO=1 npx vite build --base=/Job-Finder/demo/ --outDir=dist-demo

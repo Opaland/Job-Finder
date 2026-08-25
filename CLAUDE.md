@@ -21,6 +21,20 @@ VITE_DEMO=1 npx vite build --base=/Job-Finder/demo/ --outDir=dist-demo   # build
 `start.bat` (racine) fait l'installation complète sous Windows ; `scan.bat` est fait pour le
 Planificateur de tâches.
 
+## Garde-fous qualité
+
+- `bash scripts/verif.sh` (Windows : `scripts\verif.bat`) = syntaxe + tests + build + build
+  démo, la même chose que la CI. `--rapide` : syntaxe + tests seulement. Un hook
+  (`.claude/hooks/verif-avant-git.sh`) la lance automatiquement et **bloque** commit (rapide)
+  et push (complet) si elle est rouge.
+- `python scripts/revue_ia.py` — revue du diff par la session Claude locale (check-list du
+  projet, sortie JSON en français). `node scripts/smoke_ui.mjs` — parcours navigateur des
+  7 onglets (Playwright).
+- Skills projet : `/verif` (vérification + correction jusqu'au vert), `/revue` (agent
+  `revue-jobfinder` + revue IA, applique les correctifs), `/smoke` (test navigateur réel).
+- Les règles détaillées vivent dans `.claude/rules/` (backend, frontend, qualité) : helpers
+  partagés à réutiliser, règle absolue du scan, heures locales, simulation démo obligatoire.
+
 ## Architecture
 
 - `backend/app/connectors/` — un fichier par site d'emploi (France Travail, Adzuna, JSearch,

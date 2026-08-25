@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, formatDate, GEM_SCORE, scoreColor, SOURCE_LABELS, STATUS_LABELS } from '../api.js'
 
 function OfferLine({ offer }) {
@@ -53,8 +53,13 @@ export default function Dashboard({ scanning, goToOffers }) {
     }
   }
 
-  // Au montage puis quand un scan se termine.
-  useEffect(() => { load() }, [scanning])
+  // Au montage puis quand un scan se termine (pas à son démarrage : le digest
+  // n'a pas changé et sa reconstruction côté backend est coûteuse).
+  const premierRendu = useRef(true)
+  useEffect(() => {
+    if (premierRendu.current || !scanning) load()
+    premierRendu.current = false
+  }, [scanning])
 
   if (error) return <p className="error-text">Erreur : {error}</p>
   if (!digest) return <p>Chargement…</p>

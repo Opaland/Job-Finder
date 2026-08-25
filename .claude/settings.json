@@ -1,0 +1,44 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest:*)",
+      "Bash(python3 -m pytest:*)",
+      "Bash(python -m compileall:*)",
+      "Bash(python3 -m compileall:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx vite build:*)",
+      "Bash(bash scripts/verif.sh:*)",
+      "Bash(scripts/verif.bat:*)",
+      "Bash(python scripts/revue_ia.py:*)",
+      "Bash(python3 scripts/revue_ia.py:*)",
+      "Bash(node scripts/smoke_ui.mjs:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\"",
+            "timeout": 600,
+            "statusMessage": "Préparation de l'environnement Job Finder…"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/verif-avant-git.sh\"",
+            "timeout": 300,
+            "statusMessage": "Vérification avant commit/push (tests + builds)…"
+          }
+        ]
+      }
+    ]
+  }
+}

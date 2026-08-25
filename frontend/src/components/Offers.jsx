@@ -84,7 +84,8 @@ export default function Offers({ scanning }) {
     }
   }, [filters, page, showToast])
 
-  // Au montage, à chaque changement de filtre/page, et quand un scan se termine.
+  // Au montage, à chaque changement de filtre/page, et à chaque bascule de scan
+  // (recharger au démarrage est voulu ici : requête légère, liste à jour).
   useEffect(() => { load() }, [load, scanning])
 
   const setFilter = (key, value) => { setPage(0); setFilters((f) => ({ ...f, [key]: value })) }

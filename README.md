@@ -172,13 +172,28 @@ Job-Finder/
 │   │   └── routers/            Endpoints REST (/api/...)
 │   ├── seed/                   Profil initial : CV, lettre type, critères
 │   └── tests/                  pytest (scoring, dédoublonnage, statuts)
-└── frontend/                   React + Vite (tableau de bord, offres, profil, sources)
+├── frontend/                   React + Vite (tableau de bord, offres, profil, sources)
+├── scripts/                    Vérification, revue IA, smoke test navigateur
+└── .claude/                    Règles, hooks et skills pour Claude Code
 ```
 
 Lancer les tests : `cd backend && venv\Scripts\python -m pytest tests/ -q`
 Mode développement interface : `cd frontend && npm run dev` (proxy vers le backend sur :8000).
 
-## 8. Limites connues (assumées)
+## 8. Garde-fous qualité (scripts)
+
+Trois scripts, utilisables à la main ou par Claude Code :
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `scripts\verif.bat` (Windows) · `bash scripts/verif.sh` | Syntaxe + tests backend + build frontend + build démo — exactement ce que vérifie la CI. Ajouter `rapide` / `--rapide` pour un contrôle éclair avant un commit. |
+| `python scripts/revue_ia.py [commit]` | Revue du diff par **ta session Claude locale** (aucune clé API), avec la check-list du projet : dédoublonnage, heures locales, statuts centralisés, N+1 SQL, simulation démo. Constats en français, gravité par constat. |
+| `node scripts/smoke_ui.mjs [url]` | Parcourt les 7 onglets dans un vrai navigateur (Playwright) et signale toute erreur JS. Backend démarré requis. |
+
+Dans Claude Code, les mêmes contrôles sont accessibles par `/verif`, `/revue` et `/smoke`, et un
+hook bloque automatiquement un commit dont les tests sont rouges ou un push dont les builds cassent.
+
+## 9. Limites connues (assumées)
 
 - **LinkedIn / Indeed** : pas d'accès direct (interdit par leurs CGU et bloqué techniquement) — couverts
   indirectement via JSearch et Adzuna.

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { actionDue, api, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
 import { useToast } from '../App.jsx'
 import OfferDetail from './OfferDetail.jsx'
@@ -23,8 +23,13 @@ export default function Kanban({ scanning }) {
     }
   }, [showToast])
 
-  // Au montage puis quand un scan se termine.
-  useEffect(() => { load() }, [load, scanning])
+  // Au montage puis à la FIN d'un scan seulement : ce chargement ramène jusqu'à
+  // 2000 offres, inutile de le jouer aussi au démarrage du scan.
+  const premierRendu = useRef(true)
+  useEffect(() => {
+    if (premierRendu.current || !scanning) load()
+    premierRendu.current = false
+  }, [load, scanning])
 
   const moveOffer = async (offerId, status) => {
     const offer = offers.find((o) => o.id === offerId)

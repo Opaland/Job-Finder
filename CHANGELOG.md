@@ -1,5 +1,30 @@
 # Changelog
 
+## v2.2 — Qualité : refacto + garde-fous
+
+**Refacto (revue globale)**
+- Règle de dédoublonnage unique (`find_twin`) partagée par le scan et l'ajout
+  manuel ; pipeline `run_full_scan` unique (bouton Scanner, scan quotidien, CLI).
+- Scan sans requête N+1 (index en mémoire) ; liste, Kanban, export Excel et
+  digest ne chargent plus les colonnes lourdes inutilement.
+- Mutualisation : tronc commun des 4 routes IA, groupes de statuts nommés,
+  `parse_iso_dt` / `parse_published` ; côté interface `downloadFile`,
+  `actionDue`, `StatusRow`, un seul état d'action longue, statuts dérivés
+  d'`api.js` (démo comprise).
+
+**Garde-fous**
+- `scripts/verif.sh` / `verif.bat` : syntaxe + tests + build + build démo,
+  identique à la CI ; hook Claude Code bloquant sur commit (rapide) et push
+  (complet).
+- `scripts/revue_ia.py` : revue du diff par la session Claude locale avec la
+  check-list du projet ; `scripts/smoke_ui.mjs` : parcours navigateur des
+  7 onglets.
+- `.claude/` : règles backend/frontend/qualité, agent `revue-jobfinder`,
+  skills `/verif` `/revue` `/smoke`, hook d'installation des dépendances pour
+  les sessions web.
+- Nouveau test : toute route API doit être gérée en mode démo (sinon la démo
+  GitHub Pages casse) ; la CI construit désormais aussi la démo.
+
 ## v2.1 — Sprints 11 à 20 (EPICs G/H/I/J)
 
 **Capture & candidature**

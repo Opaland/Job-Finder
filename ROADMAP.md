@@ -93,6 +93,15 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
 - [x] **Sprint 20** : durcissement, revue de code globale, doc/site/démo à
   jour, CHANGELOG, v2.1.
 
+### EPIC K — Qualité durable
+
+- [x] **Revue globale + refacto** : dédoublonnage et pipeline de scan
+  mutualisés, requêtes allégées, duplications front/back supprimées.
+- [x] **Garde-fous** : `scripts/verif.sh|.bat`, revue IA locale
+  (`scripts/revue_ia.py`), smoke test navigateur (`scripts/smoke_ui.mjs`),
+  règles et hooks Claude Code (`.claude/`), test de couverture du mode démo,
+  build démo ajouté à la CI.
+
 ### Réserve (non planifié)
 
 - Connecteurs supplémentaires (jobboards spécialisés QA) — nécessite de
