@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { actionDue, api, checklistAvancement, DEMO, downloadFile, formatDate, GEM_SCORE, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
 import { useToast } from '../App.jsx'
+import Comparateur from './Comparateur.jsx'
 import OfferDetail from './OfferDetail.jsx'
 
 function AddOfferModal({ onClose, onCreated }) {
@@ -71,6 +72,8 @@ export default function Offers({ scanning }) {
   const [loading, setLoading] = useState(false)
   const [recherches, setRecherches] = useState([])
   const [nomRecherche, setNomRecherche] = useState(null)
+  const [aComparer, setAComparer] = useState([])
+  const [comparaison, setComparaison] = useState(null)
   const showToast = useToast()
 
   const load = useCallback(async () => {
@@ -246,6 +249,15 @@ export default function Offers({ scanning }) {
         </button>
       </div>
 
+      {aComparer.length > 0 && (
+        <div className="actions-row" style={{ marginBottom: 8 }}>
+          <span className="hint">{aComparer.length} offre(s) sélectionnée(s) pour comparaison</span>
+          <button className="primary" disabled={aComparer.length !== 2}
+            onClick={() => setComparaison(aComparer)}>⚖️ Comparer</button>
+          <button className="secondary" onClick={() => setAComparer([])}>Annuler</button>
+        </div>
+      )}
+
       <div className="card" style={{ padding: '4px 14px' }}>
         {loading && <p className="hint">Chargement…</p>}
         {!loading && data.items.length === 0 && (
@@ -283,6 +295,17 @@ export default function Offers({ scanning }) {
               </div>
             </div>
             <div className="right" onClick={(e) => e.stopPropagation()}>
+              <label className="hint" title="Comparer cette offre" style={{ cursor: 'pointer', display: 'block', marginBottom: 4 }}>
+                <input
+                  type="checkbox"
+                  checked={aComparer.includes(offer.id)}
+                  onChange={() => setAComparer((liste) => {
+                    if (liste.includes(offer.id)) return liste.filter((id) => id !== offer.id)
+                    // Deux offres au maximum : la plus ancienne sélection laisse sa place.
+                    return [...liste, offer.id].slice(-2)
+                  })}
+                /> comparer
+              </label>
               <button
                 className={`fav ${offer.favorite ? 'active' : ''}`}
                 title="Favori"
@@ -315,6 +338,10 @@ export default function Offers({ scanning }) {
           onClose={() => setShowAdd(false)}
           onCreated={(offer) => { setShowAdd(false); load(); setSelectedId(offer.id) }}
         />
+      )}
+
+      {comparaison && (
+        <Comparateur idA={comparaison[0]} idB={comparaison[1]} onClose={() => setComparaison(null)} />
       )}
 
       {selectedId && (

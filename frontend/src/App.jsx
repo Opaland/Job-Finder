@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard.jsx'
 import Journal from './components/Journal.jsx'
 import Kanban from './components/Kanban.jsx'
 import Marche from './components/Marche.jsx'
+import Palette from './components/Palette.jsx'
 import Offers from './components/Offers.jsx'
 import ProfilePage from './components/Profile.jsx'
 import Sources from './components/Sources.jsx'
@@ -23,6 +24,12 @@ const PAGES = [
   { id: 'sources', label: 'Sources & réglages', icon: '🔌' },
 ]
 
+// Raccourci affiché en face de chaque page dans la palette (voir onKeyDown).
+const RACCOURCIS_PAGE = {
+  dashboard: 'D', offers: 'O', kanban: 'K', stats: 'S',
+  marche: 'M', journal: 'J', profile: 'P', sources: 'R',
+}
+
 function initialTheme() {
   let theme = 'light'
   try {
@@ -38,6 +45,7 @@ export default function App() {
   const [toast, setToast] = useState(null)
   const [scanning, setScanning] = useState(false)
   const [theme, setTheme] = useState(initialTheme)
+  const [palette, setPalette] = useState(false)
   const timer = useRef(null)
 
   const toggleTheme = () => {
@@ -77,6 +85,30 @@ export default function App() {
       showToast(`Impossible de lancer le scan : ${err.message}`, true)
     }
   }
+
+  // Raccourcis clavier globaux. Ignorés pendant une saisie : taper « o » dans
+  // un champ de recherche ne doit pas changer de page.
+  useEffect(() => {
+    const dansUnChamp = (cible) =>
+      ['INPUT', 'TEXTAREA', 'SELECT'].includes(cible?.tagName) || cible?.isContentEditable
+
+    const onKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPalette((ouverte) => !ouverte)
+        return
+      }
+      if (e.key === 'Escape') { setPalette(false); return }
+      if (e.ctrlKey || e.metaKey || e.altKey || dansUnChamp(e.target)) return
+
+      const versPage = { d: 'dashboard', o: 'offers', k: 'kanban', s: 'stats', m: 'marche', j: 'journal', p: 'profile', r: 'sources' }
+      const cible = versPage[e.key.toLowerCase()]
+      if (cible) { e.preventDefault(); setPage(cible) }
+      if (e.key === '?') { e.preventDefault(); setPalette(true) }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   return (
     <ToastContext.Provider value={showToast}>
@@ -119,6 +151,23 @@ export default function App() {
           </div>
         </aside>
         <main className="content">
+          {palette && (
+            <Palette
+              onClose={() => setPalette(false)}
+              commandes={[
+                ...PAGES.map((p) => ({
+                  id: `page-${p.id}`, libelle: `Aller à ${p.label}`,
+                  raccourci: RACCOURCIS_PAGE[p.id], action: () => setPage(p.id),
+                })),
+                { id: 'scan', libelle: 'Lancer un scan maintenant', action: startScan },
+                {
+                  id: 'theme', libelle: theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre',
+                  action: toggleTheme,
+                },
+              ]}
+            />
+          )}
+
           {page === 'dashboard' && <Dashboard scanning={scanning} goToOffers={() => setPage('offers')} />}
           {page === 'offers' && <Offers scanning={scanning} />}
           {page === 'kanban' && <Kanban scanning={scanning} />}

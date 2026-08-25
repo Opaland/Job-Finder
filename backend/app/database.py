@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import JSON, create_engine, inspect, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from .config import settings
@@ -10,6 +10,29 @@ logger = logging.getLogger("jobfinder.db")
 
 class Base(DeclarativeBase):
     pass
+
+
+def _json_vide(column) -> str | None:
+    """« [] » ou « {} » selon le défaut Python de la colonne JSON, sinon None.
+
+    SQLAlchemy encapsule les défauts appelables (`default=list`) : on évalue
+    donc le défaut au lieu de comparer la fonction, qui n'est plus `list`.
+    """
+    if not isinstance(column.type, JSON) or column.default is None:
+        return None
+    arg = column.default.arg
+    if callable(arg):
+        try:
+            valeur = arg(None)          # forme encapsulée : callable(contexte)
+        except TypeError:
+            valeur = arg()
+    else:
+        valeur = arg
+    if isinstance(valeur, list):
+        return "[]"
+    if isinstance(valeur, dict):
+        return "{}"
+    return None
 
 
 def ensure_schema(target_engine) -> None:
@@ -39,6 +62,10 @@ def ensure_schema(target_engine) -> None:
                         default_clause = f" DEFAULT {arg}"
                     elif isinstance(arg, str):
                         default_clause = " DEFAULT '{}'".format(arg.replace("'", "''"))
+                # Colonnes JSON (list/dict) : sans valeur, les lignes existantes
+                # recevraient NULL et l'API les rejetterait au premier affichage.
+                elif (vide := _json_vide(column)) is not None:
+                    default_clause = f" DEFAULT '{vide}'"
                 if not column.nullable and not default_clause:
                     logger.warning(
                         "Migration : %s.%s est NOT NULL sans défaut scalaire — "
@@ -49,6 +76,17 @@ def ensure_schema(target_engine) -> None:
                     text(f"ALTER TABLE {table.name} ADD COLUMN {column.name} {col_type}{default_clause}")
                 )
                 logger.info("Migration : colonne %s.%s ajoutée", table.name, column.name)
+
+        # Rattrapage : une colonne JSON ajoutée sans défaut par une version
+        # antérieure laisse des NULL, que les schémas de réponse refusent.
+        for table in Base.metadata.sorted_tables:
+            for column in table.columns:
+                vide = _json_vide(column)
+                if vide is None:
+                    continue
+                conn.execute(text(
+                    f"UPDATE {table.name} SET {column.name} = '{vide}' WHERE {column.name} IS NULL"
+                ))
 
 
 engine = create_engine(
