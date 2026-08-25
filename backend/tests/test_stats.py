@@ -186,3 +186,18 @@ def test_source_sans_candidature_na_pas_de_taux(client, db):
     ligne = next(s for s in client.get("/api/stats").json()["conversion_sources"] if s["source"] == "wttj")
     assert ligne["taux_entretien"] is None
     assert ligne["offres"] == 1
+
+
+def test_une_candidature_classee_reste_comptee(client, db):
+    """Régression : les chiffres se dégradaient quand l'utilisateur classait une
+    offre postulée en « fermée » — la candidature disparaissait du total."""
+    offre = db.query(Offer).filter(Offer.status == "postulee").one()
+    offre.status_history = [
+        {"status": "postulee", "date": local_now().isoformat(), "par": "utilisateur"},
+        {"status": "fermee", "date": local_now().isoformat(), "par": "utilisateur"},
+    ]
+    offre.status = "fermee"
+    db.commit()
+
+    t = client.get("/api/stats").json()["totals"]
+    assert t["sent"] == 3            # inchangé : l'historique fait foi

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, DEMO } from '../api.js'
+import { api, DEMO, STATUS_LABELS } from '../api.js'
 import { useToast } from '../App.jsx'
 
 // Palette dataviz validée (une seule teinte : magnitude → bleu séquentiel).
@@ -177,11 +177,6 @@ function ActivityChart({ days, onHover }) {
   )
 }
 
-const STATUS_FR = {
-  nouvelle: 'Nouvelles', vue: 'Vues', a_postuler: 'À postuler', postulee: 'Postulées',
-  relancee: 'Relancées', entretien: 'Entretiens', refusee: 'Refusées', fermee: 'Fermées',
-}
-
 export default function Stats() {
   const { BLUE } = pal()
   const [data, setData] = useState(null)
@@ -219,7 +214,7 @@ export default function Stats() {
 
       <div className="card">
         <h2>Pipeline par statut</h2>
-        <HBarChart items={data.by_status.map((s) => ({ label: STATUS_FR[s.status] || s.status, count: s.count }))} onHover={setTip} />
+        <HBarChart items={data.by_status.map((s) => ({ label: STATUS_LABELS[s.status] || s.status, count: s.count }))} onHover={setTip} />
       </div>
 
       <div className="card">

@@ -137,6 +137,14 @@ export const STATUS_LABELS = {
   fermee: 'Fermée',
 }
 
+// Groupes de statuts — miroir de models.py (backend). Ne jamais réécrire une
+// liste littérale de statuts dans un composant : importer le groupe.
+export const STATUTS_NON_TRAITES = ['nouvelle', 'vue', 'a_postuler']
+export const STATUTS_EN_ATTENTE = ['postulee', 'relancee']
+export const STATUTS_CLOS = ['refusee', 'fermee']
+export const STATUTS_CANDIDATURE = ['postulee', 'relancee', 'entretien', 'refusee']
+export const STATUTS_REPONSE = ['entretien', 'refusee']
+
 export const STATUS_COLORS = {
   nouvelle: '#0969da',
   vue: '#57606a',

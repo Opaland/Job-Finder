@@ -263,8 +263,9 @@ export default function Sources() {
         <h2>Sauvegarde</h2>
         <p className="hint" style={{ marginTop: 0 }}>
           Toutes tes données (offres, statuts, notes, lettres) vivent dans une base locale
-          (<code>data/jobfinder.db</code>). Télécharge une copie régulièrement — pour restaurer,
-          remplace le fichier par ta sauvegarde, application arrêtée.
+          (<code>data/jobfinder.db</code>). Télécharge une copie régulièrement — la restauration
+          se fait juste en dessous, sans arrêter l'application (une copie de sécurité de la base
+          actuelle est créée avant).
         </p>
         <button
           className="secondary"

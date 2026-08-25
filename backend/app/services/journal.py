@@ -9,8 +9,10 @@ from ..models import ActivityLog
 
 logger = logging.getLogger("jobfinder.journal")
 
-# Types d'événements connus (libellés côté frontend).
-KINDS = ["scan", "statut", "ia", "ajout", "cv", "restauration"]
+# Types d'événements connus — miroir de KIND_META (frontend/src/components/Journal.jsx),
+# comme STATUS_LABELS : une source par langage. Sert aussi à valider le filtre
+# `?kind=` du journal (un type inconnu renverrait une liste vide sans explication).
+KINDS = ["scan", "statut", "ia", "ajout", "entretien", "import", "cv", "restauration"]
 
 
 def log_event(db: Session, kind: str, message: str, offer_id: int | None = None) -> None:

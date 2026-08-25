@@ -147,6 +147,9 @@ Le digest est envoyé chaque matin après le scan (si le SMTP est configuré). A
   Le scan et l'email fonctionnent alors même sans interface ouverte.
 - Pour lancer l'application automatiquement au démarrage de Windows : mets un raccourci vers `start.bat`
   dans le dossier `shell:startup`.
+- **Les deux à la fois, c'est sans risque** : un verrou de fichier (`data/scan.lock`) empêche
+  l'application et la tâche planifiée de scanner en même temps. Le second arrivé s'arrête
+  proprement — la tâche planifiée affiche « Scan ignoré », l'interface un message d'attente.
 
 ## 6. IA locale (session Claude Code)
 

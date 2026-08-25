@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import JSON, create_engine, inspect, text
+from sqlalchemy import JSON, create_engine, event, inspect, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from .config import settings
@@ -98,8 +98,19 @@ def ensure_schema(target_engine) -> None:
 
 engine = create_engine(
     f"sqlite:///{settings.db_path}",
-    connect_args={"check_same_thread": False},
+    # timeout : l'appli et la CLI (scan.bat) peuvent écrire en même temps —
+    # mieux vaut attendre le verrou que renvoyer « database is locked ».
+    connect_args={"check_same_thread": False, "timeout": 30},
 )
+
+
+@event.listens_for(engine, "connect")
+def _reglages_sqlite(connexion, _record):
+    """WAL : lecture et écriture concurrentes (interface ouverte pendant un scan)."""
+    curseur = connexion.cursor()
+    curseur.execute("PRAGMA journal_mode=WAL")
+    curseur.execute("PRAGMA busy_timeout=30000")
+    curseur.close()
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 

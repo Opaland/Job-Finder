@@ -11,7 +11,7 @@ from datetime import timedelta
 from sqlalchemy.orm import Session, load_only
 
 from ..models import STATUTS_CLOS, Offer, local_now
-from .emailer import send_email, smtp_configured
+from .emailer import send_email, smtp_configured, texte_html as _txt
 from .textutils import parse_iso_dt
 
 logger = logging.getLogger("jobfinder.rappels")
@@ -60,8 +60,8 @@ def rappel_html(echeances: dict) -> str:
         details = " · ".join(x for x in (e["format"], e["interlocuteur"]) if x)
         return (
             f"<li style='margin-bottom:8px'><b>{e['heure']}</b> — "
-            f"<a href='{e['url']}'>{e['titre']}</a> chez <b>{e['entreprise']}</b>"
-            f"{f' ({details})' if details else ''}{alerte}</li>"
+            f"<a href='{_txt(e['url'])}'>{_txt(e['titre'])}</a> chez <b>{_txt(e['entreprise'])}</b>"
+            f"{f' ({_txt(details)})' if details else ''}{alerte}</li>"
         )
 
     parties = ["<html><body style=\"font-family:Segoe UI,Arial,sans-serif;color:#1f2328;max-width:640px\">",
@@ -73,7 +73,8 @@ def rappel_html(echeances: dict) -> str:
     if echeances["actions"]:
         parties.append(f"<h3 style='color:#0969da'>🗓️ Action(s) prévue(s) ({len(echeances['actions'])})</h3><ul>")
         parties.extend(
-            f"<li><b>{a['note']}</b> — <a href='{a['url']}'>{a['titre']}</a> ({a['entreprise']})</li>"
+            f"<li><b>{_txt(a['note'])}</b> — <a href='{_txt(a['url'])}'>{_txt(a['titre'])}</a> "
+            f"({_txt(a['entreprise'])})</li>"
             for a in echeances["actions"]
         )
         parties.append("</ul>")

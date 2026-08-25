@@ -71,3 +71,34 @@ def test_dates_incoherentes_refusees(client, db):
     resp = client.get("/api/exports/justificatif.pdf?depuis=2026-08-01&jusqu_a=2026-07-01")
     assert resp.status_code == 400
     assert "précéder" in resp.json()["detail"]
+
+
+def test_entretien_declare_par_le_statut_seul_est_compte(client, db):
+    """France Travail veut la liste des démarches : un entretien noté uniquement
+    par un changement de statut ne doit pas manquer au justificatif."""
+    offer = _offre_postulee(db, "j5", 8)
+    historique = list(offer.status_history)
+    historique.append({"status": "entretien", "date": (local_now() - timedelta(days=2)).isoformat(),
+                       "par": "utilisateur"})
+    offer.status_history = historique
+    db.commit()
+
+    aujourdhui = local_now().date()
+    actes = actes_de_recherche(db, aujourdhui - timedelta(days=30), aujourdhui)
+    assert [a["acte"] for a in actes].count("Entretien") == 1
+
+
+def test_un_entretien_fiche_n_est_pas_compte_deux_fois(client, db):
+    """Statut « entretien » + entretien fiché le même jour = un seul acte."""
+    offer = _offre_postulee(db, "j6", 8)
+    quand = local_now() - timedelta(days=2)
+    historique = list(offer.status_history)
+    historique.append({"status": "entretien", "date": quand.isoformat(), "par": "utilisateur"})
+    offer.status_history = historique
+    offer.interviews = [{"date": quand.isoformat(), "format": "Visio"}]
+    db.commit()
+
+    aujourdhui = local_now().date()
+    actes = actes_de_recherche(db, aujourdhui - timedelta(days=30), aujourdhui)
+    entretiens = [a["acte"] for a in actes if a["acte"].startswith("Entretien")]
+    assert entretiens == ["Entretien (Visio)"]

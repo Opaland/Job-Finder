@@ -11,7 +11,7 @@ from datetime import date, datetime
 
 from sqlalchemy.orm import Session, load_only
 
-from ..models import STATUTS_EN_ATTENTE, Offer, Profile, local_now
+from ..models import Offer, Profile, local_now
 from .textutils import parse_iso_dt
 
 # Libellés des actes, dans l'ordre de priorité d'affichage d'une même journée.
@@ -33,22 +33,30 @@ def actes_de_recherche(db: Session, depuis: date, jusqu_a: date) -> list[dict]:
             "poste": offer.title,
             "source": offer.source,
         }
-        for entree in offer.status_history or []:
-            statut = entree.get("statut") or entree.get("status")
-            if statut not in STATUTS_EN_ATTENTE:
-                continue
-            quand = parse_iso_dt(entree.get("date"))
-            if quand and debut <= quand <= fin:
-                actes.append({**commun, "date": quand, "acte": ACTES[statut]})
-
+        # Les entretiens fichés font foi : ils portent la date et le format réels.
+        jours_dentretien = set()
         for entretien in offer.interviews or []:
             quand = parse_iso_dt(entretien.get("date"))
             if quand and debut <= quand <= fin:
+                jours_dentretien.add(quand.date())
                 detail = entretien.get("format") or ""
                 actes.append({
                     **commun, "date": quand,
                     "acte": ACTES["entretien"] + (f" ({detail})" if detail else ""),
                 })
+
+        for entree in offer.status_history or []:
+            statut = entree.get("statut") or entree.get("status")
+            if statut not in ACTES:
+                continue
+            quand = parse_iso_dt(entree.get("date"))
+            if not quand or not (debut <= quand <= fin):
+                continue
+            # Un entretien noté seulement par un changement de statut compte
+            # aussi — sauf s'il est déjà fiché le même jour (même acte).
+            if statut == "entretien" and quand.date() in jours_dentretien:
+                continue
+            actes.append({**commun, "date": quand, "acte": ACTES[statut]})
 
     actes.sort(key=lambda a: a["date"], reverse=True)
     return actes

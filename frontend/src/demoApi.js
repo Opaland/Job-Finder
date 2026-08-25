@@ -3,7 +3,10 @@
 // Les modifications (statuts, notes…) vivent en mémoire le temps de la visite.
 import data from './demoData.json'
 // Import sûr : api.js ne charge demoApi.js que dynamiquement (pas de cycle).
-import { GEM_SCORE, SOURCE_LABELS, STATUS_LABELS } from './api.js'
+import {
+  GEM_SCORE, SOURCE_LABELS, STATUS_LABELS,
+  STATUTS_CANDIDATURE, STATUTS_CLOS, STATUTS_EN_ATTENTE, STATUTS_NON_TRAITES, STATUTS_REPONSE,
+} from './api.js'
 
 const state = {
   offers: JSON.parse(JSON.stringify(data.offers)),
@@ -67,9 +70,14 @@ function computeStats() {
   const offers = state.offers
   const counts = {}
   offers.forEach((o) => { counts[o.status] = (counts[o.status] || 0) + 1 })
-  const sent = ['postulee', 'relancee', 'entretien', 'refusee'].reduce((n, s) => n + (counts[s] || 0), 0)
-  const responses = (counts.entretien || 0) + (counts.refusee || 0)
-  const open = offers.filter((o) => !['refusee', 'fermee'].includes(o.status))
+  // Même règle que le backend : candidatures et réponses se lisent dans
+  // l'historique, pas seulement dans le statut courant.
+  const statutsDe = (o) => new Set([...(o.status_history || []).map((h) => h.status), o.status])
+  const aTouche = (o, groupe) => groupe.some((s) => statutsDe(o).has(s))
+  const sent = offers.filter((o) => aTouche(o, STATUTS_CANDIDATURE)).length
+  const responses = offers.filter((o) => aTouche(o, STATUTS_REPONSE)).length
+  const interviews = offers.filter((o) => statutsDe(o).has('entretien')).length
+  const open = offers.filter((o) => !STATUTS_CLOS.includes(o.status))
   const top20 = open.map((o) => o.final_score).sort((a, b) => b - a).slice(0, 20)
 
   const bySource = {}
@@ -97,7 +105,7 @@ function computeStats() {
       applications: 1,
       responses: ['entretien', 'refusee'].includes(o.status) ? 1 : 0,
       avg_response_days: null,
-      pending_days: ['postulee', 'relancee'].includes(o.status) ? pendingDays : null,
+      pending_days: STATUTS_EN_ATTENTE.includes(o.status) ? pendingDays : null,
     })
   })
 
@@ -106,7 +114,7 @@ function computeStats() {
       offers: offers.length,
       new_7d: offers.length - 2,
       sent,
-      interviews: counts.entretien || 0,
+      interviews,
       response_rate: sent ? Math.round((100 * responses) / sent) : null,
       avg_top20: top20.length ? Math.round((top20.reduce((a, b) => a + b, 0) / top20.length) * 10) / 10 : null,
     },
@@ -267,7 +275,7 @@ export async function demoRequest(path, options = {}) {
       candidatures_envoyees: compte('postulee'), relances: compte('relancee'),
       entretiens_obtenus: compte('entretien'), entretiens_a_venir: 0,
       nouvelles_offres_collectees: state.offers.length, pepites_en_attente:
-        state.offers.filter((o) => o.final_score >= GEM_SCORE && ['nouvelle', 'vue', 'a_postuler'].includes(o.status)).length,
+        state.offers.filter((o) => o.final_score >= GEM_SCORE && STATUTS_NON_TRAITES.includes(o.status)).length,
       relances_en_retard: 0, actions_en_retard: 0,
     }
   }

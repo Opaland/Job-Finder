@@ -212,3 +212,19 @@ def test_enrich_reinitialise_avis_ia(db, monkeypatch):
         assert data["final_score"] == data["score"]
     finally:
         fastapi_app.dependency_overrides.clear()
+
+
+def test_titres_echappes_dans_l_email(db):
+    """Un titre contenant « & » ou « <…> » ne doit pas casser l'email."""
+    db.add(Offer(
+        fingerprint="fp-html", source="france_travail", source_id="html-1",
+        title="Test Manager <H/F> R&D", company="ACME & Fils", location="Lyon",
+        url="https://exemple.fr/offre?a=1&b=2", final_score=90.0, score=90.0,
+        status="nouvelle",
+    ))
+    db.commit()
+
+    html = digest_html(build_digest(db).payload)
+    assert "Test Manager &lt;H/F&gt; R&amp;D" in html
+    assert "ACME &amp; Fils" in html
+    assert "<H/F>" not in html

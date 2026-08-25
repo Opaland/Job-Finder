@@ -2,11 +2,15 @@ import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { useToast } from '../App.jsx'
 
+// Miroir de KINDS (backend/app/services/journal.py) : tout type journalisé
+// doit y figurer, sinon son filtre manque et son icône tombe en « • ».
 const KIND_META = {
   scan: ['🔎', 'Scan'],
   statut: ['📌', 'Statut'],
   ia: ['🤖', 'IA'],
   ajout: ['➕', 'Ajout'],
+  entretien: ['🗣️', 'Entretien'],
+  import: ['📥', 'Import'],
   cv: ['📄', 'CV'],
   restauration: ['💾', 'Restauration'],
 }

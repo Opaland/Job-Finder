@@ -63,3 +63,26 @@ def test_journal_ne_casse_jamais_l_action(env, monkeypatch):
     resp = env["client"].patch(f"/api/offers/{offer_id}", json={"status": "vue"})
     assert resp.status_code == 200
     assert resp.json()["status"] == "vue"
+
+
+def test_type_inconnu_explique_les_types_possibles(env):
+    resp = env["client"].get("/api/journal?kind=nimportequoi")
+    assert resp.status_code == 400
+    detail = resp.json()["detail"]
+    assert "nimportequoi" in detail and "restauration" in detail
+
+
+def test_tous_les_types_journalises_sont_declares():
+    """KINDS doit rester le miroir de ce que le code écrit réellement."""
+    import re
+    from pathlib import Path
+
+    from app.services.journal import KINDS
+
+    racine = Path(__file__).resolve().parent.parent / "app"
+    ecrits = {
+        m.group(1)
+        for fichier in racine.rglob("*.py")
+        for m in re.finditer(r'log_event\(\s*\w+\s*,\s*"([a-z_]+)"', fichier.read_text(encoding="utf-8"))
+    }
+    assert ecrits <= set(KINDS), f"types journalisés absents de KINDS : {ecrits - set(KINDS)}"

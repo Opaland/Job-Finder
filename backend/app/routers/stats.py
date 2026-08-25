@@ -12,7 +12,15 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..database import engine, ensure_schema, get_db
-from ..models import OFFER_STATUSES, STATUTS_CLOS, STATUTS_EN_ATTENTE, Offer, local_now
+from ..models import (
+    OFFER_STATUSES,
+    STATUTS_CANDIDATURE,
+    STATUTS_CLOS,
+    STATUTS_EN_ATTENTE,
+    STATUTS_REPONSE,
+    Offer,
+    local_now,
+)
 from ..services.scan import scan_status
 from ..services.textutils import parse_iso_dt
 
@@ -115,8 +123,16 @@ def stats(db: Session = Depends(get_db)):
     )
 
     status_counts = dict(db.query(Offer.status, func.count(Offer.id)).group_by(Offer.status).all())
-    sent = sum(status_counts.get(s, 0) for s in ("postulee", "relancee", "entretien", "refusee"))
-    responses = status_counts.get("entretien", 0) + status_counts.get("refusee", 0)
+    # Candidatures et réponses se lisent dans l'historique, pas seulement dans le
+    # statut courant : une candidature envoyée puis classée « fermée » à la main
+    # disparaissait du total, et les chiffres se dégradaient avec le temps.
+    # Même source que le tableau de conversion par source.
+    sent = responses = interviews = 0
+    for (historique, statut) in db.query(Offer.status_history, Offer.status).all():
+        statuts = {h.get("status") for h in (historique or [])} | {statut}
+        sent += bool(statuts.intersection(STATUTS_CANDIDATURE))
+        responses += bool(statuts.intersection(STATUTS_REPONSE))
+        interviews += "entretien" in statuts
 
     top20 = [
         s for (s,) in db.query(Offer.final_score)
@@ -158,7 +174,7 @@ def stats(db: Session = Depends(get_db)):
             "offers": total,
             "new_7d": new_7d,
             "sent": sent,
-            "interviews": status_counts.get("entretien", 0),
+            "interviews": interviews,
             "response_rate": round(100 * responses / sent) if sent else None,
             "avg_top20": round(sum(top20) / len(top20), 1) if top20 else None,
         },
@@ -177,9 +193,13 @@ def stats(db: Session = Depends(get_db)):
 def journal(limit: int = 100, kind: str | None = None, db: Session = Depends(get_db)):
     """Journal d'activité : les derniers événements de l'application."""
     from ..models import ActivityLog
+    from ..services.journal import KINDS
 
     query = db.query(ActivityLog)
     if kind:
+        if kind not in KINDS:
+            raise HTTPException(
+                400, f"Type d'événement inconnu : « {kind} ». Types possibles : {', '.join(KINDS)}.")
         query = query.filter(ActivityLog.kind == kind)
     entries = query.order_by(ActivityLog.id.desc()).limit(min(limit, 500)).all()
     return [
@@ -272,9 +292,13 @@ async def restore(file: UploadFile):
 
     from ..database import SessionLocal
     from ..services.journal import log_event
+    from ..services.seeding import ensure_profile
 
     session = SessionLocal()
     try:
+        # Une sauvegarde peut venir d'une base sans ligne de profil (table créée
+        # mais jamais amorcée) : sans elle, toute l'application renverrait des 500.
+        ensure_profile(session)
         log_event(session, "restauration",
                   f"Base restaurée depuis une sauvegarde ({offer_count} offres) — copie de sécurité : {safety_name}.")
     finally:

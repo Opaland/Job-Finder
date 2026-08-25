@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, load_only
 
 from ..models import (
     STATUS_LABELS,
+    STATUTS_ACTIFS,
     STATUTS_CLOS,
     STATUTS_EN_ATTENTE,
     STATUTS_NON_TRAITES,
@@ -18,10 +19,23 @@ from ..models import (
     ScanRun,
     local_now,
 )
-from .emailer import send_email, smtp_configured
+from .emailer import send_email, smtp_configured, texte_html as _txt
 from .textutils import parse_iso_dt
 
 logger = logging.getLogger("jobfinder.digest")
+
+
+# Colonnes lues par `_offer_brief` : les requêtes du digest ne chargent jamais
+# les colonnes lourdes (description, lettre, fiches IA) qu'elles ne renvoient pas.
+COLONNES_BRIEF = (
+    Offer.id, Offer.title, Offer.company, Offer.location, Offer.contract_type,
+    Offer.source, Offer.url, Offer.final_score, Offer.ai_reason, Offer.remote,
+)
+
+
+def _brief_only(*colonnes_en_plus):
+    """Option `load_only` des colonnes du brief, plus celles demandées."""
+    return load_only(*COLONNES_BRIEF, *colonnes_en_plus)
 
 
 def _offer_brief(offer: Offer) -> dict:
@@ -51,6 +65,7 @@ def gems(db: Session) -> list[Offer]:
     """Les meilleures offres pas encore traitées — à regarder en priorité."""
     return (
         db.query(Offer)
+        .options(_brief_only())
         .filter(Offer.final_score >= GEM_SCORE, Offer.status.in_(STATUTS_NON_TRAITES))
         .order_by(Offer.final_score.desc())
         .limit(10)
@@ -89,11 +104,7 @@ def offers_to_relaunch(db: Session) -> list[Offer]:
     cutoff = local_now() - timedelta(days=RELAUNCH_AFTER_DAYS)
     candidates = (
         db.query(Offer)
-        .options(load_only(
-            Offer.id, Offer.title, Offer.company, Offer.location, Offer.contract_type,
-            Offer.source, Offer.url, Offer.final_score, Offer.ai_reason, Offer.remote,
-            Offer.status, Offer.status_history,
-        ))
+        .options(_brief_only(Offer.status, Offer.status_history))
         .filter(Offer.status.in_(STATUTS_EN_ATTENTE))
         .all()
     )
@@ -111,11 +122,7 @@ def next_interviews(db: Session, jours: int = 21) -> list[dict]:
     debut = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
     fin = debut + timedelta(days=jours)
     a_venir = []
-    for offer in db.query(Offer).options(load_only(
-        Offer.id, Offer.title, Offer.company, Offer.location, Offer.contract_type,
-        Offer.source, Offer.url, Offer.final_score, Offer.ai_reason, Offer.remote,
-        Offer.status, Offer.interviews,
-    )).all():
+    for offer in db.query(Offer).options(_brief_only(Offer.status, Offer.interviews)).all():
         for entretien in offer.interviews or []:
             quand = parse_iso_dt(entretien.get("date"))
             if quand is None or not (debut <= quand <= fin):
@@ -138,6 +145,7 @@ def actions_due(db: Session) -> list[dict]:
     start_of_today = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
     offers = (
         db.query(Offer)
+        .options(_brief_only(Offer.status, Offer.next_action_date, Offer.next_action_note))
         .filter(Offer.next_action_date.isnot(None), Offer.next_action_date <= end_of_today)
         .order_by(Offer.next_action_date)
         .all()
@@ -197,6 +205,7 @@ def daily_focus(
     if len(focus) < 3:
         best_waiting = (
             db.query(Offer)
+            .options(_brief_only())
             .filter(Offer.status.in_(STATUTS_NON_TRAITES))
             .order_by(Offer.final_score.desc())
             .first()
@@ -214,12 +223,14 @@ def build_digest(db: Session, for_date: str | None = None) -> Digest:
 
     new_offers = (
         db.query(Offer)
+        .options(_brief_only(Offer.collected_at))
         .filter(Offer.collected_at >= since)
         .order_by(Offer.final_score.desc())
         .all()
     )
     top_overall = (
         db.query(Offer)
+        .options(_brief_only(Offer.status))
         .filter(Offer.status.notin_(STATUTS_CLOS))
         .order_by(Offer.final_score.desc())
         .limit(10)
@@ -231,7 +242,8 @@ def build_digest(db: Session, for_date: str | None = None) -> Digest:
     last_run = db.query(ScanRun).order_by(ScanRun.id.desc()).first()
     to_follow = (
         db.query(Offer)
-        .filter(Offer.status.in_(["a_postuler", "postulee", "relancee", "entretien"]))
+        .options(_brief_only(Offer.status))
+        .filter(Offer.status.in_(STATUTS_ACTIFS))
         .order_by(Offer.final_score.desc())
         .all()
     )
@@ -294,10 +306,10 @@ def digest_html(payload: dict) -> str:
             out.append(
                 f"<tr>"
                 f"<td style='padding:6px 8px;white-space:nowrap'><b style='color:{badge_color}'>{o['final_score']:.0f}</b></td>"
-                f"<td style='padding:6px 8px'><a href='{o['url']}'>{o['title']}</a><br>"
-                f"<span style='color:#57606a'>{o['company']} — {o['location']}{remote}</span></td>"
-                f"<td style='padding:6px 8px'>{o.get('contract_type') or ''}</td>"
-                f"<td style='padding:6px 8px'>{o['source']}</td>"
+                f"<td style='padding:6px 8px'><a href='{_txt(o['url'])}'>{_txt(o['title'])}</a><br>"
+                f"<span style='color:#57606a'>{_txt(o['company'])} — {_txt(o['location'])}{remote}</span></td>"
+                f"<td style='padding:6px 8px'>{_txt(o.get('contract_type'))}</td>"
+                f"<td style='padding:6px 8px'>{_txt(o['source'])}</td>"
                 f"</tr>"
             )
         return "".join(out)
@@ -321,16 +333,16 @@ def digest_html(payload: dict) -> str:
 
 {f'''<h3>🎯 Focus du jour</h3>
 <ol style="margin-top:4px">{''.join(
-    f"<li style='margin-bottom:6px'><b>{f['label']}</b><br>"
-    f"<a href='{f['url']}'>{f['title']}</a> <span style='color:#57606a'>— {f['company']}</span></li>"
+    f"<li style='margin-bottom:6px'><b>{_txt(f['label'])}</b><br>"
+    f"<a href='{_txt(f['url'])}'>{_txt(f['title'])}</a> <span style='color:#57606a'>— {_txt(f['company'])}</span></li>"
     for f in payload["focus"]
 )}</ol>''' if payload.get("focus") else ''}
 
 {f'''<h3 style="color:#0969da">🗓️ À faire aujourd'hui ({len(payload["todo_today"])})</h3>
 <table style="border-collapse:collapse;width:100%" border="0">{''.join(
     f"<tr><td style='padding:6px 8px;white-space:nowrap'>{'⚠️ en retard' if a['overdue'] else 'aujourd’hui'}</td>"
-    f"<td style='padding:6px 8px'><b>{a['action_note'] or 'Action prévue'}</b><br>"
-    f"<a href='{a['url']}'>{a['title']}</a> <span style='color:#57606a'>— {a['company']}</span></td></tr>"
+    f"<td style='padding:6px 8px'><b>{_txt(a['action_note'] or 'Action prévue')}</b><br>"
+    f"<a href='{_txt(a['url'])}'>{_txt(a['title'])}</a> <span style='color:#57606a'>— {_txt(a['company'])}</span></td></tr>"
     for a in payload["todo_today"]
 )}</table>''' if payload.get("todo_today") else ''}
 

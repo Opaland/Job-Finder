@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { actionDue, api, checklistAvancement, DEMO, downloadFile, formatDate, GEM_SCORE, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
+import { actionDue, api, checklistAvancement, DEMO, downloadFile, formatDate, GEM_SCORE, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS, STATUTS_NON_TRAITES } from '../api.js'
 import { useToast } from '../App.jsx'
 import Comparateur from './Comparateur.jsx'
 import OfferDetail from './OfferDetail.jsx'
@@ -272,7 +272,7 @@ export default function Offers({ scanning }) {
             </span>
             <div>
               <div className="title">
-                {offer.final_score >= GEM_SCORE && !['postulee', 'relancee', 'entretien', 'refusee', 'fermee'].includes(offer.status) && (
+                {offer.final_score >= GEM_SCORE && STATUTS_NON_TRAITES.includes(offer.status) && (
                   <span title={`Pépite : score ≥ ${GEM_SCORE}, pas encore traitée`}>💎 </span>
                 )}
                 {offer.title}

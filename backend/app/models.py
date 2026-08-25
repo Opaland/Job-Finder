@@ -35,6 +35,14 @@ OFFER_STATUSES = [
 STATUTS_NON_TRAITES = ["nouvelle", "vue", "a_postuler"]  # pas encore de candidature envoyée
 STATUTS_EN_ATTENTE = ["postulee", "relancee"]  # candidature envoyée, réponse attendue
 STATUTS_CLOS = ["refusee", "fermee"]  # sorties du pipeline (décision de l'utilisateur)
+# Candidatures en cours de traitement : à préparer, envoyées ou en entretien.
+STATUTS_ACTIFS = ["a_postuler", "postulee", "relancee", "entretien"]
+# Statuts qui prouvent qu'une candidature a bien été envoyée (le refus aussi).
+# À chercher dans l'historique, pas dans le statut courant : une offre postulée
+# puis classée reste une candidature envoyée.
+STATUTS_CANDIDATURE = ["postulee", "relancee", "entretien", "refusee"]
+# Statuts qui valent réponse de l'entreprise.
+STATUTS_REPONSE = ["entretien", "refusee"]
 
 # Étapes de la checklist de candidature (ordre d'affichage).
 CHECKLIST_ETAPES = {

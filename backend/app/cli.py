@@ -19,7 +19,13 @@ def main():
     try:
         ensure_profile(db)
         if command == "scan":
-            run, digest, sent = run_full_scan(db, trigger="quotidien", send_email=True)
+            try:
+                run, digest, sent = run_full_scan(db, trigger="quotidien", send_email=True)
+            except RuntimeError as exc:
+                # L'application est ouverte et scanne déjà : rien à faire, et
+                # surtout pas d'échec de tâche planifiée pour si peu.
+                print(f"Scan ignoré : {exc}")
+                return
             print(f"Scan terminé : {run.new_count} nouvelle(s) offre(s), {run.error_count} erreur(s).")
             print(f"Digest du {digest.date} construit (email envoyé : {sent}).")
         elif command == "digest":

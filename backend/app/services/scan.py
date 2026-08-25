@@ -18,6 +18,7 @@ from ..models import STATUTS_CLOS, Offer, Profile, ScanRun, local_now
 from .claude_ai import ai_score_offer, cli_available
 from .scoring import combined_score, score_offer
 from .textutils import fingerprint, normalize, titles_similar
+from .verrou import verrou_scan
 
 logger = logging.getLogger("jobfinder.scan")
 
@@ -128,10 +129,22 @@ def find_twin(
 
 
 def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
-    """Exécute un scan complet. Bloquant — à lancer dans un thread/background task."""
+    """Exécute un scan complet. Bloquant — à lancer dans un thread/background task.
+
+    Deux verrous : un verrou mémoire (deux requêtes du même processus) et un
+    verrou de fichier (l'interface et la tâche planifiée sont deux processus).
+    """
     if not _scan_lock.acquire(blocking=False):
         raise RuntimeError("Un scan est déjà en cours")
+    try:
+        with verrou_scan():
+            return _executer_scan(db, trigger)
+    finally:
+        _scan_lock.release()
 
+
+def _executer_scan(db: Session, trigger: str) -> ScanRun:
+    """Corps du scan, verrous déjà pris."""
     run = ScanRun(trigger=trigger, status="en_cours")
     db.add(run)
     db.commit()
@@ -175,9 +188,14 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
                     existing = db.get(Offer, existing_id)
                     existing.last_seen_at = local_now()
                     existing.still_online = True
-                    # On complète la description si la source en fournit une plus riche.
+                    # On complète la description si la source en fournit une plus
+                    # riche — et on re-score : sans cela une offre reçue d'abord
+                    # en extrait garderait un score bas pour toujours.
                     if len(raw.description or "") > len(existing.description or ""):
                         existing.description = raw.description
+                        existing.ai_score = None   # l'avis IA portait sur l'extrait
+                        existing.ai_reason = ""
+                        rescore_offer(existing, profile_dict)
                     source_stat["seen"] += 1
                     continue
 
@@ -295,7 +313,6 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
         raise
     finally:
         _current_scan.update({"running": False})
-        _scan_lock.release()
 
 
 def run_full_scan(db: Session, trigger: str, send_email: bool):

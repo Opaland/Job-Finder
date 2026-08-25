@@ -159,3 +159,35 @@ def test_connecteur_en_erreur_ne_bloque_pas(db, monkeypatch):
     run = run_scan(db, trigger="manuel")
     assert run.new_count == 1
     assert run.status == "termine"
+
+
+def test_description_enrichie_declenche_un_nouveau_score(db, monkeypatch):
+    """Régression : une offre reçue d'abord en extrait gardait son score bas.
+
+    Le scan complétait la description mais ne recalculait pas le score : une
+    offre parfaite arrivée tronquée ne devenait jamais une pépite.
+    """
+    extrait = RawOffer(source="fake", source_id="enr1", title="Test Manager",
+                       company="Éditeur santé", location="Lyon", contract_type="CDI",
+                       description="Poste de Test Manager.")
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([extrait])])
+    run_scan(db, trigger="test")
+    offre = db.query(Offer).filter(Offer.source_id == "enr1").one()
+    score_extrait, ia_avant = offre.score, offre.ai_score
+
+    complet = RawOffer(source="fake", source_id="enr1", title="Test Manager",
+                       company="Éditeur santé", location="Lyon", contract_type="CDI",
+                       description=("Pilotage de la stratégie de test, automatisation Selenium "
+                                    "et Playwright, tests API KarateDSL, CI/CD GitLab, Jira, "
+                                    "management d'une équipe de testeurs, ISO 13485."))
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([complet])])
+    run_scan(db, trigger="test")
+    db.refresh(offre)
+
+    assert offre.description.startswith("Pilotage")     # description bien remplacée
+    assert offre.score > score_extrait, (
+        f"score resté à {score_extrait} alors que la description cite les compétences du CV"
+    )
+    detail = " ".join(b["detail"] for b in offre.score_breakdown)
+    assert "Aucune compétence" not in detail
+    assert ia_avant is None or offre.ai_score is None    # avis IA périmé retiré
