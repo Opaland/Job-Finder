@@ -19,3 +19,6 @@ frontend/dist-demo/
 # Divers
 .DS_Store
 *.log
+
+# Session Claude Code du conteneur Docker (option AVEC_IA=1)
+claude/

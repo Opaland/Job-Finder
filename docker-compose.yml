@@ -1,0 +1,36 @@
+# Job Finder sur NAS Synology (Container Manager) — voir README §9.
+#
+#   cp .env.example .env      puis renseigner les clés (facultatif)
+#   docker compose up -d --build
+#   http://<ip-du-nas>:8000
+#
+# Réseau local uniquement : l'application n'a AUCUNE authentification (choix
+# assumé). Ne pas l'exposer via QuickConnect, un reverse proxy ou le pare-feu.
+services:
+  job-finder:
+    build:
+      context: .
+      args:
+        # 1 pour embarquer la CLI Claude Code (lettres, fiches d'entretien).
+        AVEC_IA: ${AVEC_IA:-0}
+    image: job-finder:latest
+    container_name: job-finder
+    restart: unless-stopped
+    ports:
+      # Ouvert au réseau LOCAL : c'est l'intérêt du NAS (consultable depuis le PC
+      # et le téléphone de la maison). Le risque à éviter est l'exposition sur
+      # Internet — ne jamais rediriger ce port sur la box, ni via QuickConnect.
+      # Pour n'ouvrir qu'au NAS lui-même : "127.0.0.1:8000:8000".
+      - "8000:8000"
+    environment:
+      TZ: Europe/Paris
+    env_file:
+      # Clés API et SMTP. Créer le fichier avant le premier démarrage :
+      # cp .env.example .env
+      - .env
+    volumes:
+      # Base SQLite + CV importés : à sauvegarder avec Hyper Backup.
+      - ./data:/app/data
+      # Décommenter UNIQUEMENT avec AVEC_IA=1 : garde l'authentification
+      # Claude Code entre les redémarrages du conteneur.
+      # - ./claude:/root/.claude

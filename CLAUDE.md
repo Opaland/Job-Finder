@@ -21,6 +21,11 @@ VITE_DEMO=1 npx vite build --base=/Job-Finder/demo/ --outDir=dist-demo   # build
 `start.bat` (racine) fait l'installation complète sous Windows ; `scan.bat` est fait pour le
 Planificateur de tâches.
 
+`Dockerfile` + `docker-compose.yml` : déploiement NAS Synology (README §9). L'image reproduit
+l'arborescence du dépôt (`/app/backend`, `/app/frontend/dist`, `/app/data` en volume) — `config.py`
+déduit la racine depuis `backend/app/`, ne pas casser cette hiérarchie. Sans la CLI `claude` dans
+l'image (défaut), les routes IA renvoient leur 503 français et le scan saute l'affinage.
+
 ## Garde-fous qualité
 
 - `bash scripts/verif.sh` (Windows : `scripts\verif.bat`) = syntaxe + tests + build + build

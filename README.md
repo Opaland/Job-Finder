@@ -193,7 +193,64 @@ Trois scripts, utilisables à la main ou par Claude Code :
 Dans Claude Code, les mêmes contrôles sont accessibles par `/verif`, `/revue` et `/smoke`, et un
 hook bloque automatiquement un commit dont les tests sont rouges ou un push dont les builds cassent.
 
-## 9. Limites connues (assumées)
+## 9. Déploiement sur NAS Synology (Docker)
+
+Faire tourner Job Finder sur le NAS présente un vrai intérêt : le **scan de 07:30
+et l'email quotidien partent même PC éteint**, et l'interface reste consultable
+depuis n'importe quel appareil de la maison. Il faut un modèle Synology qui
+supporte **Container Manager** (gamme « + » et x86 en général ; les modèles
+d'entrée de gamme ARM ne l'ont pas).
+
+**Installation**
+
+1. Copier le dépôt dans un dossier partagé, par exemple `/volume1/docker/job-finder`
+   (File Station, ou en SSH : `git clone https://github.com/Opaland/Job-Finder.git`).
+2. Créer le fichier de configuration — obligatoire, même vide :
+   ```bash
+   cd /volume1/docker/job-finder
+   cp .env.example .env      # puis renseigner les clés (README §3) et le SMTP (§4)
+   ```
+3. Construire et démarrer :
+   ```bash
+   docker compose up -d --build
+   ```
+   Depuis l'interface DSM : Container Manager → Projet → Créer → choisir le
+   dossier, `docker-compose.yml` est détecté automatiquement.
+4. Ouvrir **`http://<ip-du-nas>:8000`**.
+
+Le conteneur contient l'API, l'interface buildée **et le planificateur** : le scan
+quotidien tourne dedans, rien à programmer dans le Planificateur de tâches DSM.
+La base et les CV vivent dans `./data` sur le NAS (à inclure dans Hyper Backup) ;
+l'image ne contient aucune donnée.
+
+**⚠️ Réseau local uniquement.** L'application n'a aucune authentification (choix
+assumé, voir §10) : ne pas l'exposer via QuickConnect, un reverse proxy DSM ou
+une redirection de port. Pour la restreindre au NAS lui-même, remplacer
+`"8000:8000"` par `"127.0.0.1:8000:8000"` dans `docker-compose.yml`.
+
+**Fonctions IA : deux options**
+
+- *Par défaut* — le conteneur n'embarque pas la CLI Claude Code. Le scan, le
+  classement 0-100 expliqué, le digest, l'email, le Kanban et les statistiques
+  fonctionnent normalement (le score par règles est déterministe et complet).
+  Les boutons IA (lettre, fiche d'entretien, analyse d'écart, emails) affichent
+  un message clair indiquant que la CLI est absente.
+- *Avec l'IA sur le NAS* — construire avec `AVEC_IA=1`, puis authentifier une
+  seule fois la session Claude Code dans le conteneur :
+  ```bash
+  # dans docker-compose.yml : décommenter le volume ./claude:/root/.claude
+  AVEC_IA=1 docker compose up -d --build
+  docker exec -it job-finder claude          # suivre le lien de connexion affiché
+  ```
+  L'authentification est conservée dans `./claude` entre les redémarrages.
+
+Une même base ne doit être utilisée que par **une seule instance** : soit le NAS,
+soit `start.bat` sur le PC — jamais les deux en même temps sur un dossier
+partagé (SQLite ne supporte pas l'accès concurrent via SMB). Pour passer du PC
+au NAS, copier `data/jobfinder.db`, ou utiliser Sauvegarde / Restauration dans
+l'onglet Sources & réglages.
+
+## 10. Limites connues (assumées)
 
 - **LinkedIn / Indeed** : pas d'accès direct (interdit par leurs CGU et bloqué techniquement) — couverts
   indirectement via JSearch et Adzuna.

@@ -1,0 +1,22 @@
+# Données locales et secrets : jamais dans l'image (montés en volume).
+data/
+claude/
+.env
+
+# Environnements et caches
+backend/venv/
+backend/.pytest_cache/
+**/__pycache__/
+**/*.pyc
+frontend/node_modules/
+frontend/dist/
+frontend/dist-demo/
+node_modules/
+
+# Historique et outillage de développement
+.git/
+.github/
+.claude/
+scripts/
+site/
+*.log

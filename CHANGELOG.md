@@ -1,5 +1,18 @@
 # Changelog
 
+## v2.3 — Déploiement NAS Synology
+
+- Image Docker multi-étapes (build de l'interface puis runtime Python) et
+  `docker-compose.yml` prêt pour Container Manager : scan quotidien, email et
+  interface tournent sur le NAS, PC éteint.
+- Base et CV dans un volume `./data` sur le NAS (Hyper Backup), rien de
+  personnel dans l'image.
+- Fonctions IA en option : sans la CLI Claude Code (défaut), le classement par
+  règles et tout le suivi fonctionnent ; avec `AVEC_IA=1`, la CLI est embarquée
+  et authentifiée une fois, session conservée entre les redémarrages.
+- README §9 : installation pas à pas, rappel « réseau local uniquement »
+  (aucune authentification), et règle d'une seule instance par base.
+
 ## v2.2 — Qualité : refacto + garde-fous
 
 **Refacto (revue globale)**
