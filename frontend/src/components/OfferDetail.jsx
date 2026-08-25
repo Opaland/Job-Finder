@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, DEMO, formatDate, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
+import { api, DEMO, downloadFile, formatDate, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
 import { useToast } from '../App.jsx'
 
 const DEMO_ONLY_MSG = "Disponible uniquement dans l'application locale (ceci est la démo en ligne)."
@@ -10,12 +10,9 @@ export default function OfferDetail({ offerId, onClose }) {
   const [letter, setLetter] = useState('')
   const [prep, setPrep] = useState('')
   const [actionNote, setActionNote] = useState('')
-  const [gapGenerating, setGapGenerating] = useState(false)
-  const [generating, setGenerating] = useState(false)
-  const [prepGenerating, setPrepGenerating] = useState(false)
-  const [enriching, setEnriching] = useState(false)
+  // Action longue en cours : 'lettre' | 'gap' | 'prep' | 'enrich' | 'email:candidature' | 'email:relance'.
+  const [busy, setBusy] = useState(null)
   const [emailDraft, setEmailDraft] = useState(null)
-  const [emailGenerating, setEmailGenerating] = useState(null)
   const [contacts, setContacts] = useState([])
   const [newContact, setNewContact] = useState(null)
   const showToast = useToast()
@@ -25,19 +22,24 @@ export default function OfferDetail({ offerId, onClose }) {
     api.contacts(company).then(setContacts).catch(() => {})
   }
 
-  const generateEmail = async (kind) => {
-    if (DEMO) { showToast(DEMO_ONLY_MSG, true); return }
-    setEmailGenerating(kind)
+  // Mécanique commune des générations IA et de l'enrichissement : une seule à la
+  // fois, toast de succès ou d'erreur (en démo, l'API simulée explique la limite).
+  const runAction = async (name, action, successMessage) => {
+    setBusy(name)
     try {
-      const email = await api.generateEmail(offerId, kind)
-      setEmailDraft({ kind, ...email })
-      showToast(`Email de ${kind} généré — copie-le ou ouvre-le dans ton client mail.`)
+      await action()
+      if (successMessage) showToast(successMessage)
     } catch (err) {
       showToast(err.message, true)
     } finally {
-      setEmailGenerating(null)
+      setBusy(null)
     }
   }
+
+  const generateEmail = (kind) => runAction(`email:${kind}`, async () => {
+    const email = await api.generateEmail(offerId, kind)
+    setEmailDraft({ kind, ...email })
+  }, `Email de ${kind} généré — copie-le ou ouvre-le dans ton client mail.`)
 
   useEffect(() => {
     api.offer(offerId).then((o) => {
@@ -65,19 +67,11 @@ export default function OfferDetail({ offerId, onClose }) {
     }
   }
 
-  const generate = async () => {
-    setGenerating(true)
-    try {
-      const updated = await api.generateLetter(offer.id)
-      setOffer(updated)
-      setLetter(updated.cover_letter)
-      showToast('Lettre générée par Claude à partir de ta lettre type et de ton CV.')
-    } catch (err) {
-      showToast(err.message, true)
-    } finally {
-      setGenerating(false)
-    }
-  }
+  const generate = () => runAction('lettre', async () => {
+    const updated = await api.generateLetter(offer.id)
+    setOffer(updated)
+    setLetter(updated.cover_letter)
+  }, 'Lettre générée par Claude à partir de ta lettre type et de ton CV.')
 
   return (
     <>
@@ -159,22 +153,12 @@ export default function OfferDetail({ offerId, onClose }) {
           <div className="actions-row" style={{ margin: '4px 0 8px' }}>
             <button
               className="secondary"
-              disabled={enriching}
-              onClick={async () => {
-                if (DEMO) { showToast(DEMO_ONLY_MSG, true); return }
-                setEnriching(true)
-                try {
-                  const updated = await api.enrichOffer(offer.id)
-                  setOffer(updated)
-                  showToast('Description complète récupérée — score recalculé.')
-                } catch (err) {
-                  showToast(err.message, true)
-                } finally {
-                  setEnriching(false)
-                }
-              }}
+              disabled={busy !== null}
+              onClick={() => runAction('enrich', async () => {
+                setOffer(await api.enrichOffer(offer.id))
+              }, 'Description complète récupérée — score recalculé.')}
             >
-              {enriching ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Récupération…</>) : 'Récupérer la description complète depuis le site'}
+              {busy === 'enrich' ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Récupération…</>) : 'Récupérer la description complète depuis le site'}
             </button>
           </div>
         )}
@@ -182,8 +166,8 @@ export default function OfferDetail({ offerId, onClose }) {
 
         <div className="section-title">Lettre de motivation adaptée</div>
         <div className="actions-row" style={{ margin: '4px 0 8px' }}>
-          <button className="primary" onClick={generate} disabled={generating}>
-            {generating ? (<><span className="spin" />Génération en cours…</>) : (letter ? 'Régénérer avec Claude' : 'Générer avec Claude')}
+          <button className="primary" onClick={generate} disabled={busy !== null}>
+            {busy === 'lettre' ? (<><span className="spin" />Génération en cours…</>) : (letter ? 'Régénérer avec Claude' : 'Générer avec Claude')}
           </button>
           {letter && (
             <button
@@ -206,12 +190,7 @@ export default function OfferDetail({ offerId, onClose }) {
                     return
                   }
                 }
-                const link = document.createElement('a')
-                link.href = `/api/offers/${offer.id}/letter.docx`
-                link.download = ''
-                document.body.appendChild(link)
-                link.click()
-                link.remove()
+                downloadFile(`/api/offers/${offer.id}/letter.docx`)
               }}
             >
               Télécharger en Word (.docx)
@@ -230,22 +209,12 @@ export default function OfferDetail({ offerId, onClose }) {
         <div className="actions-row" style={{ margin: '4px 0 8px' }}>
           <button
             className="secondary"
-            disabled={gapGenerating}
-            onClick={async () => {
-              if (DEMO) { showToast(DEMO_ONLY_MSG, true); return }
-              setGapGenerating(true)
-              try {
-                const updated = await api.gapAnalysis(offer.id)
-                setOffer(updated)
-                showToast("Analyse d'écart générée : couvert, manquant, adaptations du CV, verdict.")
-              } catch (err) {
-                showToast(err.message, true)
-              } finally {
-                setGapGenerating(false)
-              }
-            }}
+            disabled={busy !== null}
+            onClick={() => runAction('gap', async () => {
+              setOffer(await api.gapAnalysis(offer.id))
+            }, "Analyse d'écart générée : couvert, manquant, adaptations du CV, verdict.")}
           >
-            {gapGenerating
+            {busy === 'gap'
               ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Analyse en cours…</>)
               : (offer.gap_analysis ? "🔍 Régénérer l'analyse d'écart CV ↔ offre" : "🔍 Analyser l'écart CV ↔ offre")}
           </button>
@@ -254,11 +223,11 @@ export default function OfferDetail({ offerId, onClose }) {
 
         <div className="section-title">Emails</div>
         <div className="actions-row" style={{ margin: '4px 0 8px' }}>
-          <button className="secondary" disabled={emailGenerating !== null} onClick={() => generateEmail('candidature')}>
-            {emailGenerating === 'candidature' ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Rédaction…</>) : '✉️ Email de candidature'}
+          <button className="secondary" disabled={busy !== null} onClick={() => generateEmail('candidature')}>
+            {busy === 'email:candidature' ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Rédaction…</>) : '✉️ Email de candidature'}
           </button>
-          <button className="secondary" disabled={emailGenerating !== null} onClick={() => generateEmail('relance')}>
-            {emailGenerating === 'relance' ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Rédaction…</>) : '🔁 Email de relance'}
+          <button className="secondary" disabled={busy !== null} onClick={() => generateEmail('relance')}>
+            {busy === 'email:relance' ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Rédaction…</>) : '🔁 Email de relance'}
           </button>
         </div>
         {emailDraft && (
@@ -289,23 +258,14 @@ export default function OfferDetail({ offerId, onClose }) {
         <div className="actions-row" style={{ margin: '4px 0 8px' }}>
           <button
             className="primary"
-            disabled={prepGenerating}
-            onClick={async () => {
-              if (DEMO) { showToast(DEMO_ONLY_MSG, true); return }
-              setPrepGenerating(true)
-              try {
-                const updated = await api.interviewPrep(offer.id)
-                setOffer(updated)
-                setPrep(updated.interview_prep || '')
-                showToast("Fiche d'entretien générée : pitch, points forts, questions probables, vigilances.")
-              } catch (err) {
-                showToast(err.message, true)
-              } finally {
-                setPrepGenerating(false)
-              }
-            }}
+            disabled={busy !== null}
+            onClick={() => runAction('prep', async () => {
+              const updated = await api.interviewPrep(offer.id)
+              setOffer(updated)
+              setPrep(updated.interview_prep || '')
+            }, "Fiche d'entretien générée : pitch, points forts, questions probables, vigilances.")}
           >
-            {prepGenerating
+            {busy === 'prep'
               ? (<><span className="spin" />Préparation en cours…</>)
               : (prep ? "Régénérer la fiche d'entretien" : "Préparer l'entretien avec Claude")}
           </button>

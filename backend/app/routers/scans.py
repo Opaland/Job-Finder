@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from ..database import SessionLocal, get_db
 from ..models import ScanRun
 from ..schemas import ScanRunOut
-from ..services.scan import run_scan, scan_status
+from ..services.scan import run_full_scan, scan_status
 
 logger = logging.getLogger("jobfinder.api")
 router = APIRouter(prefix="/api/scans", tags=["scans"])
@@ -16,10 +16,8 @@ router = APIRouter(prefix="/api/scans", tags=["scans"])
 def _scan_thread():
     db = SessionLocal()
     try:
-        run_scan(db, trigger="manuel")
-        from ..services.digest import build_digest
-
-        build_digest(db)
+        # Pas d'email pour un scan lancé à la main : l'utilisateur est devant l'appli.
+        run_full_scan(db, trigger="manuel", send_email=False)
     except RuntimeError:
         pass
     except Exception:  # noqa: BLE001

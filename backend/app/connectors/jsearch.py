@@ -10,10 +10,8 @@ fait 4 requêtes par scan).
 """
 from __future__ import annotations
 
-from datetime import datetime
-
 from ..config import settings
-from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, profile_queries
+from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, parse_published, profile_queries
 
 SEARCH_URL = "https://jsearch.p.rapidapi.com/search"
 
@@ -27,14 +25,7 @@ class JSearchConnector(Connector):
         return bool(settings.rapidapi_key)
 
     def _parse(self, item: dict) -> RawOffer:
-        published = None
-        if item.get("job_posted_at_datetime_utc"):
-            try:
-                published = datetime.fromisoformat(
-                    item["job_posted_at_datetime_utc"].replace("Z", "+00:00")
-                ).replace(tzinfo=None)
-            except ValueError:
-                published = None
+        published = parse_published(item.get("job_posted_at_datetime_utc"))
         city = item.get("job_city") or ""
         country = item.get("job_country") or ""
         location = ", ".join(x for x in [city, country] if x)

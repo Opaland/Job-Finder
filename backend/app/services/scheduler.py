@@ -23,15 +23,12 @@ JOB_ID = "scan_quotidien"
 
 
 def _daily_job():
-    from .digest import build_digest, send_digest_email
-    from .scan import run_scan
+    from .scan import run_full_scan
 
     db = SessionLocal()
     try:
         logger.info("Scan quotidien : démarrage")
-        run_scan(db, trigger="quotidien")
-        digest = build_digest(db)
-        sent = send_digest_email(db, digest)
+        _, _, sent = run_full_scan(db, trigger="quotidien", send_email=True)
         logger.info("Scan quotidien terminé (email envoyé : %s)", sent)
     except RuntimeError as exc:
         logger.warning("Scan quotidien ignoré : %s", exc)

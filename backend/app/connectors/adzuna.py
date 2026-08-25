@@ -6,10 +6,8 @@ au-delà des sites interrogés directement.
 """
 from __future__ import annotations
 
-from datetime import datetime
-
 from ..config import settings
-from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, profile_queries
+from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, parse_published, profile_queries
 
 BASE_URL = "https://api.adzuna.com/v1/api/jobs/fr/search/{page}"
 
@@ -23,12 +21,7 @@ class AdzunaConnector(Connector):
         return bool(settings.adzuna_app_id and settings.adzuna_app_key)
 
     def _parse(self, item: dict) -> RawOffer:
-        published = None
-        if item.get("created"):
-            try:
-                published = datetime.fromisoformat(item["created"].replace("Z", "+00:00")).replace(tzinfo=None)
-            except ValueError:
-                published = None
+        published = parse_published(item.get("created"))
         salary = ""
         if item.get("salary_min") or item.get("salary_max"):
             lo = int(item.get("salary_min") or 0)

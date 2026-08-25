@@ -2,6 +2,8 @@
 // produites par le vrai moteur de scoring (et une lettre réellement générée par Claude).
 // Les modifications (statuts, notes…) vivent en mémoire le temps de la visite.
 import data from './demoData.json'
+// Import sûr : api.js ne charge demoApi.js que dynamiquement (pas de cycle).
+import { SOURCE_LABELS, STATUS_LABELS } from './api.js'
 
 const state = {
   offers: JSON.parse(JSON.stringify(data.offers)),
@@ -59,11 +61,7 @@ function listOffers(query) {
   return { total, items: items.slice(offset, offset + limit) }
 }
 
-const STATUS_ORDER = ['nouvelle', 'vue', 'a_postuler', 'postulee', 'relancee', 'entretien', 'refusee', 'fermee']
-const SOURCE_FR = {
-  france_travail: 'France Travail', adzuna: 'Adzuna', jsearch: 'LinkedIn / Indeed',
-  wttj: 'Welcome to the Jungle', apec: 'APEC', hellowork: 'HelloWork',
-}
+const STATUS_ORDER = Object.keys(STATUS_LABELS)
 
 function computeStats() {
   const offers = state.offers
@@ -114,7 +112,7 @@ function computeStats() {
     },
     by_status: STATUS_ORDER.map((s) => ({ status: s, count: counts[s] || 0 })),
     by_source: Object.entries(bySource)
-      .map(([source, count]) => ({ source, label: SOURCE_FR[source] || source, count }))
+      .map(([source, count]) => ({ source, label: SOURCE_LABELS[source] || source, count }))
       .sort((a, b) => b.count - a.count),
     score_bins: bins.map((count, i) => ({ label: i < 9 ? `${i * 10}-${i * 10 + 9}` : '90-100', count })),
     per_day: perDay,

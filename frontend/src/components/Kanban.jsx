@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
+import { actionDue, api, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
 import { useToast } from '../App.jsx'
 import OfferDetail from './OfferDetail.jsx'
 
-const COLUMNS = ['nouvelle', 'vue', 'a_postuler', 'postulee', 'relancee', 'entretien', 'refusee', 'fermee']
+const COLUMNS = Object.keys(STATUS_LABELS)
 
 export default function Kanban({ scanning }) {
   const [offers, setOffers] = useState([])
@@ -23,8 +23,8 @@ export default function Kanban({ scanning }) {
     }
   }, [showToast])
 
-  useEffect(() => { load() }, [load])
-  useEffect(() => { if (!scanning) load() }, [scanning])
+  // Au montage puis quand un scan se termine.
+  useEffect(() => { load() }, [load, scanning])
 
   const moveOffer = async (offerId, status) => {
     const offer = offers.find((o) => o.id === offerId)
@@ -101,9 +101,7 @@ export default function Kanban({ scanning }) {
                     <div style={{ marginTop: 6 }}>
                       <span className="chip" style={{ marginRight: 4 }}>{SOURCE_LABELS[offer.source] || offer.source}</span>
                       {offer.remote && <span className="chip remote">TT</span>}
-                      {offer.next_action_date && new Date(offer.next_action_date) <= new Date().setHours(23, 59, 59) && (
-                        <span className="chip offline">⏰</span>
-                      )}
+                      {actionDue(offer) && <span className="chip offline">⏰</span>}
                     </div>
                   </div>
                 ))}

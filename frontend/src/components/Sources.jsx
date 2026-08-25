@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, DEMO } from '../api.js'
+import { api, DEMO, downloadFile } from '../api.js'
 import { useToast } from '../App.jsx'
 
 const KEY_HELP = {
@@ -182,12 +182,7 @@ export default function Sources() {
               showToast("Sauvegarde disponible uniquement dans l'application locale (démo en ligne).", true)
               return
             }
-            const link = document.createElement('a')
-            link.href = '/api/backup'
-            link.download = ''
-            document.body.appendChild(link)
-            link.click()
-            link.remove()
+            downloadFile('/api/backup')
           }}
         >
           💾 Télécharger une sauvegarde de la base

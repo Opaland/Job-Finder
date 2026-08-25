@@ -5,10 +5,21 @@ import logging
 from datetime import datetime, timedelta
 
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
-from ..models import STATUS_LABELS, Digest, Offer, Profile, ScanRun, local_now
+from ..models import (
+    STATUS_LABELS,
+    STATUTS_CLOS,
+    STATUTS_EN_ATTENTE,
+    STATUTS_NON_TRAITES,
+    Digest,
+    Offer,
+    Profile,
+    ScanRun,
+    local_now,
+)
 from .emailer import send_email, smtp_configured
+from .textutils import parse_iso_dt
 
 logger = logging.getLogger("jobfinder.digest")
 
@@ -40,7 +51,7 @@ def gems(db: Session) -> list[Offer]:
     """Les meilleures offres pas encore traitées — à regarder en priorité."""
     return (
         db.query(Offer)
-        .filter(Offer.final_score >= GEM_SCORE, Offer.status.in_(["nouvelle", "vue", "a_postuler"]))
+        .filter(Offer.final_score >= GEM_SCORE, Offer.status.in_(STATUTS_NON_TRAITES))
         .order_by(Offer.final_score.desc())
         .limit(10)
         .all()
@@ -52,16 +63,17 @@ def applications_this_week(db: Session) -> int:
     now = local_now()
     monday = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
     count = 0
-    for offer in db.query(Offer).filter(Offer.status.notin_(["nouvelle", "vue", "a_postuler"])).all():
-        for entry in offer.status_history or []:
+    # Seule la colonne d'historique est lue : inutile de matérialiser les offres.
+    for (history,) in db.query(Offer.status_history).filter(
+        Offer.status.notin_(STATUTS_NON_TRAITES)
+    ).all():
+        for entry in history or []:
             if entry.get("status") != "postulee":
                 continue
-            try:
-                if datetime.fromisoformat(entry["date"]) >= monday:
-                    count += 1
-                    break
-            except (KeyError, ValueError, TypeError):
-                continue
+            applied = parse_iso_dt(entry.get("date"))
+            if applied is not None and applied >= monday:
+                count += 1
+                break
     return count
 
 
@@ -69,17 +81,24 @@ def _last_status_change(offer: Offer) -> datetime | None:
     history = offer.status_history or []
     if not history:
         return None
-    try:
-        return datetime.fromisoformat(history[-1]["date"])
-    except (KeyError, ValueError, TypeError):
-        return None
+    return parse_iso_dt(history[-1].get("date"))
 
 
 def offers_to_relaunch(db: Session) -> list[Offer]:
     """Candidatures envoyées restées sans suite depuis RELAUNCH_AFTER_DAYS jours."""
     cutoff = local_now() - timedelta(days=RELAUNCH_AFTER_DAYS)
+    candidates = (
+        db.query(Offer)
+        .options(load_only(
+            Offer.id, Offer.title, Offer.company, Offer.location, Offer.contract_type,
+            Offer.source, Offer.url, Offer.final_score, Offer.ai_reason, Offer.remote,
+            Offer.status, Offer.status_history,
+        ))
+        .filter(Offer.status.in_(STATUTS_EN_ATTENTE))
+        .all()
+    )
     result = []
-    for offer in db.query(Offer).filter(Offer.status.in_(["postulee", "relancee"])).all():
+    for offer in candidates:
         changed = _last_status_change(offer)
         if changed is not None and changed <= cutoff:
             result.append(offer)
@@ -152,7 +171,7 @@ def daily_focus(
     if len(focus) < 3:
         best_waiting = (
             db.query(Offer)
-            .filter(Offer.status.in_(["a_postuler", "vue", "nouvelle"]))
+            .filter(Offer.status.in_(STATUTS_NON_TRAITES))
             .order_by(Offer.final_score.desc())
             .first()
         )
@@ -175,7 +194,7 @@ def build_digest(db: Session, for_date: str | None = None) -> Digest:
     )
     top_overall = (
         db.query(Offer)
-        .filter(Offer.status.notin_(["refusee", "fermee"]))
+        .filter(Offer.status.notin_(STATUTS_CLOS))
         .order_by(Offer.final_score.desc())
         .limit(10)
         .all()

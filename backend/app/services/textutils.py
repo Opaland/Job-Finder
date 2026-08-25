@@ -3,6 +3,15 @@ import difflib
 import hashlib
 import re
 import unicodedata
+from datetime import datetime
+
+
+def parse_iso_dt(value) -> datetime | None:
+    """Date ISO (celles de status_history) parsée sans jamais lever."""
+    try:
+        return datetime.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def normalize(text: str) -> str:

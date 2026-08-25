@@ -41,6 +41,20 @@ class ConnectorResult:
     errors: list[str] = field(default_factory=list)
 
 
+def parse_published(value) -> datetime | None:
+    """Date de publication ISO d'une API (suffixe Z accepté), ramenée en naïf.
+
+    Les heures de l'application sont toutes naïves (voir models.local_now) : on
+    retire le fuseau plutôt que de mélanger aware et naïf dans les comparaisons.
+    """
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).replace(tzinfo=None)
+    except ValueError:
+        return None
+
+
 # Requêtes par défaut, utilisées quand le profil n'en définit pas.
 DEFAULT_QUERIES = ["test manager", "QA", "responsable test", "testeur", "quality assurance"]
 

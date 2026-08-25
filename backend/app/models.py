@@ -31,6 +31,11 @@ OFFER_STATUSES = [
     "fermee",
 ]
 
+# Groupes de statuts partagés par le scan, le digest et les statistiques.
+STATUTS_NON_TRAITES = ["nouvelle", "vue", "a_postuler"]  # pas encore de candidature envoyée
+STATUTS_EN_ATTENTE = ["postulee", "relancee"]  # candidature envoyée, réponse attendue
+STATUTS_CLOS = ["refusee", "fermee"]  # sorties du pipeline (décision de l'utilisateur)
+
 # Libellés affichés (une seule copie côté backend ; le frontend a la sienne dans api.js).
 STATUS_LABELS = {
     "nouvelle": "Nouvelle",

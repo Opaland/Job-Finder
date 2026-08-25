@@ -24,6 +24,22 @@ function OfferLine({ offer }) {
   )
 }
 
+// Ligne « statut + offre + score », partagée par les cartes de relance et de suivi.
+function StatusRow({ offer }) {
+  return (
+    <tr>
+      <td style={{ whiteSpace: 'nowrap' }}>
+        <span className="chip">{STATUS_LABELS[offer.status] || offer.status}</span>
+      </td>
+      <td>
+        <a href={offer.url} target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>{offer.title}</a>
+        <div className="hint">{offer.company} — {offer.location}</div>
+      </td>
+      <td>{Math.round(offer.final_score)}</td>
+    </tr>
+  )
+}
+
 export default function Dashboard({ scanning, goToOffers }) {
   const [digest, setDigest] = useState(null)
   const [error, setError] = useState(null)
@@ -37,10 +53,8 @@ export default function Dashboard({ scanning, goToOffers }) {
     }
   }
 
-  useEffect(() => { load() }, [])
-  useEffect(() => {
-    if (!scanning) load()
-  }, [scanning])
+  // Au montage puis quand un scan se termine.
+  useEffect(() => { load() }, [scanning])
 
   if (error) return <p className="error-text">Erreur : {error}</p>
   if (!digest) return <p>Chargement…</p>
@@ -191,20 +205,7 @@ export default function Dashboard({ scanning, goToOffers }) {
             Postulées ou relancées il y a plus de 7 jours, sans changement depuis.
           </p>
           <table className="simple">
-            <tbody>
-              {p.to_relaunch.map((o) => (
-                <tr key={o.id}>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    <span className="chip">{STATUS_LABELS[o.status] || o.status}</span>
-                  </td>
-                  <td>
-                    <a href={o.url} target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>{o.title}</a>
-                    <div className="hint">{o.company} — {o.location}</div>
-                  </td>
-                  <td>{Math.round(o.final_score)}</td>
-                </tr>
-              ))}
-            </tbody>
+            <tbody>{p.to_relaunch.map((o) => <StatusRow key={o.id} offer={o} />)}</tbody>
           </table>
         </div>
       )}
@@ -213,20 +214,7 @@ export default function Dashboard({ scanning, goToOffers }) {
         <div className="card">
           <h2>Candidatures à suivre</h2>
           <table className="simple">
-            <tbody>
-              {p.to_follow.map((o) => (
-                <tr key={o.id}>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    <span className="chip">{STATUS_LABELS[o.status] || o.status}</span>
-                  </td>
-                  <td>
-                    <a href={o.url} target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>{o.title}</a>
-                    <div className="hint">{o.company} — {o.location}</div>
-                  </td>
-                  <td>{Math.round(o.final_score)}</td>
-                </tr>
-              ))}
-            </tbody>
+            <tbody>{p.to_follow.map((o) => <StatusRow key={o.id} offer={o} />)}</tbody>
           </table>
         </div>
       )}

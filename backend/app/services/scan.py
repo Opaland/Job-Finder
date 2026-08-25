@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..connectors import ALL_CONNECTORS
-from ..models import Offer, Profile, ScanRun, local_now
+from ..models import STATUTS_CLOS, Offer, Profile, ScanRun, local_now
 from .claude_ai import ai_score_offer, cli_available
 from .scoring import combined_score, score_offer
 from .textutils import fingerprint, normalize, titles_similar
@@ -64,6 +64,49 @@ def rescore_offer(offer: Offer, profile_dict: dict) -> None:
     offer.final_score = combined_score(offer.score, offer.ai_score)
 
 
+def find_twin(
+    db: Session,
+    title: str,
+    company: str,
+    *,
+    fingerprints: dict[str, int] | None = None,
+    company_index: dict[str, list[tuple[int, str]]] | None = None,
+) -> Offer | None:
+    """Offre déjà suivie correspondant à (titre, entreprise), ou None.
+
+    Règle unique du dédoublonnage, partagée par le scan et l'ajout manuel :
+    empreinte exacte d'abord, puis même entreprise + titre quasi identique.
+    Sans entreprise identifiée, aucune fusion : deux « Test Manager H/F »
+    d'entreprises inconnues peuvent être deux offres distinctes.
+
+    `fingerprints` (empreinte → id) et `company_index` (entreprise normalisée →
+    [(id, titre)]) sont fournis par le scan pour éviter une requête par offre.
+    """
+    company_key = normalize(company or "")
+    if not company_key:
+        return None
+    fp = fingerprint(title, company)
+    if fingerprints is not None:
+        twin_id = fingerprints.get(fp)
+        twin = db.get(Offer, twin_id) if twin_id else None
+    else:
+        twin = db.query(Offer).filter(Offer.fingerprint == fp).first()
+    if twin is not None or len(company_key) < 3:
+        return twin
+    if company_index is not None:
+        candidates = company_index.get(company_key, [])
+    else:
+        candidates = [
+            (oid, otitle)
+            for oid, otitle, ocompany in db.query(Offer.id, Offer.title, Offer.company).all()
+            if normalize(ocompany or "") == company_key
+        ]
+    for oid, otitle in candidates:
+        if titles_similar(title, otitle):
+            return db.get(Offer, oid)
+    return None
+
+
 def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
     """Exécute un scan complet. Bloquant — à lancer dans un thread/background task."""
     if not _scan_lock.acquire(blocking=False):
@@ -80,10 +123,18 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
         enabled = profile.sources_enabled or {}
         stats: dict[str, dict] = {}
 
-        # Index (entreprise normalisée → offres connues) pour détecter les
-        # doublons dont le titre varie légèrement (« H/F », « CDI »…).
+        # Index en mémoire des offres connues, construits en un seul parcours de
+        # table : (source, source_id) → id, empreinte → id, et entreprise
+        # normalisée → [(id, titre)] pour les doublons au titre légèrement
+        # différent (« H/F », « CDI »…). Évite deux requêtes par offre rapportée.
+        known_ids: dict[tuple[str, str], int] = {}
+        fingerprints: dict[str, int] = {}
         company_index: dict[str, list[tuple[int, str]]] = {}
-        for oid, otitle, ocompany in db.query(Offer.id, Offer.title, Offer.company).all():
+        for oid, osource, osource_id, ofp, otitle, ocompany in db.query(
+            Offer.id, Offer.source, Offer.source_id, Offer.fingerprint, Offer.title, Offer.company
+        ).all():
+            known_ids[(osource, osource_id)] = oid
+            fingerprints.setdefault(ofp, oid)
             key = normalize(ocompany or "")
             if len(key) >= 3:
                 company_index.setdefault(key, []).append((oid, otitle))
@@ -112,12 +163,9 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
             for raw in result.offers:
                 if not raw.title or not raw.source_id:
                     continue
-                existing = (
-                    db.query(Offer)
-                    .filter(Offer.source == raw.source, Offer.source_id == str(raw.source_id))
-                    .one_or_none()
-                )
-                if existing:
+                existing_id = known_ids.get((raw.source, str(raw.source_id)))
+                if existing_id:
+                    existing = db.get(Offer, existing_id)
                     existing.last_seen_at = local_now()
                     existing.still_online = True
                     # On complète la description si la source en fournit une plus riche.
@@ -126,23 +174,10 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
                     source_stat["seen"] += 1
                     continue
 
-                fp = fingerprint(raw.title, raw.company)
-                company_key = normalize(raw.company or "")
-                # Sans entreprise identifiée, pas de fusion inter-sources : deux
-                # annonces « Test Manager H/F » d'entreprises inconnues peuvent
-                # être deux offres distinctes.
-                twin = (
-                    db.query(Offer).filter(Offer.fingerprint == fp).first()
-                    if company_key
-                    else None
+                twin = find_twin(
+                    db, raw.title, raw.company,
+                    fingerprints=fingerprints, company_index=company_index,
                 )
-                if twin is None:
-                    # Même entreprise + titre quasi identique = même offre.
-                    if len(company_key) >= 3:
-                        for oid, otitle in company_index.get(company_key, []):
-                            if titles_similar(raw.title, otitle):
-                                twin = db.get(Offer, oid)
-                                break
                 if twin:
                     # Même offre déjà connue via une autre source : on note la piste
                     # supplémentaire sans créer de doublon.
@@ -157,7 +192,7 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
                     continue
 
                 offer = Offer(
-                    fingerprint=fp,
+                    fingerprint=fingerprint(raw.title, raw.company),
                     source=raw.source,
                     source_id=str(raw.source_id),
                     title=raw.title[:300],
@@ -176,6 +211,8 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
                 ]
                 db.add(offer)
                 db.flush()
+                known_ids[(offer.source, offer.source_id)] = offer.id
+                fingerprints.setdefault(offer.fingerprint, offer.id)
                 new_key = normalize(offer.company or "")
                 if len(new_key) >= 3:
                     company_index.setdefault(new_key, []).append((offer.id, offer.title))
@@ -212,7 +249,7 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
                 .filter(
                     Offer.ai_score.is_(None),
                     Offer.score >= settings.ai_min_rule_score,
-                    Offer.status.notin_(["refusee", "fermee"]),
+                    Offer.status.notin_(STATUTS_CLOS),
                 )
                 .order_by(Offer.score.desc())
                 .limit(settings.ai_max_offers_per_scan)
@@ -252,6 +289,21 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
     finally:
         _current_scan.update({"running": False})
         _scan_lock.release()
+
+
+def run_full_scan(db: Session, trigger: str, send_email: bool):
+    """Pipeline complet scan → digest → email éventuel.
+
+    Point d'entrée unique du scan manuel (routeur), du scan quotidien
+    (scheduler) et de la CLI : toute étape ajoutée ici profite aux trois.
+    Renvoie (ScanRun, Digest, email_envoyé).
+    """
+    from .digest import build_digest, send_digest_email
+
+    run = run_scan(db, trigger=trigger)
+    digest = build_digest(db)
+    sent = send_digest_email(db, digest) if send_email else False
+    return run, digest, sent
 
 
 def rescore_all(db: Session) -> int:

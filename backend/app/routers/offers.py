@@ -3,7 +3,7 @@ import re
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
 from ..database import get_db
 from ..models import OFFER_STATUSES, STATUS_LABELS, Offer, Profile, local_now
@@ -11,9 +11,20 @@ from ..schemas import ManualOffer, OfferDetail, OfferSummary, OfferUpdate
 from ..services.claude_ai import ai_cover_letter, ai_email, ai_gap_analysis, ai_interview_prep, cli_available
 from ..services.enrich import fetch_full_description
 from ..services.journal import log_event
-from ..services.textutils import escape_like
+from ..services.scan import find_twin, offer_to_scoring_dict, profile_to_dict, rescore_offer
+from ..services.textutils import contains_word, escape_like, fingerprint, normalize
 
 router = APIRouter(prefix="/api/offers", tags=["offres"])
+
+# Colonnes réellement renvoyées par la liste (OfferSummary) : on ne charge pas
+# les champs lourds (description, lettres, fiches…) pour les jeter aussitôt.
+SUMMARY_COLUMNS = load_only(
+    Offer.id, Offer.source, Offer.title, Offer.company, Offer.location,
+    Offer.contract_type, Offer.salary_text, Offer.remote, Offer.url,
+    Offer.published_at, Offer.collected_at, Offer.still_online, Offer.score,
+    Offer.ai_score, Offer.final_score, Offer.status, Offer.favorite,
+    Offer.next_action_date,
+)
 
 
 @router.get("", response_model=dict)
@@ -62,7 +73,7 @@ def list_offers(
         query = query.order_by(Offer.published_at.desc().nulls_last(), Offer.final_score.desc())
     else:
         query = query.order_by(Offer.final_score.desc(), Offer.collected_at.desc())
-    offers = query.offset(offset).limit(min(limit, 2000)).all()
+    offers = query.options(SUMMARY_COLUMNS).offset(offset).limit(min(limit, 2000)).all()
     return {
         "total": total,
         "items": [OfferSummary.model_validate(o).model_dump() for o in offers],
@@ -72,10 +83,6 @@ def list_offers(
 @router.post("/manual", response_model=OfferDetail, status_code=201)
 def add_manual_offer(payload: ManualOffer, db: Session = Depends(get_db)):
     """Ajoute une offre à la main (annonce collée depuis LinkedIn, Indeed, cooptation…)."""
-    from ..services.scan import profile_to_dict, rescore_offer
-    from ..services.textutils import fingerprint as make_fp
-    from ..services.textutils import normalize, titles_similar
-
     text = (payload.raw_text or "").strip()
     if not text and payload.url:
         # Rien de collé : on tente de lire la page de l'offre.
@@ -92,31 +99,17 @@ def add_manual_offer(payload: ManualOffer, db: Session = Depends(get_db)):
     lowered = normalize(text + " " + title)
     contract = ""
     for label, needle in [("CDI", "cdi"), ("CDD", "cdd"), ("Freelance", "freelance"), ("Intérim", "interim"), ("Alternance", "alternance"), ("Stage", "stage")]:
-        if f" {needle} " in f" {lowered} ":
+        if contains_word(lowered, needle):
             contract = label
             break
 
-    # Dédoublonnage : empreinte exacte puis similarité de titre (même entreprise).
-    fp = make_fp(title, company)
-    twin = (
-        db.query(Offer).filter(Offer.fingerprint == fp).first()
-        if normalize(company)
-        else None
-    )
-    if twin is None and len(normalize(company)) >= 3:
-        # Correspondance exacte insensible à la casse (pas un motif LIKE : un nom
-        # d'entreprise contenant % ou _ ne doit pas devenir un joker).
-        from sqlalchemy import func as sa_func
-
-        for other in db.query(Offer).filter(sa_func.lower(Offer.company) == company.lower()).all():
-            if titles_similar(title, other.title):
-                twin = other
-                break
+    # Même règle de dédoublonnage que le scan (empreinte, puis titre similaire).
+    twin = find_twin(db, title, company)
     if twin:
         raise HTTPException(409, f"Cette offre est déjà suivie : « {twin.title} » ({twin.company or 'entreprise inconnue'}, score {twin.final_score:.0f}).")
 
     offer = Offer(
-        fingerprint=fp,
+        fingerprint=fingerprint(title, company),
         source="manuelle",
         source_id=f"manuelle-{local_now().strftime('%Y%m%d%H%M%S%f')}",
         title=title[:300],
@@ -162,7 +155,12 @@ def export_xlsx(db: Session = Depends(get_db)):
         ws.column_dimensions[get_column_letter(col)].width = width
     ws.freeze_panes = "A2"
 
-    offers = db.query(Offer).order_by(Offer.final_score.desc()).all()
+    # Seules les colonnes exportées sont lues (pas les descriptions ni les lettres).
+    offers = db.query(
+        Offer.final_score, Offer.title, Offer.company, Offer.location, Offer.contract_type,
+        Offer.salary_text, Offer.remote, Offer.status, Offer.favorite, Offer.source,
+        Offer.published_at, Offer.collected_at, Offer.ai_reason, Offer.notes, Offer.url,
+    ).order_by(Offer.final_score.desc()).all()
     for row, o in enumerate(offers, start=2):
         values = [
             round(o.final_score), o.title, o.company, o.location, o.contract_type,
@@ -233,9 +231,12 @@ def update_offer(offer_id: int, update: OfferUpdate, db: Session = Depends(get_d
     return offer
 
 
-@router.post("/{offer_id}/letter", response_model=OfferDetail)
-def generate_letter(offer_id: int, db: Session = Depends(get_db)):
-    """Génère la lettre de motivation adaptée à l'offre via la session locale Claude Code."""
+def _generation_ia(db: Session, offer_id: int, generer, *, aide_503: str = "", aide_502: str = "Réessaie dans un instant."):
+    """Tronc commun des routes IA : offre existante, CLI présente, résultat non vide.
+
+    `generer(offre_dict, profile)` appelle la fonction ai_* voulue. Renvoie
+    (offer, résultat) ; toute évolution de la garde se fait ici une seule fois.
+    """
     offer = db.get(Offer, offer_id)
     if not offer:
         raise HTTPException(404, "Offre introuvable")
@@ -243,21 +244,23 @@ def generate_letter(offer_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             503,
             "CLI Claude Code introuvable sur ce poste. Vérifie que la commande « claude » "
-            "fonctionne dans un terminal, ou édite la lettre manuellement.",
+            f"fonctionne dans un terminal{aide_503}.",
         )
-    profile = db.get(Profile, 1)
-    letter = ai_cover_letter(
-        {
-            "title": offer.title,
-            "company": offer.company,
-            "location": offer.location,
-            "description": offer.description,
-        },
-        profile.cv_text,
-        profile.letter_template,
+    result = generer(offer_to_scoring_dict(offer), db.get(Profile, 1))
+    if not result:
+        raise HTTPException(502, f"La génération a échoué (voir les logs). {aide_502}")
+    return offer, result
+
+
+@router.post("/{offer_id}/letter", response_model=OfferDetail)
+def generate_letter(offer_id: int, db: Session = Depends(get_db)):
+    """Génère la lettre de motivation adaptée à l'offre via la session locale Claude Code."""
+    offer, letter = _generation_ia(
+        db, offer_id,
+        lambda o, p: ai_cover_letter(o, p.cv_text, p.letter_template),
+        aide_503=", ou édite la lettre manuellement",
+        aide_502="Réessaie ou édite la lettre manuellement.",
     )
-    if not letter:
-        raise HTTPException(502, "La génération a échoué (voir les logs). Réessaie ou édite la lettre manuellement.")
     offer.cover_letter = letter.strip()
     db.commit()
     log_event(db, "ia", f"Lettre de motivation générée pour « {offer.title} ».", offer.id)
@@ -267,22 +270,9 @@ def generate_letter(offer_id: int, db: Session = Depends(get_db)):
 @router.post("/{offer_id}/gap-analysis", response_model=OfferDetail)
 def generate_gap_analysis(offer_id: int, db: Session = Depends(get_db)):
     """Analyse d'écart CV ↔ offre (compétences couvertes/manquantes, conseils ATS)."""
-    offer = db.get(Offer, offer_id)
-    if not offer:
-        raise HTTPException(404, "Offre introuvable")
-    if not cli_available():
-        raise HTTPException(
-            503,
-            "CLI Claude Code introuvable sur ce poste. Vérifie que la commande « claude » "
-            "fonctionne dans un terminal.",
-        )
-    profile = db.get(Profile, 1)
-    analysis = ai_gap_analysis(
-        {"title": offer.title, "company": offer.company, "description": offer.description},
-        profile.cv_text,
+    offer, analysis = _generation_ia(
+        db, offer_id, lambda o, p: ai_gap_analysis(o, p.cv_text)
     )
-    if not analysis:
-        raise HTTPException(502, "La génération a échoué (voir les logs). Réessaie dans un instant.")
     offer.gap_analysis = analysis.strip()
     db.commit()
     log_event(db, "ia", f"Analyse d'écart CV ↔ offre générée pour « {offer.title} ».", offer.id)
@@ -294,23 +284,9 @@ def generate_email(offer_id: int, kind: str = "candidature", db: Session = Depen
     """Génère un email de candidature ou de relance via la session locale Claude Code."""
     if kind not in ("candidature", "relance"):
         raise HTTPException(400, "Type d'email inconnu : utilise « candidature » ou « relance ».")
-    offer = db.get(Offer, offer_id)
-    if not offer:
-        raise HTTPException(404, "Offre introuvable")
-    if not cli_available():
-        raise HTTPException(
-            503,
-            "CLI Claude Code introuvable sur ce poste. Vérifie que la commande « claude » "
-            "fonctionne dans un terminal.",
-        )
-    profile = db.get(Profile, 1)
-    email = ai_email(
-        {"title": offer.title, "company": offer.company, "description": offer.description},
-        profile.cv_text,
-        kind,
+    offer, email = _generation_ia(
+        db, offer_id, lambda o, p: ai_email(o, p.cv_text, kind)
     )
-    if not email:
-        raise HTTPException(502, "La génération a échoué (voir les logs). Réessaie dans un instant.")
     log_event(db, "ia", f"Email de {kind} généré pour « {offer.title} ».", offer.id)
     return email
 
@@ -318,27 +294,9 @@ def generate_email(offer_id: int, kind: str = "candidature", db: Session = Depen
 @router.post("/{offer_id}/interview-prep", response_model=OfferDetail)
 def generate_interview_prep(offer_id: int, db: Session = Depends(get_db)):
     """Génère une fiche de préparation d'entretien via la session locale Claude Code."""
-    offer = db.get(Offer, offer_id)
-    if not offer:
-        raise HTTPException(404, "Offre introuvable")
-    if not cli_available():
-        raise HTTPException(
-            503,
-            "CLI Claude Code introuvable sur ce poste. Vérifie que la commande « claude » "
-            "fonctionne dans un terminal.",
-        )
-    profile = db.get(Profile, 1)
-    prep = ai_interview_prep(
-        {
-            "title": offer.title,
-            "company": offer.company,
-            "location": offer.location,
-            "description": offer.description,
-        },
-        profile.cv_text,
+    offer, prep = _generation_ia(
+        db, offer_id, lambda o, p: ai_interview_prep(o, p.cv_text)
     )
-    if not prep:
-        raise HTTPException(502, "La génération a échoué (voir les logs). Réessaie dans un instant.")
     offer.interview_prep = prep.strip()
     db.commit()
     log_event(db, "ia", f"Fiche d'entretien générée pour « {offer.title} ».", offer.id)
@@ -366,8 +324,6 @@ def enrich_offer(offer_id: int, db: Session = Depends(get_db)):
     # (ou la prochaine évaluation) le recalculera sur le texte complet.
     offer.ai_score = None
     offer.ai_reason = ""
-    from ..services.scan import profile_to_dict, rescore_offer
-
     profile = db.get(Profile, 1)
     rescore_offer(offer, profile_to_dict(profile))
     db.commit()
@@ -417,8 +373,3 @@ def letter_docx(offer_id: int, db: Session = Depends(get_db)):
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={"Content-Disposition": f'attachment; filename="lettre_{safe_company}_{offer.id}.docx"'},
     )
-
-
-@router.get("/meta/statuses")
-def statuses():
-    return OFFER_STATUSES

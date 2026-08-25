@@ -6,10 +6,8 @@ dans le fichier .env.
 """
 from __future__ import annotations
 
-from datetime import datetime
-
 from ..config import settings
-from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, profile_queries
+from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, parse_published, profile_queries
 
 TOKEN_URL = "https://entreprise.francetravail.fr/connexion/oauth2/access_token?realm=%2Fpartenaire"
 SEARCH_URL = "https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search"
@@ -37,12 +35,7 @@ class FranceTravailConnector(Connector):
         return resp.json()["access_token"]
 
     def _parse(self, item: dict) -> RawOffer:
-        published = None
-        if item.get("dateCreation"):
-            try:
-                published = datetime.fromisoformat(item["dateCreation"].replace("Z", "+00:00")).replace(tzinfo=None)
-            except ValueError:
-                published = None
+        published = parse_published(item.get("dateCreation"))
         lieu = (item.get("lieuTravail") or {}).get("libelle", "")
         origine = (item.get("origineOffre") or {}).get("urlOrigine", "")
         url = origine or f"https://candidat.francetravail.fr/offres/recherche/detail/{item.get('id', '')}"

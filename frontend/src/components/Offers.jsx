@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, DEMO, formatDate, GEM_SCORE, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
+import { actionDue, api, DEMO, downloadFile, formatDate, GEM_SCORE, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
 import { useToast } from '../App.jsx'
 import OfferDetail from './OfferDetail.jsx'
 
@@ -84,8 +84,8 @@ export default function Offers({ scanning }) {
     }
   }, [filters, page, showToast])
 
-  useEffect(() => { load() }, [load])
-  useEffect(() => { if (!scanning) load() }, [scanning]) // rafraîchit à la fin d'un scan
+  // Au montage, à chaque changement de filtre/page, et quand un scan se termine.
+  useEffect(() => { load() }, [load, scanning])
 
   const setFilter = (key, value) => { setPage(0); setFilters((f) => ({ ...f, [key]: value })) }
   const pageCount = Math.max(1, Math.ceil(data.total / PAGE_SIZE))
@@ -170,12 +170,7 @@ export default function Offers({ scanning }) {
               showToast("Export Excel disponible uniquement dans l'application locale (démo en ligne).", true)
               return
             }
-            const link = document.createElement('a')
-            link.href = '/api/offers/export.xlsx'
-            link.download = ''
-            document.body.appendChild(link)
-            link.click()
-            link.remove()
+            downloadFile('/api/offers/export.xlsx')
           }}
         >
           📊 Exporter en Excel
@@ -209,9 +204,7 @@ export default function Offers({ scanning }) {
                 {offer.contract_type && <span className="chip">{offer.contract_type}</span>}
                 {offer.remote && <span className="chip remote">Télétravail</span>}
                 {!offer.still_online && <span className="chip offline">Plus en ligne ?</span>}
-                {offer.next_action_date && new Date(offer.next_action_date) <= new Date().setHours(23, 59, 59) && (
-                  <span className="chip offline">⏰ action due</span>
-                )}
+                {actionDue(offer) && <span className="chip offline">⏰ action due</span>}
                 {offer.salary_text && <span className="chip">{offer.salary_text}</span>}
               </div>
             </div>

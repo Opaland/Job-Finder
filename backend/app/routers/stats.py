@@ -12,8 +12,9 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..database import engine, ensure_schema, get_db
-from ..models import OFFER_STATUSES, Offer, local_now
+from ..models import OFFER_STATUSES, STATUTS_CLOS, STATUTS_EN_ATTENTE, Offer, local_now
 from ..services.scan import scan_status
+from ..services.textutils import parse_iso_dt
 
 router = APIRouter(prefix="/api", tags=["statistiques"])
 
@@ -21,15 +22,6 @@ router = APIRouter(prefix="/api", tags=["statistiques"])
 from ..connectors import ALL_CONNECTORS
 
 SOURCE_LABELS = {c.name: c.label for c in ALL_CONNECTORS} | {"manuelle": "Ajout manuel"}
-
-
-def _parse_dt(value):
-    from datetime import datetime
-
-    try:
-        return datetime.fromisoformat(value)
-    except (TypeError, ValueError):
-        return None
 
 
 def _company_stats(db: Session) -> list[dict]:
@@ -41,21 +33,19 @@ def _company_stats(db: Session) -> list[dict]:
     ).all():
         history = status_history or []
         applied = next(
-            (_parse_dt(h.get("date")) for h in history if h.get("status") == "postulee"),
+            (parse_iso_dt(h.get("date")) for h in history if h.get("status") == "postulee"),
             None,
         )
         if applied is None:
             continue
-        response = next(
-            (
-                _parse_dt(h.get("date"))
-                for h in history
-                if h.get("status") in ("entretien", "refusee")
-                and _parse_dt(h.get("date")) is not None
-                and _parse_dt(h.get("date")) >= applied
-            ),
-            None,
-        )
+        response = None
+        for h in history:
+            if h.get("status") not in ("entretien", "refusee"):
+                continue
+            dt = parse_iso_dt(h.get("date"))
+            if dt is not None and dt >= applied:
+                response = dt
+                break
         entry = by_company.setdefault(
             company or "Entreprise non précisée",
             {"applications": 0, "responses": 0, "delays": [], "pending": []},
@@ -64,7 +54,7 @@ def _company_stats(db: Session) -> list[dict]:
         if response is not None:
             entry["responses"] += 1
             entry["delays"].append(max(0, (response - applied).days))
-        elif status in ("postulee", "relancee"):
+        elif status in STATUTS_EN_ATTENTE:
             entry["pending"].append(max(0, (now - applied).days))
 
     companies = [
@@ -98,7 +88,7 @@ def stats(db: Session = Depends(get_db)):
 
     top20 = [
         s for (s,) in db.query(Offer.final_score)
-        .filter(Offer.status.notin_(["refusee", "fermee"]))
+        .filter(Offer.status.notin_(STATUTS_CLOS))
         .order_by(Offer.final_score.desc())
         .limit(20)
         .all()

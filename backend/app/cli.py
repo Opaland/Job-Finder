@@ -8,7 +8,7 @@ import sys
 
 from .database import SessionLocal, engine, ensure_schema
 from .services.digest import build_digest, send_digest_email
-from .services.scan import run_scan
+from .services.scan import run_full_scan
 from .services.seeding import ensure_profile
 
 
@@ -19,10 +19,8 @@ def main():
     try:
         ensure_profile(db)
         if command == "scan":
-            run = run_scan(db, trigger="quotidien")
+            run, digest, sent = run_full_scan(db, trigger="quotidien", send_email=True)
             print(f"Scan terminé : {run.new_count} nouvelle(s) offre(s), {run.error_count} erreur(s).")
-            digest = build_digest(db)
-            sent = send_digest_email(db, digest)
             print(f"Digest du {digest.date} construit (email envoyé : {sent}).")
         elif command == "digest":
             digest = build_digest(db)

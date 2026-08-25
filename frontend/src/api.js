@@ -141,3 +141,19 @@ export function formatDate(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
+
+// Une action planifiée est « due » si son échéance est aujourd'hui (inclus) ou passée.
+export function actionDue(offer) {
+  return Boolean(offer.next_action_date) && new Date(offer.next_action_date) <= new Date().setHours(23, 59, 59)
+}
+
+// Déclenche le téléchargement d'un fichier servi par le backend (export Excel,
+// lettre Word, sauvegarde…). L'appelant garde la responsabilité du garde DEMO.
+export function downloadFile(path) {
+  const link = document.createElement('a')
+  link.href = path
+  link.download = ''
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+}
