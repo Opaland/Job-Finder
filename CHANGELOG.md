@@ -1,6 +1,10 @@
 # Changelog
 
-## v2.3 — Déploiement NAS Synology
+## v2.3 — Tourner 24/7 : tâche planifiée et Docker
+
+- `installer-tache-quotidienne.bat` : enregistre la tâche Windows du scan
+  quotidien avec **réveil du PC en veille** à 07h25 et rattrapage si le PC
+  était éteint — le scan et l'email partent sans intervention.
 
 - Image Docker multi-étapes (build de l'interface puis runtime Python) et
   `docker-compose.yml` prêt pour Container Manager : scan quotidien, email et

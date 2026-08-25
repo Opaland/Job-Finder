@@ -19,7 +19,8 @@ VITE_DEMO=1 npx vite build --base=/Job-Finder/demo/ --outDir=dist-demo   # build
 ```
 
 `start.bat` (racine) fait l'installation complète sous Windows ; `scan.bat` est fait pour le
-Planificateur de tâches.
+Planificateur de tâches ; `installer-tache-quotidienne.bat` enregistre la tâche quotidienne
+(modèle `tache-quotidienne.xml`, réveil du PC en veille à 07h25).
 
 `Dockerfile` + `docker-compose.yml` : déploiement NAS Synology (README §9). L'image reproduit
 l'arborescence du dépôt (`/app/backend`, `/app/frontend/dist`, `/app/data` en volume) — `config.py`

@@ -193,50 +193,72 @@ Trois scripts, utilisables à la main ou par Claude Code :
 Dans Claude Code, les mêmes contrôles sont accessibles par `/verif`, `/revue` et `/smoke`, et un
 hook bloque automatiquement un commit dont les tests sont rouges ou un push dont les builds cassent.
 
-## 9. Déploiement sur NAS Synology (Docker)
+## 9. Scan quotidien sans PC allumé
 
-Faire tourner Job Finder sur le NAS présente un vrai intérêt : le **scan de 07:30
-et l'email quotidien partent même PC éteint**, et l'interface reste consultable
-depuis n'importe quel appareil de la maison. Il faut un modèle Synology qui
-supporte **Container Manager** (gamme « + » et x86 en général ; les modèles
-d'entrée de gamme ARM ne l'ont pas).
+Le scan de 07:30 et l'email n'ont d'intérêt que s'ils partent tous les jours.
+Trois façons d'y arriver, de la plus simple à la plus « installée ».
 
-**Installation**
+### 9.1 Réveiller le PC — aucun matériel, 2 minutes
 
-1. Copier le dépôt dans un dossier partagé, par exemple `/volume1/docker/job-finder`
+Windows sait sortir le PC de **veille** pour exécuter une tâche. Le PC se
+réveille à 07h25, scanne, envoie l'email, et se rendort.
+
+```bat
+installer-tache-quotidienne.bat        (clic droit > Executer en tant qu'administrateur)
+```
+
+Le script crée la tâche « Job Finder - scan quotidien » (réveil activé,
+rattrapage si le PC était éteint). Une condition côté Windows : Panneau de
+configuration → Options d'alimentation → Paramètres du mode → Veille →
+**Minuteries de réveil = Activer**.
+
+Limite : la veille suffit, un PC **complètement éteint** ne se réveille pas
+(le scan se lancera alors au démarrage suivant). Pour désinstaller :
+`schtasks /delete /tn "Job Finder - scan quotidien" /f`.
+
+### 9.2 NAS Synology ou mini-PC avec Docker — 24/7 pour de bon
+
+Là, l'application tourne en permanence : scan, email et interface accessibles
+depuis le PC comme depuis le téléphone, sans rien allumer.
+
+**Il faut Container Manager**, donc un Synology à processeur **x86 (Intel/AMD)** :
+les modèles « + » récents (DS224+, **DS225+**, DS423+, DS723+…). Un Raspberry Pi 4/5
+ou n'importe quel mini-PC sous Linux conviennent aussi — l'image se construit en
+ARM64 comme en x86-64.
+
+1. Copier le dépôt dans un dossier partagé, ex. `/volume1/docker/job-finder`
    (File Station, ou en SSH : `git clone https://github.com/Opaland/Job-Finder.git`).
 2. Créer le fichier de configuration — obligatoire, même vide :
    ```bash
    cd /volume1/docker/job-finder
-   cp .env.example .env      # puis renseigner les clés (README §3) et le SMTP (§4)
+   cp .env.example .env      # puis les clés (§3) et le SMTP (§4)
    ```
 3. Construire et démarrer :
    ```bash
    docker compose up -d --build
    ```
-   Depuis l'interface DSM : Container Manager → Projet → Créer → choisir le
-   dossier, `docker-compose.yml` est détecté automatiquement.
+   Depuis DSM : Container Manager → Projet → Créer → choisir le dossier, le
+   `docker-compose.yml` est détecté automatiquement.
 4. Ouvrir **`http://<ip-du-nas>:8000`**.
 
-Le conteneur contient l'API, l'interface buildée **et le planificateur** : le scan
-quotidien tourne dedans, rien à programmer dans le Planificateur de tâches DSM.
-La base et les CV vivent dans `./data` sur le NAS (à inclure dans Hyper Backup) ;
-l'image ne contient aucune donnée.
+Le conteneur embarque l'API, l'interface **et le planificateur** : rien à
+programmer dans le Planificateur de tâches DSM. La base et les CV vivent dans
+`./data` sur le NAS (à inclure dans Hyper Backup) ; l'image ne contient aucune
+donnée personnelle.
 
 **⚠️ Réseau local uniquement.** L'application n'a aucune authentification (choix
-assumé, voir §10) : ne pas l'exposer via QuickConnect, un reverse proxy DSM ou
-une redirection de port. Pour la restreindre au NAS lui-même, remplacer
+assumé, §10) : ne pas l'exposer via QuickConnect, un reverse proxy DSM ou une
+redirection de port sur la box. Pour ne l'ouvrir qu'au NAS lui-même, remplacer
 `"8000:8000"` par `"127.0.0.1:8000:8000"` dans `docker-compose.yml`.
 
 **Fonctions IA : deux options**
 
-- *Par défaut* — le conteneur n'embarque pas la CLI Claude Code. Le scan, le
+- *Par défaut* — pas de CLI Claude Code dans le conteneur. Le scan, le
   classement 0-100 expliqué, le digest, l'email, le Kanban et les statistiques
   fonctionnent normalement (le score par règles est déterministe et complet).
-  Les boutons IA (lettre, fiche d'entretien, analyse d'écart, emails) affichent
-  un message clair indiquant que la CLI est absente.
+  Les boutons IA affichent un message clair indiquant que la CLI est absente.
 - *Avec l'IA sur le NAS* — construire avec `AVEC_IA=1`, puis authentifier une
-  seule fois la session Claude Code dans le conteneur :
+  seule fois la session :
   ```bash
   # dans docker-compose.yml : décommenter le volume ./claude:/root/.claude
   AVEC_IA=1 docker compose up -d --build
@@ -249,6 +271,22 @@ soit `start.bat` sur le PC — jamais les deux en même temps sur un dossier
 partagé (SQLite ne supporte pas l'accès concurrent via SMB). Pour passer du PC
 au NAS, copier `data/jobfinder.db`, ou utiliser Sauvegarde / Restauration dans
 l'onglet Sources & réglages.
+
+### 9.3 Les NAS ARM ne peuvent pas héberger l'application
+
+Container Manager (Docker) n'existe **que sur les Synology x86**. Les modèles ARM
+— dont le **DS214** (Marvell Armada XP 32 bits, 512 Mo) et les séries « j » /
+« play » — ne le proposent pas dans le Centre de paquets, et aucun contournement
+fiable n'existe en ARM 32 bits.
+
+Installer Python à la main dessus (Entware) est théoriquement possible mais
+déconseillé : 512 Mo de RAM, dépendances compilées introuvables pour cette
+architecture, et une maintenance sans fin pour un gain nul par rapport à
+l'option 9.1.
+
+En revanche, un tel NAS reste **parfait comme destination de sauvegarde** :
+copier `data\jobfinder.db` (ou le fichier produit par le bouton Sauvegarde) vers
+un dossier partagé du NAS, manuellement ou via une tâche planifiée.
 
 ## 10. Limites connues (assumées)
 
