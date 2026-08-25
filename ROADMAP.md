@@ -102,7 +102,7 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
   règles et hooks Claude Code (`.claude/`), test de couverture du mode démo,
   build démo ajouté à la CI.
 
-## V3 — Décrocher le poste
+## V3 — Décrocher le poste ✅
 
 Cap : passer de « collecter des offres » à « piloter une recherche d'emploi »,
 avec ce qui compte quand on cherche vraiment — préparer et suivre les entretiens,
@@ -159,7 +159,7 @@ chaque jour.
 
 - [x] **Sprint 39** : application installable (PWA) et interface soignée sur
   téléphone.
-- [ ] **Sprint 40** : durcissement, revue globale, documentation et démo à jour,
+- [x] **Sprint 40** : durcissement, revue globale, documentation et démo à jour,
   release v3.0.
 
 ### Réserve (non planifié)

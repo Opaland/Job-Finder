@@ -1,5 +1,47 @@
 # Changelog
 
+## v3.0 — Décrocher le poste (sprints 21 à 40)
+
+**Entretiens et suivi (EPIC L)**
+- Entretiens datés par offre (date, format, interlocuteur) + carte « Prochains
+  entretiens » sur le tableau de bord.
+- Compte-rendu structuré après l'entretien (déroulé, ressenti, suite annoncée)
+  qui planifie directement la relance.
+- Checklist de candidature (CV adapté, lettre prête, envoyée, relancée) avec
+  avancement visible dans la liste.
+- Historique des lettres : 10 versions gardées, comparables et restaurables.
+
+**Comprendre le marché (EPIC M)**
+- Nouvel onglet Marché : compétences les plus demandées et lesquelles manquent
+  au CV, entreprises qui recrutent, salaires observés (lecture des fourchettes
+  dans les annonces), manques récurrents repérés par l'IA, fraîcheur des offres
+  et repérage des annonces republiées en boucle.
+
+**Preuves et administratif (EPIC N)**
+- Justificatif PDF de recherche d'emploi sur une période (France Travail).
+- Import / export CSV du suivi, doublons ignorés à l'import.
+- Taux d'entretien par source : ce que chaque site rapporte vraiment.
+
+**Efficacité quotidienne (EPIC O)**
+- Recherches sauvegardées, comparateur de deux offres côte à côte,
+  raccourcis clavier et palette de commandes (Ctrl+K).
+- Rappel par email à 18 h la veille d'un entretien ou d'une action datée,
+  signalant une fiche de préparation non générée.
+
+**IA de préparation (EPIC P)**
+- Simulation d'entretien : Claude joue le recruteur, commente chaque réponse.
+- Reformulation ATS du CV pour une offre donnée, sans rien inventer.
+- Bilan hebdomadaire commenté : ce qui avance, ce qui bloque, 3 actions.
+
+**Mobile (EPIC Q)**
+- Application installable sur l'écran d'accueil (PWA) et interface repensée
+  pour le téléphone.
+
+**Durcissement** — correctif de migration important : les colonnes JSON
+ajoutées à une base existante recevaient NULL et l'API renvoyait une erreur au
+premier affichage ; elles reçoivent désormais leur valeur vide et les NULL
+laissés par une version antérieure sont rattrapés.
+
 ## v2.3 — Tourner 24/7 : tâche planifiée et Docker
 
 - `deploiement/installer-linux.sh` : installation en une commande sur

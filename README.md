@@ -58,6 +58,16 @@ Tout est modifiable dans l'onglet **Profil & CV**.
 | **Personnalisation** | Pondérations du score réglables, requêtes de scan configurables, mode sombre |
 | **Données** | Enrichissement de description depuis le site d'origine, export Excel du suivi, sauvegarde et restauration de la base en un clic, migration automatique du schéma |
 | **Notes & favoris** | Notes libres, favoris ★, historique des statuts par offre |
+| **Entretiens** | Entretiens datés par offre, carte « Prochains entretiens », compte-rendu structuré qui planifie la relance |
+| **Checklist** | CV adapté / lettre prête / envoyée / relancée, avancement visible dans la liste |
+| **Marché** | Compétences les plus demandées (et lesquelles manquent à ton CV), qui recrute, salaires observés, offres fantômes |
+| **Justificatifs** | Export PDF des démarches sur une période, pour l'actualisation France Travail |
+| **Simulation d'entretien** | Claude joue le recruteur : questions, retours sur tes réponses, ce qu'il attend |
+| **Version ATS du CV** | Titre, accroche et puces réécrits avec les mots de l'offre, sans rien inventer |
+| **Bilan hebdomadaire** | Chiffres de la semaine + commentaire de Claude : ce qui avance, ce qui bloque, 3 actions |
+| **Rappels** | Email à 18 h la veille d'un entretien ou d'une action datée |
+| **Confort** | Recherches sauvegardées, comparateur d'offres, raccourcis clavier et palette (Ctrl+K), import/export CSV |
+| **Mobile** | Application installable sur l'écran d'accueil (PWA), interface adaptée au téléphone |
 
 ## 3. Configurer les sources (clés gratuites)
 

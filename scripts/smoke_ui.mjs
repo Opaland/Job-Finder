@@ -1,4 +1,4 @@
-// Smoke test navigateur : les 7 onglets de l'interface se chargent sans erreur JS.
+// Smoke test navigateur : les 8 onglets de l'interface se chargent sans erreur JS.
 // Prérequis : backend lancé sur :8000 (avec frontend/dist buildé) et Playwright
 // installé à la racine du dépôt : npm i -D playwright && npx playwright install chromium
 // (PW_MODULE=/chemin/vers/playwright si tu l'as installé ailleurs).
@@ -27,6 +27,7 @@ const onglets = [
   ['Offres', 'h1:has-text("Offres")'],
   ['Kanban', '.kcol'],
   ['Statistiques', 'h1:has-text("Statistiques")'],
+  ['Marché', 'h1:has-text("Marché")'],
   ['Journal', 'h1:has-text("Journal")'],
   ['Profil & CV', 'h1:has-text("Profil")'],
   ['Sources & réglages', 'h1:has-text("Sources")'],
