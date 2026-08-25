@@ -86,6 +86,7 @@ export const api = {
   digests: () => request('/api/digests'),
   sendDigestEmail: () => request('/api/digests/send-email', { method: 'POST' }),
   testEmail: () => request('/api/digests/test-email', { method: 'POST' }),
+  sendReminder: () => request('/api/digests/reminder', { method: 'POST' }),
 
   csvUrl: () => '/api/exports/offres.csv',
   importCsv: (file) => {

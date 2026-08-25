@@ -20,6 +20,9 @@ logger = logging.getLogger("jobfinder.scheduler")
 
 _scheduler: BackgroundScheduler | None = None
 JOB_ID = "scan_quotidien"
+JOB_RAPPEL = "rappel_veille"
+# Heure d'envoi du rappel de la veille (fin de journée, pour préparer demain).
+HEURE_RAPPEL = (18, 0)
 
 
 def _daily_job():
@@ -34,6 +37,19 @@ def _daily_job():
         logger.warning("Scan quotidien ignoré : %s", exc)
     except Exception:  # noqa: BLE001
         logger.exception("Scan quotidien en erreur")
+    finally:
+        db.close()
+
+
+def _rappel_job():
+    from .rappels import envoyer_rappel
+
+    db = SessionLocal()
+    try:
+        envoye = envoyer_rappel(db)
+        logger.info("Rappel de la veille : %s", "envoyé" if envoye else "rien à signaler")
+    except Exception:  # noqa: BLE001
+        logger.exception("Rappel de la veille en erreur")
     finally:
         db.close()
 
@@ -66,8 +82,15 @@ def start_scheduler():
         id=JOB_ID,
         replace_existing=True,
     )
+    _scheduler.add_job(
+        _rappel_job,
+        CronTrigger(hour=HEURE_RAPPEL[0], minute=HEURE_RAPPEL[1]),
+        id=JOB_RAPPEL,
+        replace_existing=True,
+    )
     _scheduler.start()
     logger.info("Scan quotidien programmé à %02d:%02d (%s)", hour, minute, settings.timezone)
+    logger.info("Rappel de la veille programmé à %02d:%02d", *HEURE_RAPPEL)
 
 
 def reschedule(scan_hour: str):

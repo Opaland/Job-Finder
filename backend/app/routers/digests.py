@@ -45,3 +45,13 @@ def test_email():
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(502, f"Échec de l'envoi : {exc}")
     return {"sent": True}
+
+
+@router.post("/reminder")
+def send_reminder(db: Session = Depends(get_db)):
+    """Envoie tout de suite le rappel des échéances de demain (test manuel)."""
+    from ..services.rappels import echeances_de_demain, envoyer_rappel
+
+    echeances = echeances_de_demain(db)
+    envoye = envoyer_rappel(db)
+    return {"envoye": envoye, **echeances}

@@ -142,10 +142,10 @@ chaque jour.
 
 ### EPIC O — Efficacité quotidienne
 
-- [ ] **Sprint 32** : recherches sauvegardées (filtres nommés, rappelés en un clic).
-- [ ] **Sprint 33** : comparateur de deux offres côte à côte.
-- [ ] **Sprint 34** : raccourcis clavier et palette de commandes.
-- [ ] **Sprint 35** : email de rappel la veille d'un entretien ou d'une action datée.
+- [x] **Sprint 32** : recherches sauvegardées (filtres nommés, rappelés en un clic).
+- [x] **Sprint 33** : comparateur de deux offres côte à côte.
+- [x] **Sprint 34** : raccourcis clavier et palette de commandes.
+- [x] **Sprint 35** : email de rappel la veille d'un entretien ou d'une action datée.
 
 ### EPIC P — IA au service de la préparation
 

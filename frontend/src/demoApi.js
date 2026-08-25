@@ -260,6 +260,7 @@ export async function demoRequest(path, options = {}) {
   if (route === '/api/scans') return data.scans
   if (route === '/api/digests/today') return data.digest
   if (route === '/api/digests') return [data.digest]
+  if (route === '/api/digests/reminder') throw new Error(LOCAL_ONLY)
   if (route.startsWith('/api/digests/')) throw new Error(LOCAL_ONLY)
   if (route === '/api/contacts' && method === 'GET') {
     const company = (params_get(query, 'company') || '').toLowerCase()

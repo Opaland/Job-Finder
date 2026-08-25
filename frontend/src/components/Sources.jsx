@@ -169,9 +169,23 @@ export default function Sources() {
             <span className="hint"> — renseigne SMTP_USER, SMTP_PASSWORD et DIGEST_EMAIL_TO dans le fichier .env (README §4)</span>
           )}
         </p>
+        <p className="hint" style={{ marginTop: 0 }}>
+          Deux envois automatiques : le point du matin après le scan, et un rappel à 18 h la
+          veille d'un entretien ou d'une action datée.
+        </p>
         <div className="actions-row">
           <button className="secondary" onClick={testEmail}>Envoyer un email de test</button>
           <button className="secondary" onClick={sendDigest}>Envoyer le digest du jour maintenant</button>
+          <button className="secondary" onClick={async () => {
+            try {
+              const r = await api.sendReminder()
+              const total = r.entretiens.length + r.actions.length
+              showToast(total === 0
+                ? 'Rien de prévu demain : aucun rappel à envoyer.'
+                : (r.envoye ? `Rappel envoyé (${total} échéance(s) demain).`
+                            : `${total} échéance(s) demain — configure le SMTP pour recevoir le rappel.`))
+            } catch (err) { showToast(err.message, true) }
+          }}>Tester le rappel de la veille</button>
         </div>
       </div>
 
