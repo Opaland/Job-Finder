@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import FRONTEND_DIST
 from .database import SessionLocal, engine, ensure_schema
-from .routers import contacts, digests, market, offers, profile, scans, sources, stats
+from .routers import contacts, digests, exports, market, offers, profile, scans, sources, stats
 from .services.scheduler import start_scheduler, stop_scheduler
 from .services.seeding import ensure_profile
 
@@ -54,6 +54,7 @@ app.include_router(sources.router)
 app.include_router(stats.router)
 app.include_router(contacts.router)
 app.include_router(market.router)
+app.include_router(exports.router)
 
 
 @app.get("/api/health")

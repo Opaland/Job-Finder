@@ -11,7 +11,12 @@ const KEY_HELP = {
   hellowork: 'Sans clé (lecture du site) — peut casser si le site change',
 }
 
+const jourISO = (decalage = 0) =>
+  new Date(Date.now() + decalage * 86400000).toISOString().slice(0, 10)
+
 export default function Sources() {
+  const [justifDu, setJustifDu] = useState(jourISO(-30))
+  const [justifAu, setJustifAu] = useState(jourISO(0))
   const [data, setData] = useState(null)
   const [profile, setProfile] = useState(null)
   const [scans, setScans] = useState([])
@@ -165,6 +170,33 @@ export default function Sources() {
         <div className="actions-row">
           <button className="secondary" onClick={testEmail}>Envoyer un email de test</button>
           <button className="secondary" onClick={sendDigest}>Envoyer le digest du jour maintenant</button>
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>Justificatif de recherche d'emploi</h2>
+        <p className="hint" style={{ marginTop: 0 }}>
+          PDF listant tes démarches (candidatures envoyées, relances, entretiens) sur la période
+          choisie — à joindre à ton actualisation France Travail.
+        </p>
+        <div className="actions-row">
+          <span className="hint">Du</span>
+          <input type="date" value={justifDu} onChange={(e) => setJustifDu(e.target.value)} />
+          <span className="hint">au</span>
+          <input type="date" value={justifAu} onChange={(e) => setJustifAu(e.target.value)} />
+          <button
+            className="primary"
+            onClick={() => {
+              if (DEMO) {
+                showToast("Justificatif disponible uniquement dans l'application locale (démo en ligne).", true)
+                return
+              }
+              if (justifDu > justifAu) { showToast('La date de début doit précéder la date de fin.', true); return }
+              downloadFile(api.justificatifUrl(justifDu, justifAu))
+            }}
+          >
+            📄 Télécharger le justificatif
+          </button>
         </div>
       </div>
 

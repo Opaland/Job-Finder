@@ -26,6 +26,7 @@ ROUTES_FICHIERS = {
     "/api/offers/{offer_id}/letter.docx",
     "/api/restore",
     "/api/profile/cv",
+    "/api/exports/justificatif.pdf",
 }
 
 

@@ -87,6 +87,9 @@ export const api = {
   sendDigestEmail: () => request('/api/digests/send-email', { method: 'POST' }),
   testEmail: () => request('/api/digests/test-email', { method: 'POST' }),
 
+  justificatifUrl: (depuis, jusquA) =>
+    `/api/exports/justificatif.pdf?depuis=${depuis}&jusqu_a=${jusquA}`,
+
   marketSkills: () => request('/api/market/skills'),
   marketCompanies: () => request('/api/market/companies'),
   marketGaps: () => request('/api/market/gaps'),
