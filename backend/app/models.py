@@ -142,6 +142,8 @@ class Profile(Base):
     scoring_weights: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     # Objectif de candidatures envoyées par semaine (jauge du tableau de bord).
     weekly_goal: Mapped[int] = mapped_column(Integer, default=5, server_default="5")
+    # Recherches sauvegardées : [{nom, filtres}] rappelées d'un clic dans la liste.
+    saved_searches: Mapped[list] = mapped_column(JSON, default=list)
     # Requêtes envoyées aux sites d'emploi à chaque scan ; None/vide = défauts des connecteurs.
     search_queries: Mapped[list | None] = mapped_column(JSON, nullable=True)
 

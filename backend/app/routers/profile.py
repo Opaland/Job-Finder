@@ -18,6 +18,35 @@ def get_profile(db: Session = Depends(get_db)):
     return db.get(Profile, 1)
 
 
+# Filtres autorisés dans une recherche sauvegardée : ceux de la liste d'offres.
+FILTRES_RECHERCHE = {"status", "source", "min_score", "search", "company", "favorite", "remote", "sort"}
+MAX_RECHERCHES = 20
+
+
+def _nettoyer_recherches(recherches: list | None) -> list:
+    """Garde des recherches exploitables : un nom, des filtres connus, pas de doublon."""
+    propres, noms_vus = [], set()
+    for brute in recherches or []:
+        if not isinstance(brute, dict):
+            continue
+        nom = str(brute.get("nom", "")).strip()[:60]
+        if not nom or nom.lower() in noms_vus:
+            continue
+        filtres = brute.get("filtres") or {}
+        if not isinstance(filtres, dict):
+            continue
+        noms_vus.add(nom.lower())
+        propres.append({
+            "nom": nom,
+            "filtres": {
+                cle: str(valeur)[:120]
+                for cle, valeur in filtres.items()
+                if cle in FILTRES_RECHERCHE and str(valeur).strip()
+            },
+        })
+    return propres[:MAX_RECHERCHES]
+
+
 @router.put("", response_model=ProfileOut)
 def update_profile(update: ProfileUpdate, db: Session = Depends(get_db)):
     profile = db.get(Profile, 1)
@@ -27,6 +56,8 @@ def update_profile(update: ProfileUpdate, db: Session = Depends(get_db)):
         "contracts", "sector_bonus", "excluded_keywords", "scoring_weights",
     }
     for field, value in update.model_dump(exclude_unset=True).items():
+        if field == "saved_searches":
+            value = _nettoyer_recherches(value)
         setattr(profile, field, value)
         if field in scoring_fields:
             changed_scoring = True

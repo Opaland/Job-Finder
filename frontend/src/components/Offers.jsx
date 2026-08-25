@@ -69,6 +69,8 @@ export default function Offers({ scanning }) {
   const [selectedId, setSelectedId] = useState(null)
   const [showAdd, setShowAdd] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [recherches, setRecherches] = useState([])
+  const [nomRecherche, setNomRecherche] = useState(null)
   const showToast = useToast()
 
   const load = useCallback(async () => {
@@ -84,9 +86,32 @@ export default function Offers({ scanning }) {
     }
   }, [filters, page, showToast])
 
+  useEffect(() => {
+    api.profile().then((p) => setRecherches(p.saved_searches || [])).catch(() => {})
+  }, [])
+
   // Au montage, à chaque changement de filtre/page, et à chaque bascule de scan
   // (recharger au démarrage est voulu ici : requête légère, liste à jour).
   useEffect(() => { load() }, [load, scanning])
+
+  const enregistrerRecherche = async (nom) => {
+    const filtres = Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== '' && v !== null))
+    const liste = [...recherches.filter((r) => r.nom.toLowerCase() !== nom.toLowerCase()), { nom, filtres }]
+    try {
+      const p = await api.updateProfile({ saved_searches: liste })
+      setRecherches(p.saved_searches || [])
+      setNomRecherche(null)
+      showToast(`Recherche « ${nom} » enregistrée.`)
+    } catch (err) { showToast(err.message, true) }
+  }
+
+  const supprimerRecherche = async (nom) => {
+    try {
+      const p = await api.updateProfile({ saved_searches: recherches.filter((r) => r.nom !== nom) })
+      setRecherches(p.saved_searches || [])
+      showToast(`Recherche « ${nom} » supprimée.`)
+    } catch (err) { showToast(err.message, true) }
+  }
 
   const setFilter = (key, value) => { setPage(0); setFilters((f) => ({ ...f, [key]: value })) }
   const pageCount = Math.max(1, Math.ceil(data.total / PAGE_SIZE))
@@ -160,6 +185,49 @@ export default function Offers({ scanning }) {
           <option value="date">Tri : date de collecte</option>
           <option value="published">Tri : date de publication</option>
         </select>
+        {recherches.length > 0 && (
+          <select
+            value=""
+            title="Rappeler une recherche enregistrée"
+            onChange={(e) => {
+              const trouvee = recherches.find((r) => r.nom === e.target.value)
+              if (!trouvee) return
+              setPage(0)
+              setFilters({
+                status: '', source: '', min_score: '', search: '', company: '', sort: 'score',
+                favorite: '', ...trouvee.filtres,
+              })
+              showToast(`Recherche « ${trouvee.nom} » appliquée.`)
+            }}
+          >
+            <option value="">⭐ Mes recherches…</option>
+            {recherches.map((r) => <option key={r.nom} value={r.nom}>{r.nom}</option>)}
+          </select>
+        )}
+        {nomRecherche === null ? (
+          <button className="secondary" title="Enregistrer les filtres actuels"
+            onClick={() => setNomRecherche('')}>💾 Enregistrer la recherche</button>
+        ) : (
+          <>
+            <input
+              type="text" autoFocus placeholder="Nom de la recherche" style={{ maxWidth: 180 }}
+              value={nomRecherche} onChange={(e) => setNomRecherche(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && nomRecherche.trim()) enregistrerRecherche(nomRecherche.trim()) }}
+            />
+            <button className="primary" disabled={!nomRecherche.trim()}
+              onClick={() => enregistrerRecherche(nomRecherche.trim())}>OK</button>
+            <button className="secondary" onClick={() => setNomRecherche(null)}>Annuler</button>
+          </>
+        )}
+        {recherches.length > 0 && (
+          <select
+            value="" title="Supprimer une recherche enregistrée" style={{ maxWidth: 44 }}
+            onChange={(e) => e.target.value && supprimerRecherche(e.target.value)}
+          >
+            <option value="">🗑️</option>
+            {recherches.map((r) => <option key={r.nom} value={r.nom}>{r.nom}</option>)}
+          </select>
+        )}
         <button className="primary" onClick={() => setShowAdd(true)}>
           + Ajouter une offre
         </button>
