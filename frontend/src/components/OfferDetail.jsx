@@ -19,6 +19,7 @@ export default function OfferDetail({ offerId, onClose }) {
   const [newContact, setNewContact] = useState(null)
   const [newInterview, setNewInterview] = useState(null)
   const [report, setReport] = useState(null)
+  const [simulation, setSimulation] = useState(null)   // { echange: [], tour, reponse }
   const showToast = useToast()
 
   const loadContacts = (company) => {
@@ -314,6 +315,80 @@ export default function OfferDetail({ offerId, onClose }) {
           onChange={(e) => setPrep(e.target.value)}
           onBlur={() => prep !== (offer.interview_prep || '') && patch({ interview_prep: prep }, 'Fiche enregistrée.')}
         />
+
+        <div className="section-title">Simulation d'entretien</div>
+        <p className="hint" style={{ margin: '2px 0 6px' }}>
+          Claude joue le recruteur à partir de cette offre et de ton CV : il pose une question,
+          tu réponds, il commente puis enchaîne.
+        </p>
+        <div className="actions-row" style={{ margin: '4px 0 8px' }}>
+          <button
+            className="primary" disabled={busy !== null}
+            onClick={() => runAction('simu', async () => {
+              const tour = await api.simulateInterview(offer.id, [])
+              setSimulation({ echange: [], tour, reponse: '' })
+            })}
+          >
+            {busy === 'simu' ? (<><span className="spin" />Le recruteur réfléchit…</>) : (simulation ? '🔄 Recommencer la simulation' : '🎤 Démarrer la simulation')}
+          </button>
+          {simulation && (
+            <button className="secondary" onClick={() => setSimulation(null)}>Terminer</button>
+          )}
+        </div>
+        {simulation?.tour && (
+          <div className="card" style={{ padding: 12 }}>
+            {simulation.tour.retour && (
+              <div className="ai-box" style={{ marginTop: 0 }}>{simulation.tour.retour}</div>
+            )}
+            <p style={{ fontWeight: 700, marginBottom: 4 }}>{simulation.tour.question}</p>
+            {simulation.tour.conseil && (
+              <p className="hint" style={{ marginTop: 0 }}>💡 {simulation.tour.conseil}</p>
+            )}
+            <textarea
+              rows={4} placeholder="Ta réponse…" value={simulation.reponse}
+              onChange={(e) => setSimulation({ ...simulation, reponse: e.target.value })}
+            />
+            <div className="actions-row" style={{ marginTop: 6 }}>
+              <button
+                className="primary" disabled={busy !== null || !simulation.reponse.trim()}
+                onClick={() => runAction('simu', async () => {
+                  const echange = [
+                    ...simulation.echange,
+                    { question: simulation.tour.question, reponse: simulation.reponse },
+                  ]
+                  const tour = await api.simulateInterview(offer.id, echange)
+                  setSimulation({ echange, tour, reponse: '' })
+                })}
+              >
+                {busy === 'simu' ? (<><span className="spin" />Analyse…</>) : 'Répondre'}
+              </button>
+              <span className="hint">{simulation.echange.length} question(s) déjà traitée(s)</span>
+            </div>
+          </div>
+        )}
+
+        <div className="section-title">Adapter le CV à cette offre (ATS)</div>
+        <div className="actions-row" style={{ margin: '4px 0 8px' }}>
+          <button
+            className="secondary" disabled={busy !== null}
+            onClick={() => runAction('ats', async () => {
+              setOffer(await api.reformulationAts(offer.id))
+            }, 'Reformulation ATS générée : titre, accroche, puces et mots-clés.')}
+          >
+            {busy === 'ats'
+              ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Reformulation…</>)
+              : (offer.ats_reformulation ? '📝 Régénérer la version ATS' : '📝 Reformuler mon CV pour cette offre')}
+          </button>
+          {offer.ats_reformulation && (
+            <button className="secondary"
+              onClick={() => { navigator.clipboard.writeText(offer.ats_reformulation); showToast('Reformulation copiée.') }}>
+              Copier
+            </button>
+          )}
+        </div>
+        {offer.ats_reformulation && (
+          <div className="desc" style={{ maxHeight: 320 }}>{offer.ats_reformulation}</div>
+        )}
 
         {offer.company && (
           <>

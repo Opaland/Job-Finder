@@ -55,3 +55,32 @@ def send_reminder(db: Session = Depends(get_db)):
     echeances = echeances_de_demain(db)
     envoye = envoyer_rappel(db)
     return {"envoye": envoye, **echeances}
+
+
+@router.post("/weekly-review")
+def weekly_review(db: Session = Depends(get_db)):
+    """Bilan de la semaine commenté par l'IA locale (chiffres + conseils)."""
+    from ..models import Profile
+    from ..services.claude_ai import ai_bilan_hebdo, cli_available
+    from ..services.digest import resume_semaine
+
+    resume = resume_semaine(db)
+    if not cli_available():
+        raise HTTPException(
+            503,
+            "CLI Claude Code introuvable sur ce poste : les chiffres de la semaine sont "
+            "affichés, mais le commentaire nécessite la commande « claude ».",
+        )
+    profile = db.get(Profile, 1)
+    texte = ai_bilan_hebdo(resume, profile.cv_text if profile else "")
+    if not texte:
+        raise HTTPException(502, "La génération a échoué (voir les logs). Réessaie dans un instant.")
+    return {"resume": resume, "bilan": texte}
+
+
+@router.get("/weekly-summary")
+def weekly_summary(db: Session = Depends(get_db)):
+    """Chiffres de la semaine, sans IA."""
+    from ..services.digest import resume_semaine
+
+    return resume_semaine(db)

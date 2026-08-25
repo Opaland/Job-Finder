@@ -7,8 +7,10 @@ from sqlalchemy.orm import Session, load_only
 
 from ..database import get_db
 from ..models import CHECKLIST_ETAPES, OFFER_STATUSES, STATUS_LABELS, Offer, Profile, local_now
-from ..schemas import InterviewIn, InterviewReport, ManualOffer, OfferDetail, OfferSummary, OfferUpdate
-from ..services.claude_ai import ai_cover_letter, ai_email, ai_gap_analysis, ai_interview_prep, cli_available
+from ..schemas import InterviewIn, InterviewReport, ManualOffer, SimulationTour, OfferDetail, OfferSummary, OfferUpdate
+# Import du module (et non des fonctions) : la disponibilité de la CLI est lue
+# à l'appel, ce qui permet aussi de simuler son absence dans les tests.
+from ..services import claude_ai
 from ..services.enrich import fetch_full_description
 from ..services.journal import log_event
 from ..services.scan import find_twin, offer_to_scoring_dict, profile_to_dict, rescore_offer
@@ -256,7 +258,7 @@ def _generation_ia(db: Session, offer_id: int, generer, *, aide_503: str = "", a
     offer = db.get(Offer, offer_id)
     if not offer:
         raise HTTPException(404, "Offre introuvable")
-    if not cli_available():
+    if not claude_ai.cli_available():
         raise HTTPException(
             503,
             "CLI Claude Code introuvable sur ce poste. Vérifie que la commande « claude » "
@@ -273,7 +275,7 @@ def generate_letter(offer_id: int, db: Session = Depends(get_db)):
     """Génère la lettre de motivation adaptée à l'offre via la session locale Claude Code."""
     offer, letter = _generation_ia(
         db, offer_id,
-        lambda o, p: ai_cover_letter(o, p.cv_text, p.letter_template),
+        lambda o, p: claude_ai.ai_cover_letter(o, p.cv_text, p.letter_template),
         aide_503=", ou édite la lettre manuellement",
         aide_502="Réessaie ou édite la lettre manuellement.",
     )
@@ -303,7 +305,7 @@ def restore_letter(offer_id: int, index: int, db: Session = Depends(get_db)):
 def generate_gap_analysis(offer_id: int, db: Session = Depends(get_db)):
     """Analyse d'écart CV ↔ offre (compétences couvertes/manquantes, conseils ATS)."""
     offer, analysis = _generation_ia(
-        db, offer_id, lambda o, p: ai_gap_analysis(o, p.cv_text)
+        db, offer_id, lambda o, p: claude_ai.ai_gap_analysis(o, p.cv_text)
     )
     offer.gap_analysis = analysis.strip()
     db.commit()
@@ -317,7 +319,7 @@ def generate_email(offer_id: int, kind: str = "candidature", db: Session = Depen
     if kind not in ("candidature", "relance"):
         raise HTTPException(400, "Type d'email inconnu : utilise « candidature » ou « relance ».")
     offer, email = _generation_ia(
-        db, offer_id, lambda o, p: ai_email(o, p.cv_text, kind)
+        db, offer_id, lambda o, p: claude_ai.ai_email(o, p.cv_text, kind)
     )
     log_event(db, "ia", f"Email de {kind} généré pour « {offer.title} ».", offer.id)
     return email
@@ -327,11 +329,32 @@ def generate_email(offer_id: int, kind: str = "candidature", db: Session = Depen
 def generate_interview_prep(offer_id: int, db: Session = Depends(get_db)):
     """Génère une fiche de préparation d'entretien via la session locale Claude Code."""
     offer, prep = _generation_ia(
-        db, offer_id, lambda o, p: ai_interview_prep(o, p.cv_text)
+        db, offer_id, lambda o, p: claude_ai.ai_interview_prep(o, p.cv_text)
     )
     offer.interview_prep = prep.strip()
     db.commit()
     log_event(db, "ia", f"Fiche d'entretien générée pour « {offer.title} ».", offer.id)
+    return offer
+
+
+@router.post("/{offer_id}/simulation")
+def simulate_interview(offer_id: int, payload: SimulationTour, db: Session = Depends(get_db)):
+    """Simulation d'entretien : Claude commente la réponse puis pose la suivante."""
+    _, tour = _generation_ia(
+        db, offer_id,
+        lambda o, p: claude_ai.ai_interview_question(o, p.cv_text, [e.model_dump() for e in payload.echange]),
+        aide_502="Réessaie : la simulation reprend là où tu en étais.",
+    )
+    return tour
+
+
+@router.post("/{offer_id}/ats", response_model=OfferDetail)
+def reformulation_ats(offer_id: int, db: Session = Depends(get_db)):
+    """Reformule les expériences du CV avec les mots de l'offre (lecture ATS)."""
+    offer, texte = _generation_ia(db, offer_id, lambda o, p: claude_ai.ai_reformulation_ats(o, p.cv_text))
+    offer.ats_reformulation = texte.strip()
+    db.commit()
+    log_event(db, "ia", f"Reformulation ATS générée pour « {offer.title} ».", offer.id)
     return offer
 
 

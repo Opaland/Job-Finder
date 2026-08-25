@@ -43,6 +43,9 @@ export const api = {
   interviewPrep: (id) => request(`/api/offers/${id}/interview-prep`, { method: 'POST' }),
   generateEmail: (id, kind) => request(`/api/offers/${id}/email?kind=${kind}`, { method: 'POST' }),
   gapAnalysis: (id) => request(`/api/offers/${id}/gap-analysis`, { method: 'POST' }),
+  simulateInterview: (id, echange) =>
+    request(`/api/offers/${id}/simulation`, { method: 'POST', body: JSON.stringify({ echange }) }),
+  reformulationAts: (id) => request(`/api/offers/${id}/ats`, { method: 'POST' }),
 
   addInterview: (id, body) =>
     request(`/api/offers/${id}/interviews`, { method: 'POST', body: JSON.stringify(body) }),
@@ -87,6 +90,8 @@ export const api = {
   sendDigestEmail: () => request('/api/digests/send-email', { method: 'POST' }),
   testEmail: () => request('/api/digests/test-email', { method: 'POST' }),
   sendReminder: () => request('/api/digests/reminder', { method: 'POST' }),
+  weeklySummary: () => request('/api/digests/weekly-summary'),
+  weeklyReview: () => request('/api/digests/weekly-review', { method: 'POST' }),
 
   csvUrl: () => '/api/exports/offres.csv',
   importCsv: (file) => {

@@ -42,6 +42,7 @@ class OfferDetail(OfferSummary):
     other_sources: list
     interviews: list
     letter_versions: list
+    ats_reformulation: str | None
     status_history: list
     last_seen_at: datetime
 
@@ -62,6 +63,17 @@ class InterviewReport(BaseModel):
     ressenti: str | None = None       # bon, mitige, mauvais
     suite: str | None = None          # ce que le recruteur a annoncé
     relance_le: datetime | None = None  # cale la prochaine action sur cette date
+
+
+class SimulationEchange(BaseModel):
+    question: str = ""
+    reponse: str = ""
+
+
+class SimulationTour(BaseModel):
+    """Historique de la simulation d'entretien envoyé à chaque tour."""
+
+    echange: list[SimulationEchange] = []
 
 
 class ManualOffer(BaseModel):

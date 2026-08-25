@@ -222,3 +222,95 @@ Rédige la lettre de motivation ADAPTÉE à cette offre, en français, en gardan
 pertinentes pour CE poste). Longueur : 350 à 450 mots. Réponds UNIQUEMENT avec le texte de la
 lettre, sans commentaire avant ou après."""
     return _run_claude(prompt, timeout=300)
+
+
+def ai_interview_question(offer: dict, cv_text: str, echange: list[dict] | None = None) -> dict | None:
+    """Simulation d'entretien : pose une question, ou commente la réponse précédente.
+
+    `echange` est l'historique [{"question": …, "reponse": …}, …]. Le retour vaut
+    {"retour": <commentaire sur la dernière réponse, vide au début>,
+     "question": <question suivante>, "conseil": <ce que le recruteur attend>}.
+    """
+    if not cli_available():
+        return None
+    historique = ""
+    for tour in (echange or [])[-6:]:
+        historique += f"\nQ : {tour.get('question', '')}\nR : {tour.get('reponse', '')}\n"
+
+    prompt = f"""Tu simules un entretien de recrutement avec Cédric Moretti (Test Manager / QA Lead,
+15 ans d'expérience, Lyon). Tu joues le recruteur : exigeant mais bienveillant, questions
+concrètes, en français.
+
+CV (résumé) :
+{cv_text[:4000]}
+
+OFFRE :
+Titre : {offer.get('title', '')}
+Entreprise : {offer.get('company', '')}
+Description : {offer.get('description', '')[:4000]}
+
+ÉCHANGE JUSQU'ICI :{historique or " (aucun, c'est la première question)"}
+
+Réponds UNIQUEMENT avec un objet JSON :
+{{"retour": "<2 phrases max sur la dernière réponse : ce qui marche, ce qui manque — chaîne vide s'il n'y a pas encore de réponse>",
+  "question": "<la question suivante, une seule, adaptée à l'offre et à ce qui a déjà été dit>",
+  "conseil": "<1 phrase : ce que le recruteur cherche vraiment dans cette question>"}}"""
+    result = _run_claude(prompt, timeout=180)
+    if not result:
+        return None
+    data = _extract_json(result)
+    if not data or not data.get("question"):
+        return None
+    return {
+        "retour": str(data.get("retour", ""))[:1200],
+        "question": str(data["question"])[:800],
+        "conseil": str(data.get("conseil", ""))[:500],
+    }
+
+
+def ai_reformulation_ats(offer: dict, cv_text: str) -> str | None:
+    """Reformule les expériences du CV avec les mots de l'offre (lecture ATS)."""
+    if not cli_available():
+        return None
+    prompt = f"""Tu es expert des ATS (logiciels de tri de CV). Tu aides Cédric Moretti à adapter
+son CV à une offre précise, SANS jamais inventer d'expérience ni gonfler un niveau.
+
+CV actuel :
+{cv_text[:6000]}
+
+OFFRE VISÉE :
+Titre : {offer.get('title', '')}
+Entreprise : {offer.get('company', '')}
+Description : {offer.get('description', '')[:5000]}
+
+Produis, en français et en texte simple :
+1. TITRE DU CV : 2 propositions reprenant l'intitulé de l'offre s'il correspond vraiment au profil.
+2. ACCROCHE : un paragraphe de 3 lignes maximum, avec les mots-clés de l'offre réellement couverts par le CV.
+3. EXPÉRIENCES REFORMULÉES : 5 à 8 puces réécrites depuis le CV avec le vocabulaire de l'offre,
+   chiffrées quand le CV donne un chiffre. Chaque puce doit rester vraie.
+4. MOTS-CLÉS À AJOUTER : ceux de l'offre absents du CV, en séparant « déjà pratiqué, à mentionner »
+   et « à ne pas revendiquer ».
+Pas de blabla d'introduction."""
+    result = _run_claude(prompt, timeout=300)
+    return result.strip() if result else None
+
+
+def ai_bilan_hebdo(resume: dict, cv_text: str) -> str | None:
+    """Bilan de la semaine : ce qui avance, ce qui bloque, quoi faire ensuite."""
+    if not cli_available():
+        return None
+    prompt = f"""Tu es coach en recherche d'emploi. Voici les chiffres de la semaine de Cédric
+Moretti (Test Manager / QA Lead, Lyon, en recherche active) :
+
+{json.dumps(resume, ensure_ascii=False, indent=2)}
+
+Extrait de son CV :
+{cv_text[:2500]}
+
+Écris en français, en 200 mots maximum, sans flatterie :
+- CE QUI AVANCE : 1 à 2 constats appuyés sur les chiffres.
+- CE QUI BLOQUE : le point le plus faible des chiffres, dit franchement.
+- LA SEMAINE PROCHAINE : 3 actions concrètes et réalistes, la plus importante d'abord.
+Pas d'introduction ni de conclusion générique."""
+    result = _run_claude(prompt, timeout=240)
+    return result.strip() if result else None

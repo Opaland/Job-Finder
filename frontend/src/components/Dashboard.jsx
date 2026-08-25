@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, formatDate, GEM_SCORE, scoreColor, SOURCE_LABELS, STATUS_LABELS } from '../api.js'
+import { useToast } from '../App.jsx'
 
 function OfferLine({ offer }) {
   return (
@@ -43,9 +44,14 @@ function StatusRow({ offer }) {
 export default function Dashboard({ scanning, goToOffers }) {
   const [digest, setDigest] = useState(null)
   const [error, setError] = useState(null)
+  const [semaine, setSemaine] = useState(null)
+  const [bilan, setBilan] = useState(null)
+  const [bilanEnCours, setBilanEnCours] = useState(false)
+  const showToast = useToast()
 
   const load = async () => {
     try {
+      api.weeklySummary().then(setSemaine).catch(() => {})
       setDigest(await api.digestToday())
       setError(null)
     } catch (err) {
@@ -181,6 +187,43 @@ export default function Dashboard({ scanning, goToOffers }) {
           <p className="hint" style={{ marginBottom: 0 }}>
             Candidatures envoyées depuis lundi. Objectif réglable dans Profil & CV.
           </p>
+        </div>
+      )}
+
+      {semaine && (
+        <div className="card">
+          <h2>Bilan de la semaine</h2>
+          <div className="actions-row" style={{ flexWrap: 'wrap', marginBottom: 8 }}>
+            <span className="chip">Candidatures : <b>{semaine.candidatures_envoyees}</b> / {semaine.objectif_hebdo}</span>
+            <span className="chip">Relances : <b>{semaine.relances}</b></span>
+            <span className="chip">Entretiens obtenus : <b>{semaine.entretiens_obtenus}</b></span>
+            <span className="chip">Offres collectées : <b>{semaine.nouvelles_offres_collectees}</b></span>
+            {semaine.relances_en_retard > 0 && (
+              <span className="chip offline">Relances en retard : <b>{semaine.relances_en_retard}</b></span>
+            )}
+            {semaine.actions_en_retard > 0 && (
+              <span className="chip offline">Actions en retard : <b>{semaine.actions_en_retard}</b></span>
+            )}
+          </div>
+          <button
+            className="secondary" disabled={bilanEnCours}
+            onClick={async () => {
+              setBilanEnCours(true)
+              try {
+                const r = await api.weeklyReview()
+                setBilan(r.bilan)
+              } catch (err) {
+                showToast(err.message, true)
+              } finally {
+                setBilanEnCours(false)
+              }
+            }}
+          >
+            {bilanEnCours
+              ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Analyse de la semaine…</>)
+              : (bilan ? '🔄 Régénérer le bilan commenté' : '🧭 Demander le bilan commenté à Claude')}
+          </button>
+          {bilan && <div className="desc" style={{ marginTop: 10, maxHeight: 'none' }}>{bilan}</div>}
         </div>
       )}
 

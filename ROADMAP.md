@@ -149,10 +149,10 @@ chaque jour.
 
 ### EPIC P — IA au service de la préparation
 
-- [ ] **Sprint 36** : simulation d'entretien — Claude pose les questions, tu
+- [x] **Sprint 36** : simulation d'entretien — Claude pose les questions, tu
   réponds, il commente.
-- [ ] **Sprint 37** : reformulation ATS des expériences du CV pour une offre donnée.
-- [ ] **Sprint 38** : bilan hebdomadaire commenté par l'IA (ce qui avance, ce
+- [x] **Sprint 37** : reformulation ATS des expériences du CV pour une offre donnée.
+- [x] **Sprint 38** : bilan hebdomadaire commenté par l'IA (ce qui avance, ce
   qui bloque, quoi faire la semaine prochaine).
 
 ### EPIC Q — Mobile et release

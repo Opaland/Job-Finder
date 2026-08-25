@@ -368,3 +368,36 @@ def send_digest_email(db: Session, digest: Digest) -> bool:
     except Exception:  # noqa: BLE001
         logger.exception("Envoi de l'email du digest impossible")
         return False
+
+
+def resume_semaine(db: Session) -> dict:
+    """Chiffres de la semaine écoulée, matière première du bilan IA."""
+    debut = local_now() - timedelta(days=7)
+    nouvelles = db.query(func.count(Offer.id)).filter(Offer.collected_at >= debut).scalar() or 0
+
+    candidatures = relances = entretiens_passes = 0
+    for (historique,) in db.query(Offer.status_history).all():
+        for entree in historique or []:
+            quand = parse_iso_dt(entree.get("date"))
+            if quand is None or quand < debut:
+                continue
+            if entree.get("status") == "postulee":
+                candidatures += 1
+            elif entree.get("status") == "relancee":
+                relances += 1
+            elif entree.get("status") == "entretien":
+                entretiens_passes += 1
+
+    entretiens_a_venir = len(next_interviews(db))
+    profile = db.get(Profile, 1)
+    return {
+        "objectif_hebdo": (profile.weekly_goal if profile else 5) or 0,
+        "candidatures_envoyees": candidatures,
+        "relances": relances,
+        "entretiens_obtenus": entretiens_passes,
+        "entretiens_a_venir": entretiens_a_venir,
+        "nouvelles_offres_collectees": nouvelles,
+        "pepites_en_attente": len(gems(db)),
+        "relances_en_retard": len(offers_to_relaunch(db)),
+        "actions_en_retard": sum(1 for a in actions_due(db) if a["overdue"]),
+    }

@@ -242,6 +242,8 @@ export async function demoRequest(path, options = {}) {
   if (route.match(/^\/api\/offers\/\d+\/interview-prep$/)) throw new Error(LOCAL_ONLY)
   if (route.match(/^\/api\/offers\/\d+\/email$/)) throw new Error(LOCAL_ONLY)
   if (route.match(/^\/api\/offers\/\d+\/gap-analysis$/)) throw new Error(LOCAL_ONLY)
+  if (route.match(/^\/api\/offers\/\d+\/simulation$/)) throw new Error(LOCAL_ONLY)
+  if (route.match(/^\/api\/offers\/\d+\/ats$/)) throw new Error(LOCAL_ONLY)
   if (route === '/api/offers/meta/checklist') {
     return { cv_adapte: 'CV adapté', lettre_prete: 'Lettre prête', envoyee: 'Candidature envoyée', relancee: 'Relancée' }
   }
@@ -260,6 +262,18 @@ export async function demoRequest(path, options = {}) {
   if (route === '/api/scans') return data.scans
   if (route === '/api/digests/today') return data.digest
   if (route === '/api/digests') return [data.digest]
+  if (route === '/api/digests/weekly-summary') {
+    const compte = (statut) => state.offers.filter((o) =>
+      (o.status_history || []).some((h) => h.status === statut)).length
+    return {
+      objectif_hebdo: state.profile.weekly_goal || 5,
+      candidatures_envoyees: compte('postulee'), relances: compte('relancee'),
+      entretiens_obtenus: compte('entretien'), entretiens_a_venir: 0,
+      nouvelles_offres_collectees: state.offers.length, pepites_en_attente:
+        state.offers.filter((o) => o.final_score >= 85 && ['nouvelle', 'vue', 'a_postuler'].includes(o.status)).length,
+      relances_en_retard: 0, actions_en_retard: 0,
+    }
+  }
   if (route === '/api/digests/reminder') throw new Error(LOCAL_ONLY)
   if (route.startsWith('/api/digests/')) throw new Error(LOCAL_ONLY)
   if (route === '/api/contacts' && method === 'GET') {
