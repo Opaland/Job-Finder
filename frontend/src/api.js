@@ -54,8 +54,6 @@ export const api = {
   deleteInterview: (id, index) =>
     request(`/api/offers/${id}/interviews/${index}`, { method: 'DELETE' }),
 
-  checklistEtapes: () => request('/api/offers/meta/checklist'),
-
   contacts: (company) => request(`/api/contacts${company ? `?company=${encodeURIComponent(company)}` : ''}`),
   addContact: (body) => request('/api/contacts', { method: 'POST', body: JSON.stringify(body) }),
   deleteContact: (id) => request(`/api/contacts/${id}`, { method: 'DELETE' }),
@@ -177,7 +175,8 @@ export function formatDate(iso) {
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-// Étapes de la checklist de candidature (miroir de CHECKLIST_ETAPES, models.py).
+// Étapes de la checklist de candidature — miroir de CHECKLIST_ETAPES
+// (backend/app/models.py), comme STATUS_LABELS : une source par langage.
 export const CHECKLIST_ETAPES = {
   cv_adapte: 'CV adapté',
   lettre_prete: 'Lettre prête',

@@ -53,7 +53,7 @@ def send_reminder(db: Session = Depends(get_db)):
     from ..services.rappels import echeances_de_demain, envoyer_rappel
 
     echeances = echeances_de_demain(db)
-    envoye = envoyer_rappel(db)
+    envoye = envoyer_rappel(db, echeances)
     return {"envoye": envoye, **echeances}
 
 

@@ -94,7 +94,12 @@ def _conversion_par_source(db: Session) -> list[dict]:
             # Part des candidatures qui ont débouché sur un entretien.
             "taux_entretien": round(100 * entree["entretiens"] / candidatures) if candidatures else None,
         })
-    lignes.sort(key=lambda s: (-(s["taux_entretien"] or -1), -s["candidatures"], s["label"]))
+    # Un taux de 0 % est une information ; « pas encore de candidature » (None)
+    # passe en dernier, sans être confondu avec un 0 %.
+    lignes.sort(key=lambda s: (
+        -(s["taux_entretien"] if s["taux_entretien"] is not None else -1),
+        -s["candidatures"], s["label"],
+    ))
     return lignes
 
 

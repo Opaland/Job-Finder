@@ -78,9 +78,12 @@ def rappel_html(echeances: dict) -> str:
     return "".join(parties)
 
 
-def envoyer_rappel(db: Session) -> bool:
-    """Envoie le rappel s'il y a quelque chose demain ET que le SMTP est configuré."""
-    echeances = echeances_de_demain(db)
+def envoyer_rappel(db: Session, echeances: dict | None = None) -> bool:
+    """Envoie le rappel s'il y a quelque chose demain ET que le SMTP est configuré.
+
+    `echeances` évite de reparcourir les offres quand l'appelant les a déjà.
+    """
+    echeances = echeances_de_demain(db) if echeances is None else echeances
     if not echeances["entretiens"] and not echeances["actions"]:
         return False
     if not smtp_configured():

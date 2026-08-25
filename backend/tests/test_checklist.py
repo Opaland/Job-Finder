@@ -10,10 +10,20 @@ def _offre(db):
     return offer
 
 
-def test_etapes_exposees_au_frontend(client):
-    resp = client.get("/api/offers/meta/checklist")
-    assert resp.status_code == 200
-    assert list(resp.json()) == list(CHECKLIST_ETAPES)
+def test_etapes_alignees_avec_le_frontend():
+    """Les étapes du backend et celles d'api.js doivent rester identiques.
+
+    Comme STATUS_LABELS, la table est écrite dans les deux langages : ce test
+    empêche qu'elles divergent.
+    """
+    import re
+    from pathlib import Path
+
+    api_js = (Path(__file__).resolve().parent.parent.parent
+              / "frontend" / "src" / "api.js").read_text(encoding="utf-8")
+    bloc = re.search(r"CHECKLIST_ETAPES = \{(.*?)\}", api_js, re.DOTALL).group(1)
+    cles_frontend = re.findall(r"(\w+):", bloc)
+    assert cles_frontend == list(CHECKLIST_ETAPES)
 
 
 def test_cocher_une_etape(client, db):

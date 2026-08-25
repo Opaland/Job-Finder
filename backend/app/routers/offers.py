@@ -188,12 +188,6 @@ def export_xlsx(db: Session = Depends(get_db)):
 
 
 
-@router.get("/meta/checklist")
-def checklist_etapes():
-    """Étapes de la checklist de candidature, dans l'ordre d'affichage."""
-    return CHECKLIST_ETAPES
-
-
 @router.get("/{offer_id}", response_model=OfferDetail)
 def get_offer(offer_id: int, db: Session = Depends(get_db)):
     offer = db.get(Offer, offer_id)
