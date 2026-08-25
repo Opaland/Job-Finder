@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, load_only
 
 from ..database import get_db
 from ..models import OFFER_STATUSES, STATUS_LABELS, Offer, Profile, local_now
-from ..schemas import InterviewIn, ManualOffer, OfferDetail, OfferSummary, OfferUpdate
+from ..schemas import InterviewIn, InterviewReport, ManualOffer, OfferDetail, OfferSummary, OfferUpdate
 from ..services.claude_ai import ai_cover_letter, ai_email, ai_gap_analysis, ai_interview_prep, cli_available
 from ..services.enrich import fetch_full_description
 from ..services.journal import log_event
@@ -358,6 +358,37 @@ def add_interview(offer_id: int, payload: InterviewIn, db: Session = Depends(get
     log_event(db, "entretien", f"Entretien noté pour « {offer.title} » "
                                f"({offer.company or 'entreprise inconnue'}) le "
                                f"{payload.date.strftime('%d/%m/%Y à %H:%M')}.", offer.id)
+    return offer
+
+
+@router.patch("/{offer_id}/interviews/{index}", response_model=OfferDetail)
+def update_interview(offer_id: int, index: int, payload: InterviewReport, db: Session = Depends(get_db)):
+    """Compte-rendu d'entretien : déroulé, ressenti, suite annoncée.
+
+    Si une date de relance est fournie, elle devient la prochaine action datée
+    de l'offre — la suite annoncée en entretien ne se perd pas.
+    """
+    offer = _offre(db, offer_id)
+    entretiens = list(offer.interviews or [])
+    if not 0 <= index < len(entretiens):
+        raise HTTPException(404, "Cet entretien n'existe pas (la liste a peut-être changé).")
+
+    entretien = dict(entretiens[index])
+    data = payload.model_dump(exclude_unset=True)
+    for champ in ("compte_rendu", "ressenti", "suite"):
+        if data.get(champ) is not None:
+            entretien[champ] = data[champ]
+    entretiens[index] = entretien
+    offer.interviews = entretiens
+
+    if "relance_le" in payload.model_fields_set:
+        offer.next_action_date = payload.relance_le
+        if payload.relance_le is not None and not (offer.next_action_note or "").strip():
+            offer.next_action_note = "Relancer après l'entretien" + (
+                f" ({entretien.get('suite', '').strip()})" if entretien.get("suite", "").strip() else ""
+            )
+    db.commit()
+    log_event(db, "entretien", f"Compte-rendu d'entretien enregistré pour « {offer.title} ».", offer.id)
     return offer
 
 

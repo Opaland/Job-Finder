@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { api, DEMO, downloadFile, formatDate, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
 import { useToast } from '../App.jsx'
 
+const RESSENTIS = { bon: '😀 bon', mitige: '😐 mitigé', mauvais: '☹️ mauvais' }
+
 const DEMO_ONLY_MSG = "Disponible uniquement dans l'application locale (ceci est la démo en ligne)."
 
 export default function OfferDetail({ offerId, onClose }) {
@@ -16,6 +18,7 @@ export default function OfferDetail({ offerId, onClose }) {
   const [contacts, setContacts] = useState([])
   const [newContact, setNewContact] = useState(null)
   const [newInterview, setNewInterview] = useState(null)
+  const [report, setReport] = useState(null)
   const showToast = useToast()
 
   const loadContacts = (company) => {
@@ -343,14 +346,59 @@ export default function OfferDetail({ offerId, onClose }) {
             </span>
             {e.format && <span className="chip">{e.format}</span>}
             {e.interlocuteur && <span className="hint">{e.interlocuteur}</span>}
+            {e.ressenti && <span className="chip">{RESSENTIS[e.ressenti] || e.ressenti}</span>}
+            <button className="secondary" style={{ padding: '2px 8px', fontSize: 13 }}
+              onClick={() => setReport(report?.index === i ? null : {
+                index: i, compte_rendu: e.compte_rendu || '', ressenti: e.ressenti || '',
+                suite: e.suite || '', relance_le: '',
+              })}>
+              {e.compte_rendu ? 'Voir le compte-rendu' : 'Compte-rendu'}
+            </button>
             <button
               className="fav" title="Supprimer cet entretien" style={{ fontSize: 14 }}
               onClick={async () => {
-                try { setOffer(await api.deleteInterview(offer.id, i)) } catch (err) { showToast(err.message, true) }
+                try { setOffer(await api.deleteInterview(offer.id, i)); setReport(null) } catch (err) { showToast(err.message, true) }
               }}
             >✕</button>
           </div>
         ))}
+        {report !== null && (
+          <div className="card" style={{ padding: 12, margin: '6px 0' }}>
+            <div className="section-title" style={{ marginTop: 0 }}>Compte-rendu de l'entretien</div>
+            <textarea rows={5} placeholder="Déroulé, questions posées, ce que tu as répondu, points à creuser…"
+              value={report.compte_rendu}
+              onChange={(ev) => setReport({ ...report, compte_rendu: ev.target.value })} />
+            <div className="actions-row" style={{ marginTop: 8 }}>
+              <select value={report.ressenti} style={{ width: 150 }}
+                onChange={(ev) => setReport({ ...report, ressenti: ev.target.value })}>
+                <option value="">Ressenti…</option>
+                {Object.entries(RESSENTIS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+              <input type="text" placeholder="Suite annoncée (ex. retour sous 8 jours)" style={{ flex: 1, minWidth: 200 }}
+                value={report.suite} onChange={(ev) => setReport({ ...report, suite: ev.target.value })} />
+            </div>
+            <div className="actions-row" style={{ marginTop: 8 }}>
+              <span className="hint">Relancer le</span>
+              <input type="date" value={report.relance_le}
+                onChange={(ev) => setReport({ ...report, relance_le: ev.target.value })} />
+              <button className="primary"
+                onClick={async () => {
+                  const body = {
+                    compte_rendu: report.compte_rendu, ressenti: report.ressenti, suite: report.suite,
+                  }
+                  if (report.relance_le) body.relance_le = `${report.relance_le}T09:00:00`
+                  try {
+                    setOffer(await api.updateInterview(offer.id, report.index, body))
+                    setReport(null)
+                    showToast(report.relance_le
+                      ? 'Compte-rendu enregistré, relance planifiée.'
+                      : 'Compte-rendu enregistré.')
+                  } catch (err) { showToast(err.message, true) }
+                }}>Enregistrer</button>
+              <button className="secondary" onClick={() => setReport(null)}>Fermer</button>
+            </div>
+          </div>
+        )}
         {newInterview === null ? (
           <button className="secondary" style={{ marginTop: 4 }}
             onClick={() => setNewInterview({ date: '', heure: '10:00', format: 'Visio', interlocuteur: '' })}>

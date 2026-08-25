@@ -45,6 +45,8 @@ export const api = {
 
   addInterview: (id, body) =>
     request(`/api/offers/${id}/interviews`, { method: 'POST', body: JSON.stringify(body) }),
+  updateInterview: (id, index, body) =>
+    request(`/api/offers/${id}/interviews/${index}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteInterview: (id, index) =>
     request(`/api/offers/${id}/interviews/${index}`, { method: 'DELETE' }),
 

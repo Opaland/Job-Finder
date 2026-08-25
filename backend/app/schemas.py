@@ -53,6 +53,15 @@ class InterviewIn(BaseModel):
     notes: str = ""
 
 
+class InterviewReport(BaseModel):
+    """Compte-rendu rempli après l'entretien."""
+
+    compte_rendu: str | None = None
+    ressenti: str | None = None       # bon, mitige, mauvais
+    suite: str | None = None          # ce que le recruteur a annoncé
+    relance_le: datetime | None = None  # cale la prochaine action sur cette date
+
+
 class ManualOffer(BaseModel):
     """Offre ajoutée à la main (annonce collée)."""
 

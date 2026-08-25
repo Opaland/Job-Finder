@@ -184,6 +184,17 @@ export async function demoRequest(path, options = {}) {
     return offer
   }
   const interviewDel = route.match(/^\/api\/offers\/(\d+)\/interviews\/(\d+)$/)
+  if (interviewDel && method === 'PATCH') {
+    const offer = offerById(interviewDel[1])
+    if (!offer) throw new Error('Offre introuvable')
+    const i = Number(interviewDel[2])
+    const liste = [...(offer.interviews || [])]
+    if (!liste[i]) throw new Error("Cet entretien n'existe pas.")
+    liste[i] = { ...liste[i], ...body }
+    offer.interviews = liste
+    if ('relance_le' in body) offer.next_action_date = body.relance_le
+    return offer
+  }
   if (interviewDel && method === 'DELETE') {
     const offer = offerById(interviewDel[1])
     if (!offer) throw new Error('Offre introuvable')

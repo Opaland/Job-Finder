@@ -59,3 +59,42 @@ def test_prochains_entretiens_du_digest(client, db):
     assert len(a_venir) == 1
     assert a_venir[0]["title"] == "Test Manager"
     assert a_venir[0]["aujourdhui"] is False
+
+
+def test_compte_rendu_et_relance_planifiee(client, db):
+    """Sprint 22 : le compte-rendu se sauvegarde et cale la prochaine action."""
+    offer = _offre(db)
+    quand = (local_now() - timedelta(days=1)).replace(microsecond=0)
+    client.post(f"/api/offers/{offer.id}/interviews", json={"date": quand.isoformat()})
+
+    relance = (local_now() + timedelta(days=8)).replace(microsecond=0, second=0)
+    resp = client.patch(f"/api/offers/{offer.id}/interviews/0", json={
+        "compte_rendu": "Entretien RH puis technique, bonne écoute.",
+        "ressenti": "bon",
+        "suite": "retour sous 8 jours",
+        "relance_le": relance.isoformat(),
+    })
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["interviews"][0]["ressenti"] == "bon"
+    assert "bonne écoute" in data["interviews"][0]["compte_rendu"]
+    # La suite annoncée devient une action datée, avec une note explicite.
+    assert data["next_action_date"].startswith(relance.strftime("%Y-%m-%d"))
+    assert "retour sous 8 jours" in data["next_action_note"]
+
+
+def test_compte_rendu_partiel_ne_touche_pas_le_reste(client, db):
+    offer = _offre(db)
+    quand = (local_now() - timedelta(days=2)).replace(microsecond=0)
+    client.post(f"/api/offers/{offer.id}/interviews",
+                json={"date": quand.isoformat(), "interlocuteur": "Claire"})
+    client.patch(f"/api/offers/{offer.id}/interviews/0", json={"ressenti": "mitige"})
+    entretien = client.get(f"/api/offers/{offer.id}").json()["interviews"][0]
+    assert entretien["ressenti"] == "mitige"
+    assert entretien["interlocuteur"] == "Claire"   # non écrasé
+    assert entretien["compte_rendu"] == ""
+
+
+def test_compte_rendu_entretien_inexistant(client, db):
+    offer = _offre(db)
+    assert client.patch(f"/api/offers/{offer.id}/interviews/3", json={"ressenti": "bon"}).status_code == 404
