@@ -87,6 +87,8 @@ export const api = {
   sendDigestEmail: () => request('/api/digests/send-email', { method: 'POST' }),
   testEmail: () => request('/api/digests/test-email', { method: 'POST' }),
 
+  marketSkills: () => request('/api/market/skills'),
+
   sources: () => request('/api/sources'),
   stats: () => request('/api/stats'),
   journal: (kind) => request(`/api/journal${kind ? `?kind=${kind}` : ''}`),

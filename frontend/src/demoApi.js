@@ -267,6 +267,23 @@ export async function demoRequest(path, options = {}) {
     return { deleted: true }
   }
   if (route === '/api/sources') return data.sources
+  if (route === '/api/market/skills') {
+    // Comptage réel sur les descriptions des offres d'exemple.
+    const taxonomie = ['selenium', 'playwright', 'cypress', 'jira', 'ci/cd', 'api rest', 'jmeter',
+      'squash tm', 'agile', 'iso 13485', 'sql', 'gitlab', 'cucumber', 'postman']
+    const duCv = (state.profile.skills || []).map((s) => s.toLowerCase())
+    const total = state.offers.length
+    const classement = taxonomie.map((c) => {
+      const offres = state.offers.filter((o) =>
+        `${o.title} ${o.description}`.toLowerCase().includes(c)).length
+      return { competence: c, offres, part: total ? Math.round((100 * offres) / total) : 0,
+               dans_le_cv: duCv.some((s) => s.includes(c) || c.includes(s)) }
+    }).filter((c) => c.offres > 0).sort((a, b) => b.offres - a.offres)
+    return {
+      total_offres: total, assez_de_donnees: total >= 3, competences: classement,
+      manquantes: classement.filter((c) => !c.dans_le_cv).slice(0, 10),
+    }
+  }
   if (route === '/api/stats') return computeStats()
   if (route === '/api/journal') {
     const kind = params_get(query, 'kind')
