@@ -51,7 +51,7 @@ export default function Dashboard({ scanning, goToOffers }) {
 
   const load = async () => {
     try {
-      api.weeklySummary().then(setSemaine).catch(() => {})
+      api.weeklySummary().then(setSemaine).catch((e) => showToast(e.message, true))
       setDigest(await api.digestToday())
       setError(null)
     } catch (err) {

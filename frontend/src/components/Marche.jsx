@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
+import { useToast } from '../App.jsx'
 
 // Barre horizontale simple : lisible en clair comme en sombre, sans dépendance.
 function Barre({ part, couleur }) {
@@ -16,13 +17,16 @@ export default function Marche() {
   const [gaps, setGaps] = useState(null)
   const [frais, setFrais] = useState(null)
   const [erreur, setErreur] = useState(null)
+  const showToast = useToast()
 
   useEffect(() => {
     api.marketSkills().then(setSkills).catch((e) => setErreur(e.message))
-    api.marketCompanies().then(setQui).catch(() => {})
-    api.marketGaps().then(setGaps).catch(() => {})
-    api.marketFreshness().then(setFrais).catch(() => {})
-  }, [])
+    // Les messages d'erreur du backend sont des phrases actionnables : les taire
+    // laisserait une section vide sans explication.
+    api.marketCompanies().then(setQui).catch((e) => showToast(e.message, true))
+    api.marketGaps().then(setGaps).catch((e) => showToast(e.message, true))
+    api.marketFreshness().then(setFrais).catch((e) => showToast(e.message, true))
+  }, [showToast])
 
   if (erreur) return <p className="error-text">Erreur : {erreur}</p>
   if (!skills) return <p>Chargement…</p>

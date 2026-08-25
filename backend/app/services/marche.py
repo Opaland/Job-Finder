@@ -13,10 +13,22 @@ from sqlalchemy.orm import Session
 
 from ..models import STATUTS_CLOS, Offer, Profile, local_now
 from .cv_parser import SKILL_TAXONOMY
-from .textutils import canonical_title, contains_word, normalize
+from .textutils import canonical_title, normalize
 
 # Nombre d'offres minimum pour qu'un classement ait un sens.
 MIN_OFFRES = 3
+
+# Une seule expression régulière pour toute la taxonomie : chercher les ~110
+# compétences une par une coûtait une trentaine de secondes sur 2 000 offres.
+_COMPETENCES = re.compile(
+    r"(?<![a-z0-9])(" + "|".join(re.escape(normalize(c)) for c in
+                                 sorted(SKILL_TAXONOMY, key=len, reverse=True)) + r")(?![a-z0-9])"
+)
+
+
+def competences_citees(texte_normalise: str) -> set[str]:
+    """Compétences de la taxonomie présentes dans un texte déjà normalisé."""
+    return set(_COMPETENCES.findall(texte_normalise))
 
 
 def competences_demandees(db: Session, limite: int = 25) -> dict:
@@ -31,10 +43,8 @@ def competences_demandees(db: Session, limite: int = 25) -> dict:
     total = 0
     for (titre, description) in db.query(Offer.title, Offer.description).all():
         total += 1
-        texte = normalize(f"{titre or ''} {description or ''}")
-        for competence in SKILL_TAXONOMY:
-            if contains_word(texte, competence):
-                compteur[competence] = compteur.get(competence, 0) + 1
+        for competence in competences_citees(normalize(f"{titre or ''} {description or ''}")):
+            compteur[competence] = compteur.get(competence, 0) + 1
 
     classement = [
         {
@@ -106,7 +116,7 @@ def _mediane(valeurs: list[int]) -> int | None:
 def qui_recrute(db: Session, limite: int = 20) -> dict:
     """Entreprises qui publient le plus, et salaires observés par intitulé."""
     par_entreprise: dict[str, dict] = {}
-    par_titre: dict[str, list[int]] = {}
+    par_titre: dict[str, dict] = {}
     avec_salaire = 0
 
     for titre, entreprise, salaire, score in db.query(
@@ -121,7 +131,9 @@ def qui_recrute(db: Session, limite: int = 20) -> dict:
         if montants:
             avec_salaire += 1
             cle = canonical_title(titre or "") or "autre"
-            par_titre.setdefault(cle, []).extend(montants)
+            entree_titre = par_titre.setdefault(cle, {"montants": [], "offres": 0})
+            entree_titre["montants"].extend(montants)
+            entree_titre["offres"] += 1   # une offre, quel que soit le nombre de bornes lues
 
     entreprises = sorted(
         (
@@ -139,12 +151,12 @@ def qui_recrute(db: Session, limite: int = 20) -> dict:
         (
             {
                 "intitule": intitule,
-                "offres": len(montants) // 2 or 1,  # une offre donne souvent 2 bornes
-                "minimum": min(montants),
-                "median": _mediane(montants),
-                "maximum": max(montants),
+                "offres": donnees["offres"],
+                "minimum": min(donnees["montants"]),
+                "median": _mediane(donnees["montants"]),
+                "maximum": max(donnees["montants"]),
             }
-            for intitule, montants in par_titre.items()
+            for intitule, donnees in par_titre.items()
         ),
         key=lambda s: -(s["median"] or 0),
     )
@@ -175,11 +187,10 @@ def manques_recurrents(db: Session, limite: int = 15) -> dict:
         if not texte:
             continue
         analyses += 1
-        for competence in SKILL_TAXONOMY:
+        for competence in competences_citees(texte):
             if any(competence in s or s in competence for s in du_cv):
                 continue
-            if contains_word(texte, competence):
-                compteur[competence] = compteur.get(competence, 0) + 1
+            compteur[competence] = compteur.get(competence, 0) + 1
 
     return {
         "analyses": analyses,

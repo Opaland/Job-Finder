@@ -9,9 +9,9 @@ from __future__ import annotations
 import io
 from datetime import date, datetime
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
-from ..models import Offer, Profile, local_now
+from ..models import STATUTS_EN_ATTENTE, Offer, Profile, local_now
 from .textutils import parse_iso_dt
 
 # Libellés des actes, dans l'ordre de priorité d'affichage d'une même journée.
@@ -24,7 +24,10 @@ def actes_de_recherche(db: Session, depuis: date, jusqu_a: date) -> list[dict]:
     fin = datetime.combine(jusqu_a, datetime.max.time())
     actes: list[dict] = []
 
-    for offer in db.query(Offer).all():
+    for offer in db.query(Offer).options(load_only(
+        Offer.id, Offer.title, Offer.company, Offer.source,
+        Offer.status_history, Offer.interviews,
+    )).all():
         commun = {
             "entreprise": offer.company or "Entreprise non précisée",
             "poste": offer.title,
@@ -32,7 +35,7 @@ def actes_de_recherche(db: Session, depuis: date, jusqu_a: date) -> list[dict]:
         }
         for entree in offer.status_history or []:
             statut = entree.get("statut") or entree.get("status")
-            if statut not in ("postulee", "relancee"):
+            if statut not in STATUTS_EN_ATTENTE:
                 continue
             quand = parse_iso_dt(entree.get("date"))
             if quand and debut <= quand <= fin:
@@ -80,8 +83,8 @@ def justificatif_pdf(db: Session, depuis: date, jusqu_a: date) -> bytes:
         y -= saut
 
     ligne("Justificatif de recherche d'emploi", 16, gras=True, saut=9 * mm)
-    ligne(profile.full_name or "", 11, gras=True)
-    if profile.email:
+    ligne((profile.full_name if profile else "") or "", 11, gras=True)
+    if profile and profile.email:
         ligne(profile.email, 9)
     ligne(f"Période du {depuis.strftime('%d/%m/%Y')} au {jusqu_a.strftime('%d/%m/%Y')}", 10)
     ligne(f"Document établi le {local_now().strftime('%d/%m/%Y')} — {len(actes)} démarche(s)", 9,

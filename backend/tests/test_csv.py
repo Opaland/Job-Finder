@@ -70,3 +70,21 @@ def test_import_fichier_invalide(client, db):
 def test_import_fichier_vide(client, db):
     resp = client.post("/api/exports/offres.csv", files={"file": ("x.csv", b"  ", "text/csv")})
     assert resp.status_code == 400
+
+
+def test_doublon_dans_le_meme_fichier(client, db):
+    """Deux lignes identiques dans un seul CSV ne doivent créer qu'une offre."""
+    csv_texte = "titre;entreprise\nQA Lead;Beta Corp\nQA Lead;Beta Corp\n"
+    resp = client.post("/api/exports/offres.csv",
+                       files={"file": ("s.csv", csv_texte.encode("utf-8"), "text/csv")})
+    assert resp.json() == {"ajoutees": 1, "doublons": 1, "ignorees": 0}
+    assert db.query(Offer).filter(Offer.title == "QA Lead").count() == 1
+
+
+def test_doublon_par_titre_similaire_dans_le_meme_fichier(client, db):
+    """Même règle que le scan : « H/F » et la casse ne créent pas un doublon."""
+    csv_texte = "titre;entreprise\nTest Manager;ACME\nTest Manager H/F;acme\n"
+    resp = client.post("/api/exports/offres.csv",
+                       files={"file": ("s.csv", csv_texte.encode("utf-8"), "text/csv")})
+    assert resp.json()["ajoutees"] == 1
+    assert resp.json()["doublons"] == 1

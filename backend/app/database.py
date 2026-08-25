@@ -77,16 +77,23 @@ def ensure_schema(target_engine) -> None:
                 )
                 logger.info("Migration : colonne %s.%s ajoutée", table.name, column.name)
 
-        # Rattrapage : une colonne JSON ajoutée sans défaut par une version
-        # antérieure laisse des NULL, que les schémas de réponse refusent.
+        # Rattrapage : toute colonne JSON à NULL est remise à sa valeur vide.
+        # Le balayage porte sur l'ensemble des colonnes JSON, pas seulement celles
+        # ajoutées à l'instant : une version antérieure a pu en laisser à NULL, et
+        # les schémas de réponse les refusent (erreur au premier affichage). Sur
+        # une base personnelle, ces quelques UPDATE sont imperceptibles.
+        reparees = 0
         for table in Base.metadata.sorted_tables:
             for column in table.columns:
                 vide = _json_vide(column)
                 if vide is None:
                     continue
-                conn.execute(text(
+                resultat = conn.execute(text(
                     f"UPDATE {table.name} SET {column.name} = '{vide}' WHERE {column.name} IS NULL"
                 ))
+                reparees += resultat.rowcount or 0
+        if reparees:
+            logger.info("Migration : %d valeur(s) JSON vide(s) restaurée(s)", reparees)
 
 
 engine = create_engine(

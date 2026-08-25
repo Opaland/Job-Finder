@@ -14,7 +14,7 @@ from ..services import claude_ai
 from ..services.enrich import fetch_full_description
 from ..services.journal import log_event
 from ..services.scan import find_twin, offer_to_scoring_dict, profile_to_dict, rescore_offer
-from ..services.textutils import contains_word, escape_like, fingerprint, normalize
+from ..services.textutils import contains_word, escape_like, fingerprint, naif, normalize
 
 router = APIRouter(prefix="/api/offers", tags=["offres"])
 
@@ -232,7 +232,7 @@ def update_offer(offer_id: int, update: OfferUpdate, db: Session = Depends(get_d
         offer.interview_prep = update.interview_prep
     # Pour la prochaine action, null explicite = effacement.
     if "next_action_date" in update.model_fields_set:
-        offer.next_action_date = update.next_action_date
+        offer.next_action_date = naif(update.next_action_date) if update.next_action_date else None
     if "next_action_note" in update.model_fields_set:
         offer.next_action_note = update.next_action_note
 
@@ -407,8 +407,9 @@ def add_interview(offer_id: int, payload: InterviewIn, db: Session = Depends(get
     """Planifie (ou consigne) un entretien pour cette offre."""
     offer = _offre(db, offer_id)
     entretiens = list(offer.interviews or [])
+    quand = naif(payload.date)   # une date avec fuseau serait incomparable ensuite
     entretiens.append({
-        "date": payload.date.isoformat(),
+        "date": quand.isoformat(),
         "format": payload.format.strip()[:60],
         "interlocuteur": payload.interlocuteur.strip()[:120],
         "notes": payload.notes,
@@ -422,7 +423,7 @@ def add_interview(offer_id: int, payload: InterviewIn, db: Session = Depends(get
     db.commit()
     log_event(db, "entretien", f"Entretien noté pour « {offer.title} » "
                                f"({offer.company or 'entreprise inconnue'}) le "
-                               f"{payload.date.strftime('%d/%m/%Y à %H:%M')}.", offer.id)
+                               f"{quand.strftime('%d/%m/%Y à %H:%M')}.", offer.id)
     return offer
 
 
@@ -447,7 +448,7 @@ def update_interview(offer_id: int, index: int, payload: InterviewReport, db: Se
     offer.interviews = entretiens
 
     if "relance_le" in payload.model_fields_set:
-        offer.next_action_date = payload.relance_le
+        offer.next_action_date = naif(payload.relance_le) if payload.relance_le else None
         if payload.relance_le is not None and not (offer.next_action_note or "").strip():
             offer.next_action_note = "Relancer après l'entretien" + (
                 f" ({entretien.get('suite', '').strip()})" if entretien.get("suite", "").strip() else ""

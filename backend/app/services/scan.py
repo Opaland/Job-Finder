@@ -64,6 +64,26 @@ def rescore_offer(offer: Offer, profile_dict: dict) -> None:
     offer.final_score = combined_score(offer.score, offer.ai_score)
 
 
+def index_offres_connues(db: Session):
+    """Index en mémoire des offres connues, construits en un seul parcours.
+
+    Renvoie (known_ids, fingerprints, company_index) — utilisés par le scan et
+    par l'import CSV pour dédoublonner sans une requête par ligne.
+    """
+    known_ids: dict[tuple[str, str], int] = {}
+    fingerprints: dict[str, int] = {}
+    company_index: dict[str, list[tuple[int, str]]] = {}
+    for oid, osource, osource_id, ofp, otitle, ocompany in db.query(
+        Offer.id, Offer.source, Offer.source_id, Offer.fingerprint, Offer.title, Offer.company
+    ).all():
+        known_ids[(osource, osource_id)] = oid
+        fingerprints.setdefault(ofp, oid)
+        key = normalize(ocompany or "")
+        if len(key) >= 3:
+            company_index.setdefault(key, []).append((oid, otitle))
+    return known_ids, fingerprints, company_index
+
+
 def find_twin(
     db: Session,
     title: str,
@@ -123,21 +143,8 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
         enabled = profile.sources_enabled or {}
         stats: dict[str, dict] = {}
 
-        # Index en mémoire des offres connues, construits en un seul parcours de
-        # table : (source, source_id) → id, empreinte → id, et entreprise
-        # normalisée → [(id, titre)] pour les doublons au titre légèrement
-        # différent (« H/F », « CDI »…). Évite deux requêtes par offre rapportée.
-        known_ids: dict[tuple[str, str], int] = {}
-        fingerprints: dict[str, int] = {}
-        company_index: dict[str, list[tuple[int, str]]] = {}
-        for oid, osource, osource_id, ofp, otitle, ocompany in db.query(
-            Offer.id, Offer.source, Offer.source_id, Offer.fingerprint, Offer.title, Offer.company
-        ).all():
-            known_ids[(osource, osource_id)] = oid
-            fingerprints.setdefault(ofp, oid)
-            key = normalize(ocompany or "")
-            if len(key) >= 3:
-                company_index.setdefault(key, []).append((oid, otitle))
+        # Index en mémoire des offres connues : évite deux requêtes par offre.
+        known_ids, fingerprints, company_index = index_offres_connues(db)
 
         for connector in ALL_CONNECTORS:
             if not enabled.get(connector.name, True):

@@ -542,6 +542,9 @@ export default function OfferDetail({ offerId, onClose }) {
                     interlocuteur: newInterview.interlocuteur,
                   }))
                   setNewInterview(null)
+                  // Le backend retrie la liste : un compte-rendu ouvert viserait
+                  // désormais un autre entretien (les routes adressent par position).
+                  setReport(null)
                   showToast('Entretien noté — il apparaîtra sur le tableau de bord.')
                 } catch (err) { showToast(err.message, true) }
               }}

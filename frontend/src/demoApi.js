@@ -3,7 +3,7 @@
 // Les modifications (statuts, notes…) vivent en mémoire le temps de la visite.
 import data from './demoData.json'
 // Import sûr : api.js ne charge demoApi.js que dynamiquement (pas de cycle).
-import { SOURCE_LABELS, STATUS_LABELS } from './api.js'
+import { GEM_SCORE, SOURCE_LABELS, STATUS_LABELS } from './api.js'
 
 const state = {
   offers: JSON.parse(JSON.stringify(data.offers)),
@@ -267,7 +267,7 @@ export async function demoRequest(path, options = {}) {
       candidatures_envoyees: compte('postulee'), relances: compte('relancee'),
       entretiens_obtenus: compte('entretien'), entretiens_a_venir: 0,
       nouvelles_offres_collectees: state.offers.length, pepites_en_attente:
-        state.offers.filter((o) => o.final_score >= 85 && ['nouvelle', 'vue', 'a_postuler'].includes(o.status)).length,
+        state.offers.filter((o) => o.final_score >= GEM_SCORE && ['nouvelle', 'vue', 'a_postuler'].includes(o.status)).length,
       relances_en_retard: 0, actions_en_retard: 0,
     }
   }

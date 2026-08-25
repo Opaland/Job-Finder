@@ -111,7 +111,11 @@ def next_interviews(db: Session, jours: int = 21) -> list[dict]:
     debut = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
     fin = debut + timedelta(days=jours)
     a_venir = []
-    for offer in db.query(Offer).all():
+    for offer in db.query(Offer).options(load_only(
+        Offer.id, Offer.title, Offer.company, Offer.location, Offer.contract_type,
+        Offer.source, Offer.url, Offer.final_score, Offer.ai_reason, Offer.remote,
+        Offer.status, Offer.interviews,
+    )).all():
         for entretien in offer.interviews or []:
             quand = parse_iso_dt(entretien.get("date"))
             if quand is None or not (debut <= quand <= fin):

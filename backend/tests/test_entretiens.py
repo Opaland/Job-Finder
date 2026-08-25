@@ -98,3 +98,21 @@ def test_compte_rendu_partiel_ne_touche_pas_le_reste(client, db):
 def test_compte_rendu_entretien_inexistant(client, db):
     offer = _offre(db)
     assert client.patch(f"/api/offers/{offer.id}/interviews/3", json={"ressenti": "bon"}).status_code == 404
+
+
+def test_date_avec_fuseau_horaire(client, db):
+    """Une date ISO avec décalage ne doit pas empoisonner le digest.
+
+    Régression : stockée telle quelle, elle rendait toute comparaison avec
+    l'heure locale (naïve) impossible — digest et tableau de bord en erreur.
+    """
+    offer = _offre(db)
+    resp = client.post(f"/api/offers/{offer.id}/interviews",
+                       json={"date": "2099-09-01T10:00:00+02:00", "format": "Visio"})
+    assert resp.status_code == 201
+    stockee = resp.json()["interviews"][0]["date"]
+    assert "+" not in stockee and "Z" not in stockee     # normalisée en heure locale naïve
+
+    # Et les services qui comparent des dates continuent de fonctionner.
+    assert next_interviews(db) == [] or isinstance(next_interviews(db), list)
+    assert client.get("/api/digests/today").status_code == 200

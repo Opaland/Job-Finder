@@ -10,8 +10,8 @@ from ..database import get_db
 from ..models import OFFER_STATUSES, STATUS_LABELS, Offer, Profile, local_now
 from ..services.justificatif import justificatif_pdf
 from ..services.journal import log_event
-from ..services.scan import find_twin, profile_to_dict, rescore_offer
-from ..services.textutils import fingerprint
+from ..services.scan import find_twin, index_offres_connues, profile_to_dict, rescore_offer
+from ..services.textutils import fingerprint, normalize
 
 router = APIRouter(prefix="/api/exports", tags=["exports"])
 
@@ -88,6 +88,10 @@ async def import_csv(file: UploadFile, db: Session = Depends(get_db)):
     profile = db.get(Profile, 1)
     profile_dict = profile_to_dict(profile)
     libelle_vers_statut = {v.lower(): k for k, v in STATUS_LABELS.items()}
+    # Index chargés une fois : sans eux, find_twin balayerait la table à chaque
+    # ligne, et les offres ajoutées dans la boucle (non flushées) resteraient
+    # invisibles — deux lignes identiques créeraient deux offres.
+    _, fingerprints, company_index = index_offres_connues(db)
 
     ajoutees, doublons, ignorees = 0, 0, 0
     for ligne in lignes:
@@ -97,7 +101,8 @@ async def import_csv(file: UploadFile, db: Session = Depends(get_db)):
             ignorees += 1
             continue
         entreprise = valeurs.get("entreprise", "")
-        if find_twin(db, titre, entreprise):
+        if find_twin(db, titre, entreprise,
+                     fingerprints=fingerprints, company_index=company_index):
             doublons += 1
             continue
 
@@ -121,6 +126,11 @@ async def import_csv(file: UploadFile, db: Session = Depends(get_db)):
         )
         rescore_offer(offer, profile_dict)
         db.add(offer)
+        db.flush()   # l'offre reçoit son id : elle entre dans les index
+        fingerprints.setdefault(offer.fingerprint, offer.id)
+        cle_entreprise = normalize(offer.company or "")
+        if len(cle_entreprise) >= 3:
+            company_index.setdefault(cle_entreprise, []).append((offer.id, offer.title))
         ajoutees += 1
 
     db.commit()

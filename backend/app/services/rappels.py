@@ -8,9 +8,9 @@ from __future__ import annotations
 import logging
 from datetime import timedelta
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
-from ..models import Offer, local_now
+from ..models import STATUTS_CLOS, Offer, local_now
 from .emailer import send_email, smtp_configured
 from .textutils import parse_iso_dt
 
@@ -22,7 +22,11 @@ def echeances_de_demain(db: Session) -> dict:
     demain = (local_now() + timedelta(days=1)).date()
     entretiens, actions = [], []
 
-    for offer in db.query(Offer).all():
+    # Une offre refusée ou fermée ne mérite plus de rappel.
+    for offer in db.query(Offer).options(load_only(
+        Offer.id, Offer.title, Offer.company, Offer.url, Offer.interview_prep,
+        Offer.interviews, Offer.next_action_date, Offer.next_action_note,
+    )).filter(Offer.status.notin_(STATUTS_CLOS)).all():
         for entretien in offer.interviews or []:
             quand = parse_iso_dt(entretien.get("date"))
             if quand and quand.date() == demain:

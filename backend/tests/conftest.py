@@ -18,7 +18,9 @@ def db(tmp_path):
     """Session sur une base SQLite neuve, avec le profil obligatoire (id=1)."""
     engine = create_engine(f"sqlite:///{tmp_path}/jobfinder-test.db")
     Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine, expire_on_commit=False)
+    # Mêmes réglages que SessionLocal (database.py) : sans cela, autoflush
+    # masquerait des bugs que la production a bel et bien.
+    Session = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
     session = Session()
     session.add(Profile(id=1, sources_enabled={}))
     session.commit()

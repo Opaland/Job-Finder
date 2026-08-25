@@ -4,12 +4,26 @@ import hashlib
 import re
 import unicodedata
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+from ..config import settings
+
+
+def naif(moment: datetime) -> datetime:
+    """Ramène une date à l'heure locale naïve (référentiel unique de l'app)."""
+    if moment.tzinfo is None:
+        return moment
+    return moment.astimezone(ZoneInfo(settings.timezone)).replace(tzinfo=None)
 
 
 def parse_iso_dt(value) -> datetime | None:
-    """Date ISO (celles de status_history) parsée sans jamais lever."""
+    """Date ISO (celles de status_history) parsée sans jamais lever.
+
+    Toujours renvoyée en heure locale NAÏVE : une date reçue avec un décalage
+    (« 2026-09-01T10:00:00+02:00 ») serait sinon incomparable avec local_now().
+    """
     try:
-        return datetime.fromisoformat(value)
+        return naif(datetime.fromisoformat(value))
     except (TypeError, ValueError):
         return None
 
