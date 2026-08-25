@@ -157,7 +157,7 @@ chaque jour.
 
 ### EPIC Q — Mobile et release
 
-- [ ] **Sprint 39** : application installable (PWA) et interface soignée sur
+- [x] **Sprint 39** : application installable (PWA) et interface soignée sur
   téléphone.
 - [ ] **Sprint 40** : durcissement, revue globale, documentation et démo à jour,
   release v3.0.
