@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database import Base, get_db
 from app.main import app as fastapi_app
-from app.models import Offer, Profile, utcnow
+from app.models import Offer, Profile, local_now
 
 
 @pytest.fixture()
@@ -26,7 +26,7 @@ def client(tmp_path):
             fingerprint=f"fp{add.n}", source=source, source_id=str(add.n),
             title=f"Offre {add.n}", company="ACME", status=status,
             score=score, final_score=score,
-            collected_at=utcnow() - timedelta(days=days_ago),
+            collected_at=local_now() - timedelta(days=days_ago),
         ))
     add.n = 0
     add("nouvelle", 92)
@@ -87,7 +87,7 @@ def test_reactivite_entreprises(client):
 
     # Récupère la session injectée pour enrichir l'historique de deux offres.
     db = next(iter(fastapi_app.dependency_overrides[get_db]()))
-    now = utcnow()
+    now = local_now()
     o_reponse = db.query(Offer).filter(Offer.status == "entretien").one()
     o_reponse.company = "Rapide SAS"
     o_reponse.status_history = [

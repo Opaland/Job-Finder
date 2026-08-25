@@ -18,12 +18,12 @@ def list_sources(db: Session = Depends(get_db)):
     enabled = (profile.sources_enabled or {}) if profile else {}
     from datetime import timedelta
 
-    from ..models import utcnow
+    from ..models import local_now
 
     # Fenêtre de 14 jours (bornée à 60 scans pour rester lisible).
     runs = (
         db.query(ScanRun)
-        .filter(ScanRun.status == "termine", ScanRun.started_at >= utcnow() - timedelta(days=14))
+        .filter(ScanRun.status == "termine", ScanRun.started_at >= local_now() - timedelta(days=14))
         .order_by(ScanRun.id.desc())
         .limit(60)
         .all()

@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
-from app.models import Offer, Profile, utcnow
+from app.models import Offer, Profile, local_now
 from app.services.digest import build_digest, digest_html, offers_to_relaunch
 from app.services.enrich import extract_main_text
 
@@ -24,7 +24,7 @@ def db(tmp_path):
 
 
 def _offer(db, status, days_ago, title="Test Manager"):
-    changed = (utcnow() - timedelta(days=days_ago)).isoformat()
+    changed = (local_now() - timedelta(days=days_ago)).isoformat()
     offer = Offer(
         fingerprint=f"fp-{title}-{status}-{days_ago}",
         source="test", source_id=f"{title}-{status}-{days_ago}",
@@ -73,7 +73,7 @@ def test_actions_a_faire_aujourdhui(db):
         return Offer(
             fingerprint=f"fp-act-{sid}", source="test", source_id=f"act-{sid}",
             title=f"Offre {sid}", company="ACME", status="postulee", final_score=70,
-            next_action_date=utcnow() + timedelta(days=days_offset),
+            next_action_date=local_now() + timedelta(days=days_offset),
             next_action_note=note,
         )
 
@@ -99,12 +99,12 @@ def test_focus_du_jour(db):
     db.add_all([
         Offer(fingerprint="fp-f1", source="test", source_id="f1", title="Action due",
               company="A", status="postulee", final_score=60,
-              next_action_date=utcnow() - timedelta(days=1), next_action_note="Rappeler la RH"),
+              next_action_date=local_now() - timedelta(days=1), next_action_note="Rappeler la RH"),
         Offer(fingerprint="fp-f2", source="test", source_id="f2", title="Pépite ouverte",
               company="B", status="nouvelle", final_score=93),
         Offer(fingerprint="fp-f3", source="test", source_id="f3", title="Vieille candidature",
               company="C", status="postulee", final_score=70,
-              status_history=[{"status": "postulee", "date": (utcnow() - timedelta(days=10)).isoformat(), "par": "u"}]),
+              status_history=[{"status": "postulee", "date": (local_now() - timedelta(days=10)).isoformat(), "par": "u"}]),
     ])
     db.commit()
 
@@ -124,7 +124,7 @@ def test_pepites_et_objectif_hebdo(db):
                     title="Offre moyenne", company="ACME", status="nouvelle", final_score=60)
     gem_traitee = Offer(fingerprint="fp-traitee", source="test", source_id="traitee",
                         title="Déjà postulée", company="ACME", status="postulee", final_score=95,
-                        status_history=[{"status": "postulee", "date": utcnow().isoformat(), "par": "utilisateur"}])
+                        status_history=[{"status": "postulee", "date": local_now().isoformat(), "par": "utilisateur"}])
     db.add_all([gem, pas_gem, gem_traitee])
     db.commit()
 

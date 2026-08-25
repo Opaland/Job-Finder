@@ -26,6 +26,14 @@ def contains_word(haystack_norm: str, needle: str) -> bool:
     return re.search(pattern, haystack_norm) is not None
 
 
+def escape_like(value: str) -> str:
+    """Échappe les jokers SQL (%, _) d'une saisie utilisateur pour un LIKE/ILIKE.
+
+    À utiliser avec `.ilike(motif, escape="\\\\")`.
+    """
+    return value.replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
+
+
 def fingerprint(title: str, company: str) -> str:
     """Empreinte stable d'une offre pour le dédoublonnage entre sources."""
     base = normalize(title) + "|" + normalize(company)

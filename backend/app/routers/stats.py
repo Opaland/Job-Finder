@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..database import engine, ensure_schema, get_db
-from ..models import OFFER_STATUSES, Offer, utcnow
+from ..models import OFFER_STATUSES, Offer, local_now
 from ..services.scan import scan_status
 
 router = APIRouter(prefix="/api", tags=["statistiques"])
@@ -34,7 +34,7 @@ def _parse_dt(value):
 
 def _company_stats(db: Session) -> list[dict]:
     """Réactivité par entreprise, calculée depuis l'historique des statuts."""
-    now = utcnow()
+    now = local_now()
     by_company: dict[str, dict] = {}
     for company, status, status_history in db.query(
         Offer.company, Offer.status, Offer.status_history
@@ -83,7 +83,7 @@ def _company_stats(db: Session) -> list[dict]:
 
 @router.get("/stats")
 def stats(db: Session = Depends(get_db)):
-    now = utcnow()
+    now = local_now()
     total = db.query(func.count(Offer.id)).scalar() or 0
     new_7d = (
         db.query(func.count(Offer.id))
@@ -181,7 +181,7 @@ def backup():
         src.close()
         Path(tmp_path).unlink(missing_ok=True)
 
-    stamp = utcnow().strftime("%Y-%m-%d_%H%M")
+    stamp = local_now().strftime("%Y-%m-%d_%H%M")
     return Response(
         content=content,
         media_type="application/octet-stream",
@@ -220,7 +220,7 @@ async def restore(file: UploadFile):
         # d'écriture, une requête concurrente voit toujours une base cohérente
         # (jamais un fichier à moitié écrit).
         db_path = Path(settings.db_path)
-        safety_name = f"avant_restauration_{utcnow().strftime('%Y-%m-%d_%H%M%S')}.db"
+        safety_name = f"avant_restauration_{local_now().strftime('%Y-%m-%d_%H%M%S')}.db"
         if db_path.exists():
             current = sqlite3.connect(db_path)
             safety = sqlite3.connect(db_path.parent / safety_name)

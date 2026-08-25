@@ -7,7 +7,7 @@ import logging
 from sqlalchemy.orm import Session
 
 from ..config import SEED_DIR
-from ..models import Profile, utcnow
+from ..models import Profile, local_now
 from .cv_parser import extract_skills
 
 logger = logging.getLogger("jobfinder.seed")
@@ -31,7 +31,7 @@ def ensure_profile(db: Session) -> Profile:
         email=data.get("email", ""),
         cv_filename=data.get("cv_filename", ""),
         cv_text=cv_text,
-        cv_updated_at=utcnow() if cv_text else None,
+        cv_updated_at=local_now() if cv_text else None,
         letter_template=letter_path.read_text(encoding="utf-8") if letter_path.exists() else "",
         target_titles=data.get("target_titles", []),
         skills=extract_skills(cv_text) if cv_text else [],

@@ -168,6 +168,7 @@ export async function demoRequest(path, options = {}) {
       if (body.notes !== undefined) offer.notes = body.notes
       if (body.favorite !== undefined) offer.favorite = body.favorite
       if (body.cover_letter !== undefined) offer.cover_letter = body.cover_letter
+      if (body.interview_prep !== undefined) offer.interview_prep = body.interview_prep
       if ('next_action_date' in body) offer.next_action_date = body.next_action_date
       if ('next_action_note' in body) offer.next_action_note = body.next_action_note
     }

@@ -6,11 +6,12 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import OFFER_STATUSES, Offer, Profile, utcnow
+from ..models import OFFER_STATUSES, STATUS_LABELS, Offer, Profile, local_now
 from ..schemas import ManualOffer, OfferDetail, OfferSummary, OfferUpdate
 from ..services.claude_ai import ai_cover_letter, ai_email, ai_gap_analysis, ai_interview_prep, cli_available
 from ..services.enrich import fetch_full_description
 from ..services.journal import log_event
+from ..services.textutils import escape_like
 
 router = APIRouter(prefix="/api/offers", tags=["offres"])
 
@@ -31,7 +32,7 @@ def list_offers(
 ):
     query = db.query(Offer)
     if company:
-        query = query.filter(Offer.company.ilike(f"%{company}%"))
+        query = query.filter(Offer.company.ilike(f"%{escape_like(company)}%", escape="\\"))
     if status:
         statuses = [s for s in status.split(",") if s in OFFER_STATUSES]
         if statuses:
@@ -45,9 +46,13 @@ def list_offers(
     if remote is not None:
         query = query.filter(Offer.remote.is_(remote))
     if search:
-        like = f"%{search}%"
+        like = f"%{escape_like(search)}%"
         query = query.filter(
-            or_(Offer.title.ilike(like), Offer.company.ilike(like), Offer.description.ilike(like))
+            or_(
+                Offer.title.ilike(like, escape="\\"),
+                Offer.company.ilike(like, escape="\\"),
+                Offer.description.ilike(like, escape="\\"),
+            )
         )
 
     total = query.count()
@@ -93,9 +98,17 @@ def add_manual_offer(payload: ManualOffer, db: Session = Depends(get_db)):
 
     # Dédoublonnage : empreinte exacte puis similarité de titre (même entreprise).
     fp = make_fp(title, company)
-    twin = db.query(Offer).filter(Offer.fingerprint == fp).first()
+    twin = (
+        db.query(Offer).filter(Offer.fingerprint == fp).first()
+        if normalize(company)
+        else None
+    )
     if twin is None and len(normalize(company)) >= 3:
-        for other in db.query(Offer).filter(Offer.company.ilike(company)).all():
+        # Correspondance exacte insensible à la casse (pas un motif LIKE : un nom
+        # d'entreprise contenant % ou _ ne doit pas devenir un joker).
+        from sqlalchemy import func as sa_func
+
+        for other in db.query(Offer).filter(sa_func.lower(Offer.company) == company.lower()).all():
             if titles_similar(title, other.title):
                 twin = other
                 break
@@ -105,7 +118,7 @@ def add_manual_offer(payload: ManualOffer, db: Session = Depends(get_db)):
     offer = Offer(
         fingerprint=fp,
         source="manuelle",
-        source_id=f"manuelle-{utcnow().strftime('%Y%m%d%H%M%S%f')}",
+        source_id=f"manuelle-{local_now().strftime('%Y%m%d%H%M%S%f')}",
         title=title[:300],
         company=company[:200],
         location=(payload.location or "").strip()[:200],
@@ -116,7 +129,7 @@ def add_manual_offer(payload: ManualOffer, db: Session = Depends(get_db)):
     )
     profile = db.get(Profile, 1)
     rescore_offer(offer, profile_to_dict(profile))
-    offer.status_history = [{"status": "nouvelle", "date": utcnow().isoformat(), "par": "ajout manuel"}]
+    offer.status_history = [{"status": "nouvelle", "date": local_now().isoformat(), "par": "ajout manuel"}]
     db.add(offer)
     db.commit()
     log_event(db, "ajout", f"Offre ajoutée à la main : « {offer.title} » "
@@ -131,11 +144,6 @@ def export_xlsx(db: Session = Depends(get_db)):
     from openpyxl.styles import Alignment, Font, PatternFill
     from openpyxl.utils import get_column_letter
 
-    status_labels = {
-        "nouvelle": "Nouvelle", "vue": "Vue", "a_postuler": "À postuler",
-        "postulee": "Postulée", "relancee": "Relancée", "entretien": "Entretien",
-        "refusee": "Refusée", "fermee": "Fermée",
-    }
     headers = [
         ("Score", 8), ("Titre", 42), ("Entreprise", 24), ("Lieu", 20), ("Contrat", 14),
         ("Salaire", 16), ("Télétravail", 11), ("Statut", 12), ("Favori", 8),
@@ -158,13 +166,15 @@ def export_xlsx(db: Session = Depends(get_db)):
     for row, o in enumerate(offers, start=2):
         values = [
             round(o.final_score), o.title, o.company, o.location, o.contract_type,
-            o.salary_text, "Oui" if o.remote else "", status_labels.get(o.status, o.status),
+            o.salary_text, "Oui" if o.remote else "", STATUS_LABELS.get(o.status, o.status),
             "★" if o.favorite else "",
             o.source, o.published_at.strftime("%d/%m/%Y") if o.published_at else "",
             o.collected_at.strftime("%d/%m/%Y"), o.ai_reason, o.notes, o.url,
         ]
         for col, value in enumerate(values, start=1):
             cell = ws.cell(row=row, column=col, value=value)
+            if isinstance(value, str) and value.startswith("="):
+                cell.data_type = "s"  # texte collecté, jamais une formule Excel
             cell.alignment = Alignment(vertical="top", wrap_text=col in (2, 13, 14))
     ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{max(len(offers) + 1, 2)}"
 
@@ -198,7 +208,7 @@ def update_offer(offer_id: int, update: OfferUpdate, db: Session = Depends(get_d
             raise HTTPException(400, f"Statut inconnu : {update.status}")
         if update.status != offer.status:
             history = list(offer.status_history or [])
-            history.append({"status": update.status, "date": utcnow().isoformat(), "par": "utilisateur"})
+            history.append({"status": update.status, "date": local_now().isoformat(), "par": "utilisateur"})
             offer.status_history = history
             status_change = (offer.status, update.status)
             offer.status = update.status

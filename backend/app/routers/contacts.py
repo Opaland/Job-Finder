@@ -1,6 +1,7 @@
 """Contacts recruteurs (mini-CRM par entreprise)."""
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -42,7 +43,7 @@ class ContactUpdate(BaseModel):
 def list_contacts(company: str | None = None, db: Session = Depends(get_db)):
     query = db.query(Contact)
     if company:
-        query = query.filter(Contact.company.ilike(company.strip()))
+        query = query.filter(func.lower(Contact.company) == company.strip().lower())
     return query.order_by(Contact.company, Contact.name).all()
 
 

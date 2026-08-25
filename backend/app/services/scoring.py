@@ -186,7 +186,11 @@ def score_offer(offer: dict, profile: dict) -> ScoreResult:
     desc_norm = normalize(offer.get("description", ""))
     location_norm = normalize(offer.get("location", ""))
     contract_norm = normalize(offer.get("contract_type", ""))
-    full_norm = " ".join([title_norm, desc_norm, location_norm])
+    company_norm = normalize(offer.get("company", ""))
+    # Le nom d'entreprise en fait partie : les mots-clés exclus (« une entreprise
+    # à éviter ») et les secteurs bonus doivent le voir même s'il n'est pas
+    # répété dans le descriptif.
+    full_norm = " ".join([title_norm, desc_norm, location_norm, company_norm])
 
     excluded = [normalize(k) for k in profile.get("excluded_keywords", []) if k]
     excluded_hit = next((k for k in excluded if k and contains_word(full_norm, k)), None)

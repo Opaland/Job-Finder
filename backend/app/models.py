@@ -1,13 +1,21 @@
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import JSON, Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
+from .config import settings
 from .database import Base
 
 
-def utcnow() -> datetime:
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+def local_now() -> datetime:
+    """Heure locale (Europe/Paris), naïve.
+
+    Application mono-utilisateur locale : stockage, comparaisons et affichage
+    travaillent tous dans ce même référentiel — ce qu'affichent l'interface et
+    les emails est donc directement l'heure du poste.
+    """
+    return datetime.now(ZoneInfo(settings.timezone)).replace(tzinfo=None)
 
 
 # Statuts possibles d'une offre. Une offre n'est JAMAIS fermée automatiquement :
@@ -22,6 +30,18 @@ OFFER_STATUSES = [
     "refusee",
     "fermee",
 ]
+
+# Libellés affichés (une seule copie côté backend ; le frontend a la sienne dans api.js).
+STATUS_LABELS = {
+    "nouvelle": "Nouvelle",
+    "vue": "Vue",
+    "a_postuler": "À postuler",
+    "postulee": "Postulée",
+    "relancee": "Relancée",
+    "entretien": "Entretien",
+    "refusee": "Refusée",
+    "fermee": "Fermée",
+}
 
 
 class Offer(Base):
@@ -43,8 +63,8 @@ class Offer(Base):
     remote: Mapped[bool] = mapped_column(Boolean, default=False)
 
     published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    collected_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    last_seen_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    collected_at: Mapped[datetime] = mapped_column(DateTime, default=local_now)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime, default=local_now)
     still_online: Mapped[bool] = mapped_column(Boolean, default=True)
 
     score: Mapped[float] = mapped_column(Float, default=0.0)
@@ -103,7 +123,7 @@ class Profile(Base):
     # Requêtes envoyées aux sites d'emploi à chaque scan ; None/vide = défauts des connecteurs.
     search_queries: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=local_now, onupdate=local_now)
 
 
 class Contact(Base):
@@ -118,15 +138,15 @@ class Contact(Base):
     email: Mapped[str] = mapped_column(String(200), default="")
     phone: Mapped[str] = mapped_column(String(40), default="")
     notes: Mapped[str] = mapped_column(Text, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=local_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=local_now, onupdate=local_now)
 
 
 class ScanRun(Base):
     __tablename__ = "scan_runs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    started_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=local_now)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     trigger: Mapped[str] = mapped_column(String(20), default="manuel")  # manuel | quotidien
     status: Mapped[str] = mapped_column(String(20), default="en_cours")  # en_cours | termine | erreur
@@ -142,7 +162,7 @@ class ActivityLog(Base):
     __tablename__ = "activity_log"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    at: Mapped[datetime] = mapped_column(DateTime, default=local_now, index=True)
     kind: Mapped[str] = mapped_column(String(30), index=True)
     message: Mapped[str] = mapped_column(Text)
     offer_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -153,6 +173,6 @@ class Digest(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     date: Mapped[str] = mapped_column(String(10), unique=True)  # AAAA-MM-JJ
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=local_now)
     payload: Mapped[dict] = mapped_column(JSON, default=dict)
     email_sent: Mapped[bool] = mapped_column(Boolean, default=False)

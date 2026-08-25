@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 import app.services.scan as scan_module
 from app.connectors.base import ConnectorResult, RawOffer
 from app.database import Base
-from app.models import Offer, Profile, utcnow
+from app.models import Offer, Profile, local_now
 from app.services.scan import run_scan
 
 
@@ -105,13 +105,39 @@ def test_meme_offre_deux_sources_fusionnee(db, monkeypatch):
     assert any(s["source"] == "fake2" for s in offer.other_sources)
 
 
+def test_entreprises_vides_jamais_fusionnees(db, monkeypatch):
+    """Deux offres au même titre mais d'entreprises inconnues restent distinctes."""
+    offer_a = RawOffer(source="fake", source_id="x1", title="Test Manager H/F",
+                       company="", location="Lyon", description="d", url="https://a/1")
+    offer_b = RawOffer(source="fake2", source_id="x2", title="Test Manager H/F",
+                       company="", location="Paris", description="d", url="https://b/2")
+    fake2 = FakeConnector([offer_b])
+    fake2.name = "fake2"
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([offer_a]), fake2])
+    run_scan(db, trigger="manuel")
+    assert db.query(Offer).count() == 2
+
+
+def test_offre_manuelle_jamais_hors_ligne(db, monkeypatch):
+    """Une offre ajoutée à la main n'est jamais marquée « plus en ligne » par un scan."""
+    manual = Offer(fingerprint="fp-man", source="manuelle", source_id="m1",
+                   title="Offre LinkedIn collée", status="postulee", final_score=80,
+                   last_seen_at=local_now() - timedelta(days=30))
+    db.add(manual)
+    db.commit()
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([_offer()])])
+    run_scan(db, trigger="manuel")
+    db.expire_all()
+    assert db.query(Offer).filter_by(source="manuelle").one().still_online is True
+
+
 def test_offre_disparue_jamais_fermee(db, monkeypatch):
     """Une offre plus vue à la source passe hors-ligne mais garde son statut."""
     monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([_offer()])])
     run_scan(db, trigger="manuel")
     offer = db.query(Offer).one()
     offer.status = "postulee"
-    offer.last_seen_at = utcnow() - timedelta(days=30)
+    offer.last_seen_at = local_now() - timedelta(days=30)
     db.commit()
 
     monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([])])

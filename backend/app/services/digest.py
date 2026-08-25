@@ -7,21 +7,10 @@ from datetime import datetime, timedelta
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from ..models import Digest, Offer, Profile, ScanRun, utcnow
+from ..models import STATUS_LABELS, Digest, Offer, Profile, ScanRun, local_now
 from .emailer import send_email, smtp_configured
 
 logger = logging.getLogger("jobfinder.digest")
-
-STATUS_LABELS = {
-    "nouvelle": "Nouvelles",
-    "vue": "Vues",
-    "a_postuler": "À postuler",
-    "postulee": "Postulées",
-    "relancee": "Relancées",
-    "entretien": "Entretiens",
-    "refusee": "Refusées",
-    "fermee": "Fermées",
-}
 
 
 def _offer_brief(offer: Offer) -> dict:
@@ -60,7 +49,7 @@ def gems(db: Session) -> list[Offer]:
 
 def applications_this_week(db: Session) -> int:
     """Nombre d'offres postulées depuis lundi (d'après l'historique des statuts)."""
-    now = utcnow()
+    now = local_now()
     monday = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
     count = 0
     for offer in db.query(Offer).filter(Offer.status.notin_(["nouvelle", "vue", "a_postuler"])).all():
@@ -88,7 +77,7 @@ def _last_status_change(offer: Offer) -> datetime | None:
 
 def offers_to_relaunch(db: Session) -> list[Offer]:
     """Candidatures envoyées restées sans suite depuis RELAUNCH_AFTER_DAYS jours."""
-    cutoff = utcnow() - timedelta(days=RELAUNCH_AFTER_DAYS)
+    cutoff = local_now() - timedelta(days=RELAUNCH_AFTER_DAYS)
     result = []
     for offer in db.query(Offer).filter(Offer.status.in_(["postulee", "relancee"])).all():
         changed = _last_status_change(offer)
@@ -100,8 +89,8 @@ def offers_to_relaunch(db: Session) -> list[Offer]:
 
 def actions_due(db: Session) -> list[dict]:
     """Actions datées arrivées à échéance (aujourd'hui inclus), les plus urgentes d'abord."""
-    end_of_today = utcnow().replace(hour=23, minute=59, second=59, microsecond=0)
-    start_of_today = utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_today = local_now().replace(hour=23, minute=59, second=59, microsecond=0)
+    start_of_today = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
     offers = (
         db.query(Offer)
         .filter(Offer.next_action_date.isnot(None), Offer.next_action_date <= end_of_today)
@@ -175,8 +164,8 @@ def daily_focus(
 
 def build_digest(db: Session, for_date: str | None = None) -> Digest:
     """Construit (ou reconstruit) le digest du jour."""
-    date_str = for_date or utcnow().strftime("%Y-%m-%d")
-    since = utcnow() - timedelta(hours=26)
+    date_str = for_date or local_now().strftime("%Y-%m-%d")
+    since = local_now() - timedelta(hours=26)
 
     new_offers = (
         db.query(Offer)
@@ -239,7 +228,7 @@ def build_digest(db: Session, for_date: str | None = None) -> Digest:
     digest = db.query(Digest).filter(Digest.date == date_str).one_or_none()
     if digest:
         digest.payload = payload
-        digest.created_at = utcnow()
+        digest.created_at = local_now()
     else:
         digest = Digest(date=date_str, payload=payload)
         db.add(digest)

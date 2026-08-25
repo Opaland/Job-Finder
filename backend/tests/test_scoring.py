@@ -112,6 +112,20 @@ def test_mot_cle_exclu_plafonne(profile):
     assert score_offer(offer, profile).score <= 10
 
 
+def test_mot_cle_exclu_sur_le_nom_d_entreprise_seul(profile):
+    """L'exclusion s'applique même si l'entreprise n'est citée que dans son champ."""
+    profile = dict(profile, excluded_keywords=["capgemini"])
+    offer = {
+        "title": "Test Manager",
+        "company": "Capgemini",
+        "location": "Lyon",
+        "contract_type": "CDI",
+        "description": "Pilotage QA, management, Selenium.",  # le nom n'y figure pas
+        "remote": False,
+    }
+    assert score_offer(offer, profile).score <= 10
+
+
 def test_breakdown_explicable(profile):
     offer = {
         "title": "QA Engineer",

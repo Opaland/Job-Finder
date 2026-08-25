@@ -69,14 +69,15 @@ class WTTJConnector(Connector):
         ] + [
             {"query": kw, "filters": "remote:fulltime"} for kw in keywords[:2]
         ]
+        from urllib.parse import urlencode
+
         requests_payload = {
             "requests": [
                 {
                     "indexName": INDEX,
-                    "params": "&".join(
-                        [f"query={s['query']}", "hitsPerPage=50"]
-                        + [f"{k}={v}" for k, v in s.items() if k != "query"]
-                    ),
+                    # urlencode : une requête contenant &, =, + ou # reste intacte.
+                    "params": urlencode({"query": s["query"], "hitsPerPage": 50,
+                                         **{k: v for k, v in s.items() if k != "query"}}),
                 }
                 for s in searches
             ]

@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..connectors import ALL_CONNECTORS
-from ..models import Offer, Profile, ScanRun, utcnow
+from ..models import Offer, Profile, ScanRun, local_now
 from .claude_ai import ai_score_offer, cli_available
 from .scoring import combined_score, score_offer
 from .textutils import fingerprint, normalize, titles_similar
@@ -79,7 +79,6 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
         profile_dict = profile_to_dict(profile)
         enabled = profile.sources_enabled or {}
         stats: dict[str, dict] = {}
-        scan_started = utcnow()
 
         # Index (entreprise normalisée → offres connues) pour détecter les
         # doublons dont le titre varie légèrement (« H/F », « CDI »…).
@@ -119,7 +118,7 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
                     .one_or_none()
                 )
                 if existing:
-                    existing.last_seen_at = utcnow()
+                    existing.last_seen_at = local_now()
                     existing.still_online = True
                     # On complète la description si la source en fournit une plus riche.
                     if len(raw.description or "") > len(existing.description or ""):
@@ -128,10 +127,17 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
                     continue
 
                 fp = fingerprint(raw.title, raw.company)
-                twin = db.query(Offer).filter(Offer.fingerprint == fp).first()
+                company_key = normalize(raw.company or "")
+                # Sans entreprise identifiée, pas de fusion inter-sources : deux
+                # annonces « Test Manager H/F » d'entreprises inconnues peuvent
+                # être deux offres distinctes.
+                twin = (
+                    db.query(Offer).filter(Offer.fingerprint == fp).first()
+                    if company_key
+                    else None
+                )
                 if twin is None:
                     # Même entreprise + titre quasi identique = même offre.
-                    company_key = normalize(raw.company or "")
                     if len(company_key) >= 3:
                         for oid, otitle in company_index.get(company_key, []):
                             if titles_similar(raw.title, otitle):
@@ -140,7 +146,7 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
                 if twin:
                     # Même offre déjà connue via une autre source : on note la piste
                     # supplémentaire sans créer de doublon.
-                    twin.last_seen_at = utcnow()
+                    twin.last_seen_at = local_now()
                     twin.still_online = True
                     others = list(twin.other_sources or [])
                     entry = {"source": raw.source, "url": raw.url}
@@ -166,7 +172,7 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
                 )
                 rescore_offer(offer, profile_dict)
                 offer.status_history = [
-                    {"status": "nouvelle", "date": utcnow().isoformat(), "par": "scan"}
+                    {"status": "nouvelle", "date": local_now().isoformat(), "par": "scan"}
                 ]
                 db.add(offer)
                 db.flush()
@@ -178,22 +184,35 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
             db.commit()
             stats[connector.name] = source_stat
 
-        # Marque hors-ligne les offres non revues depuis 15 jours (sans toucher au statut).
-        cutoff = utcnow() - timedelta(days=15)
-        db.query(Offer).filter(Offer.last_seen_at < cutoff, Offer.still_online.is_(True)).update(
-            {"still_online": False}, synchronize_session=False
-        )
-        db.commit()
+        # Marque hors-ligne les offres non revues depuis 15 jours (sans toucher au
+        # statut) — uniquement pour les sources réellement scannées avec succès :
+        # une offre manuelle ou d'une source désactivée/en panne ne peut pas être
+        # « revue », elle ne doit donc pas être signalée « plus en ligne ».
+        swept_sources = [
+            name for name, s in stats.items()
+            if not s.get("skipped") and (s.get("fetched", 0) > 0 or not s.get("errors"))
+        ]
+        if swept_sources:
+            cutoff = local_now() - timedelta(days=15)
+            db.query(Offer).filter(
+                Offer.last_seen_at < cutoff,
+                Offer.still_online.is_(True),
+                Offer.source.in_(swept_sources),
+            ).update({"still_online": False}, synchronize_session=False)
+            db.commit()
 
-        # Affinage IA (session locale Claude Code) des meilleures nouvelles offres.
+        # Affinage IA (session locale Claude Code) des meilleures offres sans avis.
+        # Pas de filtre sur la date de collecte : une offre enrichie (avis IA remis
+        # à zéro) redevient candidate au prochain scan ; le volume reste borné par
+        # ai_max_offers_per_scan, les mieux notées d'abord.
         ai_refined = 0
         if cli_available():
             candidates = (
                 db.query(Offer)
                 .filter(
-                    Offer.collected_at >= scan_started,
                     Offer.ai_score.is_(None),
                     Offer.score >= settings.ai_min_rule_score,
+                    Offer.status.notin_(["refusee", "fermee"]),
                 )
                 .order_by(Offer.score.desc())
                 .limit(settings.ai_max_offers_per_scan)
@@ -209,7 +228,7 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
                 ai_refined += 1
             db.commit()
 
-        run.finished_at = utcnow()
+        run.finished_at = local_now()
         run.status = "termine"
         run.source_stats = stats
         run.new_count = sum(s.get("new", 0) for s in stats.values())
@@ -226,7 +245,7 @@ def run_scan(db: Session, trigger: str = "manuel") -> ScanRun:
                               f"{run.seen_count} déjà connue(s), {run.error_count} erreur(s) de source.")
         return run
     except Exception:
-        run.finished_at = utcnow()
+        run.finished_at = local_now()
         run.status = "erreur"
         db.commit()
         raise

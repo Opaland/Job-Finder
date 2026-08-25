@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from ..config import DATA_DIR
 from ..database import get_db
-from ..models import Profile, utcnow
+from ..models import Profile, local_now
 from ..schemas import ProfileOut, ProfileUpdate
 from ..services import scheduler
 from ..services.cv_parser import extract_skills, extract_text
@@ -57,7 +57,7 @@ async def upload_cv(file: UploadFile, db: Session = Depends(get_db)):
     profile = db.get(Profile, 1)
     profile.cv_filename = file.filename or "cv.txt"
     profile.cv_text = text
-    profile.cv_updated_at = utcnow()
+    profile.cv_updated_at = local_now()
     profile.skills = extract_skills(text)
     db.commit()
     rescore_all(db)
