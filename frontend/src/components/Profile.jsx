@@ -40,6 +40,7 @@ const WEIGHT_LABELS = [
 ]
 
 export default function ProfilePage() {
+  const [rescoring, setRescoring] = useState(false)
   const [profile, setProfile] = useState(null)
   const [weightDefaults, setWeightDefaults] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -233,6 +234,20 @@ export default function ProfilePage() {
               <b>{WEIGHT_LABELS.reduce((sum, [k]) => sum + ((profile.scoring_weights || {})[k] ?? (weightDefaults[k] ?? 0)), 0)}</b>
               {' '}· <button className="secondary" style={{ padding: '3px 10px', fontSize: 12 }}
                 onClick={() => set('scoring_weights', null)}>Revenir aux défauts</button>
+              {' '}· <button className="secondary" style={{ padding: '3px 10px', fontSize: 12 }}
+                disabled={rescoring}
+                title="Recalcule le score de toutes les offres avec le profil actuel"
+                onClick={async () => {
+                  setRescoring(true)
+                  try {
+                    const r = await api.rescore()
+                    showToast(`${r.rescored} offre(s) recalculée(s).`)
+                  } catch (err) {
+                    showToast(err.message, true)
+                  } finally {
+                    setRescoring(false)
+                  }
+                }}>{rescoring ? 'Recalcul…' : 'Recalculer toutes les offres'}</button>
             </p>
           </>
         )}

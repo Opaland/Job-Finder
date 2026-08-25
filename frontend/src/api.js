@@ -24,8 +24,6 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  health: () => request('/api/health'),
-
   offers: (params = {}) => {
     const q = new URLSearchParams()
     Object.entries(params).forEach(([k, v]) => {
@@ -84,7 +82,6 @@ export const api = {
   scans: (limit = 10) => request(`/api/scans?limit=${limit}`),
 
   digestToday: () => request('/api/digests/today'),
-  digests: () => request('/api/digests'),
   sendDigestEmail: () => request('/api/digests/send-email', { method: 'POST' }),
   testEmail: () => request('/api/digests/test-email', { method: 'POST' }),
   sendReminder: () => request('/api/digests/reminder', { method: 'POST' }),
