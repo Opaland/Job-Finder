@@ -6,7 +6,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session, load_only
 
 from ..database import get_db
-from ..models import OFFER_STATUSES, STATUS_LABELS, Offer, Profile, local_now
+from ..models import CHECKLIST_ETAPES, OFFER_STATUSES, STATUS_LABELS, Offer, Profile, local_now
 from ..schemas import InterviewIn, InterviewReport, ManualOffer, OfferDetail, OfferSummary, OfferUpdate
 from ..services.claude_ai import ai_cover_letter, ai_email, ai_gap_analysis, ai_interview_prep, cli_available
 from ..services.enrich import fetch_full_description
@@ -23,7 +23,7 @@ SUMMARY_COLUMNS = load_only(
     Offer.contract_type, Offer.salary_text, Offer.remote, Offer.url,
     Offer.published_at, Offer.collected_at, Offer.still_online, Offer.score,
     Offer.ai_score, Offer.final_score, Offer.status, Offer.favorite,
-    Offer.next_action_date,
+    Offer.next_action_date, Offer.checklist,
 )
 
 
@@ -186,6 +186,12 @@ def export_xlsx(db: Session = Depends(get_db)):
 
 
 
+@router.get("/meta/checklist")
+def checklist_etapes():
+    """Étapes de la checklist de candidature, dans l'ordre d'affichage."""
+    return CHECKLIST_ETAPES
+
+
 @router.get("/{offer_id}", response_model=OfferDetail)
 def get_offer(offer_id: int, db: Session = Depends(get_db)):
     offer = db.get(Offer, offer_id)
@@ -210,6 +216,15 @@ def update_offer(offer_id: int, update: OfferUpdate, db: Session = Depends(get_d
             offer.status_history = history
             status_change = (offer.status, update.status)
             offer.status = update.status
+    if update.checklist is not None:
+        # Fusion avec l'existant : cocher une étape n'en décoche aucune autre.
+        # Seules les étapes connues sont retenues, en booléens — la checklist
+        # reste comparable d'une offre à l'autre (avancement, statistiques).
+        fusion = dict(offer.checklist or {})
+        fusion.update(update.checklist)
+        offer.checklist = {
+            etape: bool(valeur) for etape, valeur in fusion.items() if etape in CHECKLIST_ETAPES
+        }
     if update.notes is not None:
         offer.notes = update.notes
     if update.favorite is not None:

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { actionDue, api, DEMO, downloadFile, formatDate, GEM_SCORE, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
+import { actionDue, api, checklistAvancement, DEMO, downloadFile, formatDate, GEM_SCORE, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
 import { useToast } from '../App.jsx'
 import OfferDetail from './OfferDetail.jsx'
 
@@ -206,6 +206,11 @@ export default function Offers({ scanning }) {
                 {offer.remote && <span className="chip remote">Télétravail</span>}
                 {!offer.still_online && <span className="chip offline">Plus en ligne ?</span>}
                 {actionDue(offer) && <span className="chip offline">⏰ action due</span>}
+                {checklistAvancement(offer).faites > 0 && (
+                  <span className="chip" title="Avancement de la checklist de candidature">
+                    ✓ {checklistAvancement(offer).faites}/{checklistAvancement(offer).total}
+                  </span>
+                )}
                 {offer.salary_text && <span className="chip">{offer.salary_text}</span>}
               </div>
             </div>

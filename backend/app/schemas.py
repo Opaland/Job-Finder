@@ -27,6 +27,7 @@ class OfferSummary(BaseModel):
     status: str
     favorite: bool
     next_action_date: datetime | None = None
+    checklist: dict = {}
 
 
 class OfferDetail(OfferSummary):
@@ -74,6 +75,7 @@ class ManualOffer(BaseModel):
 
 class OfferUpdate(BaseModel):
     status: str | None = None
+    checklist: dict | None = None
     notes: str | None = None
     favorite: bool | None = None
     cover_letter: str | None = None

@@ -163,6 +163,7 @@ export async function demoRequest(path, options = {}) {
           { status: body.status, date: new Date().toISOString(), par: 'utilisateur (démo)' },
         ]
       }
+      if (body.checklist !== undefined) offer.checklist = { ...(offer.checklist || {}), ...body.checklist }
       if (body.notes !== undefined) offer.notes = body.notes
       if (body.favorite !== undefined) offer.favorite = body.favorite
       if (body.cover_letter !== undefined) offer.cover_letter = body.cover_letter
@@ -207,6 +208,9 @@ export async function demoRequest(path, options = {}) {
   if (route.match(/^\/api\/offers\/\d+\/interview-prep$/)) throw new Error(LOCAL_ONLY)
   if (route.match(/^\/api\/offers\/\d+\/email$/)) throw new Error(LOCAL_ONLY)
   if (route.match(/^\/api\/offers\/\d+\/gap-analysis$/)) throw new Error(LOCAL_ONLY)
+  if (route === '/api/offers/meta/checklist') {
+    return { cv_adapte: 'CV adapté', lettre_prete: 'Lettre prête', envoyee: 'Candidature envoyée', relancee: 'Relancée' }
+  }
   if (route === '/api/profile/scoring-defaults') {
     // Copie des défauts du backend (source : backend/app/services/scoring.py).
     return { titre: 40, competences: 25, seniorite: 10, localisation: 15, contrat: 5, secteur: 5 }

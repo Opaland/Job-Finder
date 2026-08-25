@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, DEMO, downloadFile, formatDate, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
+import { api, CHECKLIST_ETAPES, DEMO, downloadFile, formatDate, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
 import { useToast } from '../App.jsx'
 
 const RESSENTIS = { bon: '😀 bon', mitige: '😐 mitigé', mauvais: '☹️ mauvais' }
@@ -333,6 +333,22 @@ export default function OfferDetail({ offerId, onClose }) {
             )}
           </>
         )}
+
+        <div className="section-title">Checklist de candidature</div>
+        <div className="actions-row" style={{ margin: '4px 0 8px', flexWrap: 'wrap' }}>
+          {Object.entries(CHECKLIST_ETAPES).map(([cle, libelle]) => {
+            const coche = Boolean((offer.checklist || {})[cle])
+            return (
+              <label key={cle} className="chip" style={{ cursor: 'pointer', userSelect: 'none' }}>
+                <input
+                  type="checkbox" checked={coche} style={{ marginRight: 6 }}
+                  onChange={() => patch({ checklist: { ...(offer.checklist || {}), [cle]: !coche } })}
+                />
+                {libelle}
+              </label>
+            )
+          })}
+        </div>
 
         <div className="section-title">Entretiens</div>
         {(offer.interviews || []).length === 0 && (

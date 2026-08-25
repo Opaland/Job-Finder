@@ -36,6 +36,14 @@ STATUTS_NON_TRAITES = ["nouvelle", "vue", "a_postuler"]  # pas encore de candida
 STATUTS_EN_ATTENTE = ["postulee", "relancee"]  # candidature envoyée, réponse attendue
 STATUTS_CLOS = ["refusee", "fermee"]  # sorties du pipeline (décision de l'utilisateur)
 
+# Étapes de la checklist de candidature (ordre d'affichage).
+CHECKLIST_ETAPES = {
+    "cv_adapte": "CV adapté",
+    "lettre_prete": "Lettre prête",
+    "envoyee": "Candidature envoyée",
+    "relancee": "Relancée",
+}
+
 # Libellés affichés (une seule copie côté backend ; le frontend a la sienne dans api.js).
 STATUS_LABELS = {
     "nouvelle": "Nouvelle",
@@ -89,6 +97,9 @@ class Offer(Base):
     next_action_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Analyse d'écart CV ↔ offre générée par l'IA (compétences manquantes, conseils ATS).
     gap_analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Checklist de candidature : {cv_adapte, lettre_prete, envoyee, relancee} -> bool.
+    checklist: Mapped[dict] = mapped_column(JSON, default=dict)
 
     # Entretiens passés et à venir : [{date, format, interlocuteur, notes}].
     interviews: Mapped[list] = mapped_column(JSON, default=list)

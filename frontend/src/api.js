@@ -50,6 +50,8 @@ export const api = {
   deleteInterview: (id, index) =>
     request(`/api/offers/${id}/interviews/${index}`, { method: 'DELETE' }),
 
+  checklistEtapes: () => request('/api/offers/meta/checklist'),
+
   contacts: (company) => request(`/api/contacts${company ? `?company=${encodeURIComponent(company)}` : ''}`),
   addContact: (body) => request('/api/contacts', { method: 'POST', body: JSON.stringify(body) }),
   deleteContact: (id) => request(`/api/contacts/${id}`, { method: 'DELETE' }),
@@ -147,6 +149,21 @@ export function scoreColor(score) {
 export function formatDate(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+// Étapes de la checklist de candidature (miroir de CHECKLIST_ETAPES, models.py).
+export const CHECKLIST_ETAPES = {
+  cv_adapte: 'CV adapté',
+  lettre_prete: 'Lettre prête',
+  envoyee: 'Candidature envoyée',
+  relancee: 'Relancée',
+}
+
+// Avancement de la checklist d'une offre : { faites, total }.
+export function checklistAvancement(offer) {
+  const etapes = Object.keys(CHECKLIST_ETAPES)
+  const coche = offer.checklist || {}
+  return { faites: etapes.filter((e) => coche[e]).length, total: etapes.length }
 }
 
 // Une action planifiée est « due » si son échéance est aujourd'hui (inclus) ou passée.
