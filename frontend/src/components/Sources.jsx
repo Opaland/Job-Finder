@@ -15,6 +15,8 @@ const jourISO = (decalage = 0) =>
   new Date(Date.now() + decalage * 86400000).toISOString().slice(0, 10)
 
 export default function Sources() {
+  const [importing, setImporting] = useState(false)
+  const csvRef = useRef(null)
   const [justifDu, setJustifDu] = useState(jourISO(-30))
   const [justifAu, setJustifAu] = useState(jourISO(0))
   const [data, setData] = useState(null)
@@ -197,6 +199,45 @@ export default function Sources() {
           >
             📄 Télécharger le justificatif
           </button>
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>Import / export CSV</h2>
+        <p className="hint" style={{ marginTop: 0 }}>
+          Le CSV s'ouvre dans Excel ou LibreOffice (séparateur « ; »). À l'import, les offres
+          déjà suivies sont reconnues et ignorées — rien n'est écrasé.
+        </p>
+        <div className="actions-row">
+          <button
+            className="secondary"
+            onClick={() => {
+              if (DEMO) { showToast("Export CSV disponible uniquement dans l'application locale (démo en ligne).", true); return }
+              downloadFile(api.csvUrl())
+            }}
+          >
+            ⬇️ Exporter en CSV
+          </button>
+          <button className="secondary" disabled={importing} onClick={() => csvRef.current?.click()}>
+            {importing ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Import…</>) : '⬆️ Importer un CSV'}
+          </button>
+          <input
+            ref={csvRef} type="file" accept=".csv,text/csv" style={{ display: 'none' }}
+            onChange={async (e) => {
+              const fichier = e.target.files?.[0]
+              e.target.value = ''
+              if (!fichier) return
+              setImporting(true)
+              try {
+                const r = await api.importCsv(fichier)
+                showToast(`${r.ajoutees} offre(s) importée(s), ${r.doublons} doublon(s) ignoré(s).`)
+              } catch (err) {
+                showToast(err.message, true)
+              } finally {
+                setImporting(false)
+              }
+            }}
+          />
         </div>
       </div>
 

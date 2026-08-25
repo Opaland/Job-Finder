@@ -87,6 +87,17 @@ export const api = {
   sendDigestEmail: () => request('/api/digests/send-email', { method: 'POST' }),
   testEmail: () => request('/api/digests/test-email', { method: 'POST' }),
 
+  csvUrl: () => '/api/exports/offres.csv',
+  importCsv: (file) => {
+    if (DEMO) return Promise.reject(new Error("Import CSV disponible uniquement dans l'application locale (démo en ligne)."))
+    const form = new FormData()
+    form.append('file', file)
+    return fetch('/api/exports/offres.csv', { method: 'POST', body: form }).then(async (res) => {
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || res.statusText) }
+      return res.json()
+    })
+  },
+
   justificatifUrl: (depuis, jusquA) =>
     `/api/exports/justificatif.pdf?depuis=${depuis}&jusqu_a=${jusquA}`,
 

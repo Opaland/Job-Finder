@@ -16,7 +16,7 @@ from app.models import Profile
 @pytest.fixture()
 def db(tmp_path):
     """Session sur une base SQLite neuve, avec le profil obligatoire (id=1)."""
-    engine = create_engine(f"sqlite:///{tmp_path}/test.db")
+    engine = create_engine(f"sqlite:///{tmp_path}/jobfinder-test.db")
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine, expire_on_commit=False)
     session = Session()

@@ -133,11 +133,11 @@ chaque jour.
 
 ### EPIC N — Preuves et administratif
 
-- [ ] **Sprint 29** : export PDF « justificatif de recherche d'emploi » —
+- [x] **Sprint 29** : export PDF « justificatif de recherche d'emploi » —
   candidatures, relances et entretiens sur une période (France Travail).
-- [ ] **Sprint 30** : import / export CSV des offres (reprise d'un suivi tenu
+- [x] **Sprint 30** : import / export CSV des offres (reprise d'un suivi tenu
   ailleurs, ou sauvegarde lisible).
-- [ ] **Sprint 31** : taux de conversion par source — quelle source donne
+- [x] **Sprint 31** : taux de conversion par source — quelle source donne
   réellement des entretiens.
 
 ### EPIC O — Efficacité quotidienne

@@ -117,6 +117,17 @@ function computeStats() {
     score_bins: bins.map((count, i) => ({ label: i < 9 ? `${i * 10}-${i * 10 + 9}` : '90-100', count })),
     per_day: perDay,
     companies,
+    conversion_sources: Object.entries(bySource).map(([source, count]) => {
+      const desSource = offers.filter((o) => o.source === source)
+      const candidatures = desSource.filter((o) =>
+        (o.status_history || []).some((h) => h.status === 'postulee')).length
+      const entretiens = desSource.filter((o) =>
+        o.status === 'entretien' || (o.status_history || []).some((h) => h.status === 'entretien')).length
+      return {
+        source, label: SOURCE_LABELS[source] || source, offres: count, candidatures, entretiens,
+        taux_entretien: candidatures ? Math.round((100 * entretiens) / candidatures) : null,
+      }
+    }).sort((a, b) => (b.taux_entretien ?? -1) - (a.taux_entretien ?? -1)),
   }
 }
 

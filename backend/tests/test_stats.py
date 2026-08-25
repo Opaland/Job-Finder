@@ -11,14 +11,12 @@ from app.models import Offer, Profile, local_now
 
 
 @pytest.fixture()
-def client(tmp_path):
+def client(db):
+    """Client + jeu d'offres de référence, sur la base partagée (conftest.py)."""
     from fastapi.testclient import TestClient
 
-    engine = create_engine(f"sqlite:///{tmp_path}/test.db")
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine, expire_on_commit=False)
-    db = Session()
-    db.add(Profile(id=1, cv_text="cv", sources_enabled={}))
+    profile = db.get(Profile, 1)
+    profile.cv_text = "cv"
 
     def add(status, score, source="france_travail", days_ago=0):
         add.n += 1
@@ -43,7 +41,6 @@ def client(tmp_path):
     fastapi_app.dependency_overrides[get_db] = override_db
     yield TestClient(fastapi_app)
     fastapi_app.dependency_overrides.clear()
-    db.close()
 
 
 def test_stats_totaux(client):
@@ -153,3 +150,39 @@ def test_stats_base_vide(tmp_path):
     finally:
         fastapi_app.dependency_overrides.clear()
         db.close()
+
+
+# --- Sprint 31 : ce que rapporte chaque source ------------------------------
+
+def test_conversion_par_source(client, db):
+    """Taux d'entretien = entretiens / candidatures, par source."""
+    from app.models import Offer, local_now
+
+    def offre(source_id, source, statuts):
+        historique = [{"status": s, "date": local_now().isoformat(), "par": "test"} for s in statuts]
+        db.add(Offer(fingerprint=f"fp-{source_id}", source=source, source_id=source_id,
+                     title="QA", company="ACME", final_score=70.0,
+                     status=statuts[-1], status_history=historique))
+
+    offre("a1", "apec", ["nouvelle", "postulee", "entretien"])
+    offre("a2", "apec", ["nouvelle", "postulee"])
+    offre("h1", "hellowork", ["nouvelle", "postulee"])
+    offre("h2", "hellowork", ["nouvelle"])
+    db.commit()
+
+    lignes = {s["source"]: s for s in client.get("/api/stats").json()["conversion_sources"]}
+    assert lignes["apec"]["candidatures"] == 2
+    assert lignes["apec"]["entretiens"] == 1
+    assert lignes["apec"]["taux_entretien"] == 50
+    assert lignes["hellowork"]["candidatures"] == 1
+    assert lignes["hellowork"]["taux_entretien"] == 0
+
+
+def test_source_sans_candidature_na_pas_de_taux(client, db):
+    from app.models import Offer
+    db.add(Offer(fingerprint="fp-z", source="wttj", source_id="z", title="QA",
+                 company="ACME", final_score=50.0, status="nouvelle"))
+    db.commit()
+    ligne = next(s for s in client.get("/api/stats").json()["conversion_sources"] if s["source"] == "wttj")
+    assert ligne["taux_entretien"] is None
+    assert ligne["offres"] == 1

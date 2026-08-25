@@ -264,6 +264,34 @@ export default function Stats() {
       </div>
 
       <Tooltip tip={tip} />
+      {data.conversion_sources?.some((s) => s.candidatures > 0) && (
+        <div className="card">
+          <h2>Ce que rapporte chaque source</h2>
+          <p className="hint" style={{ marginTop: 0 }}>
+            Taux d'entretien = entretiens obtenus / candidatures envoyées. Les sources sans
+            candidature ne disent encore rien.
+          </p>
+          <table className="simple">
+            <thead>
+              <tr><th>Source</th><th>Offres</th><th>Candidatures</th><th>Entretiens</th><th>Taux</th></tr>
+            </thead>
+            <tbody>
+              {data.conversion_sources.map((s) => (
+                <tr key={s.source}>
+                  <td style={{ fontWeight: 600 }}>{s.label}</td>
+                  <td>{s.offres}</td>
+                  <td>{s.candidatures}</td>
+                  <td>{s.entretiens}</td>
+                  <td style={{ fontWeight: 700 }}>
+                    {s.taux_entretien === null ? <span className="hint">—</span> : `${s.taux_entretien} %`}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
     </div>
   )
 }

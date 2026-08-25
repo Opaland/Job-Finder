@@ -27,6 +27,7 @@ ROUTES_FICHIERS = {
     "/api/restore",
     "/api/profile/cv",
     "/api/exports/justificatif.pdf",
+    "/api/exports/offres.csv",
 }
 
 

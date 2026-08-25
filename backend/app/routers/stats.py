@@ -71,6 +71,33 @@ def _company_stats(db: Session) -> list[dict]:
     return companies[:25]
 
 
+def _conversion_par_source(db: Session) -> list[dict]:
+    """Ce que chaque source rapporte vraiment : candidatures, entretiens, taux."""
+    par_source: dict[str, dict] = {}
+    for source, statut, historique in db.query(Offer.source, Offer.status, Offer.status_history).all():
+        entree = par_source.setdefault(source, {
+            "source": source, "label": SOURCE_LABELS.get(source, source),
+            "offres": 0, "candidatures": 0, "entretiens": 0,
+        })
+        entree["offres"] += 1
+        statuts = {h.get("status") for h in (historique or [])} | {statut}
+        if "postulee" in statuts:
+            entree["candidatures"] += 1
+        if "entretien" in statuts:
+            entree["entretiens"] += 1
+
+    lignes = []
+    for entree in par_source.values():
+        candidatures = entree["candidatures"]
+        lignes.append({
+            **entree,
+            # Part des candidatures qui ont débouché sur un entretien.
+            "taux_entretien": round(100 * entree["entretiens"] / candidatures) if candidatures else None,
+        })
+    lignes.sort(key=lambda s: (-(s["taux_entretien"] or -1), -s["candidatures"], s["label"]))
+    return lignes
+
+
 @router.get("/stats")
 def stats(db: Session = Depends(get_db)):
     now = local_now()
@@ -137,6 +164,7 @@ def stats(db: Session = Depends(get_db)):
         "score_bins": score_bins,
         "per_day": per_day,
         "companies": _company_stats(db),
+        "conversion_sources": _conversion_par_source(db),
     }
 
 
