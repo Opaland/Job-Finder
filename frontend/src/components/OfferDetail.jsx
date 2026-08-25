@@ -15,6 +15,7 @@ export default function OfferDetail({ offerId, onClose }) {
   const [emailDraft, setEmailDraft] = useState(null)
   const [contacts, setContacts] = useState([])
   const [newContact, setNewContact] = useState(null)
+  const [newInterview, setNewInterview] = useState(null)
   const showToast = useToast()
 
   const loadContacts = (company) => {
@@ -328,6 +329,61 @@ export default function OfferDetail({ offerId, onClose }) {
               </div>
             )}
           </>
+        )}
+
+        <div className="section-title">Entretiens</div>
+        {(offer.interviews || []).length === 0 && (
+          <p className="hint" style={{ margin: '2px 0 6px' }}>Aucun entretien noté pour cette offre.</p>
+        )}
+        {(offer.interviews || []).map((e, i) => (
+          <div key={i} className="actions-row" style={{ margin: '2px 0' }}>
+            <span>
+              <b>{new Date(e.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</b>
+              {' '}{new Date(e.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+            {e.format && <span className="chip">{e.format}</span>}
+            {e.interlocuteur && <span className="hint">{e.interlocuteur}</span>}
+            <button
+              className="fav" title="Supprimer cet entretien" style={{ fontSize: 14 }}
+              onClick={async () => {
+                try { setOffer(await api.deleteInterview(offer.id, i)) } catch (err) { showToast(err.message, true) }
+              }}
+            >✕</button>
+          </div>
+        ))}
+        {newInterview === null ? (
+          <button className="secondary" style={{ marginTop: 4 }}
+            onClick={() => setNewInterview({ date: '', heure: '10:00', format: 'Visio', interlocuteur: '' })}>
+            + Noter un entretien
+          </button>
+        ) : (
+          <div className="actions-row" style={{ marginTop: 6 }}>
+            <input type="date" value={newInterview.date}
+              onChange={(e) => setNewInterview({ ...newInterview, date: e.target.value })} />
+            <input type="time" value={newInterview.heure} style={{ width: 110 }}
+              onChange={(e) => setNewInterview({ ...newInterview, heure: e.target.value })} />
+            <select value={newInterview.format} style={{ width: 120 }}
+              onChange={(e) => setNewInterview({ ...newInterview, format: e.target.value })}>
+              <option>Visio</option><option>Téléphone</option><option>Sur site</option>
+            </select>
+            <input type="text" placeholder="Interlocuteur" style={{ width: 170 }} value={newInterview.interlocuteur}
+              onChange={(e) => setNewInterview({ ...newInterview, interlocuteur: e.target.value })} />
+            <button className="primary"
+              onClick={async () => {
+                if (!newInterview.date) { showToast("Choisis au moins une date d'entretien.", true); return }
+                try {
+                  setOffer(await api.addInterview(offer.id, {
+                    date: `${newInterview.date}T${newInterview.heure || '10:00'}:00`,
+                    format: newInterview.format,
+                    interlocuteur: newInterview.interlocuteur,
+                  }))
+                  setNewInterview(null)
+                  showToast('Entretien noté — il apparaîtra sur le tableau de bord.')
+                } catch (err) { showToast(err.message, true) }
+              }}
+            >OK</button>
+            <button className="secondary" onClick={() => setNewInterview(null)}>Annuler</button>
+          </div>
         )}
 
         <div className="section-title">Prochaine action</div>

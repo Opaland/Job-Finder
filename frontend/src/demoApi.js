@@ -144,7 +144,7 @@ export async function demoRequest(path, options = {}) {
       still_online: true, score, ai_score: null, ai_reason: '', final_score: score,
       score_breakdown: [{ label: 'Démo', points: score, max: 100, detail: 'Score simplifié dans la démo — l’application locale applique le vrai moteur pondéré.' }],
       status: 'nouvelle', status_history: [{ status: 'nouvelle', date: new Date().toISOString(), par: 'ajout manuel (démo)' }],
-      favorite: false, notes: '', cover_letter: '', interview_prep: null, other_sources: [],
+      favorite: false, notes: '', cover_letter: '', interview_prep: null, interviews: [], other_sources: [],
     }
     state.offers.push(offer)
     return offer
@@ -170,6 +170,24 @@ export async function demoRequest(path, options = {}) {
       if ('next_action_date' in body) offer.next_action_date = body.next_action_date
       if ('next_action_note' in body) offer.next_action_note = body.next_action_note
     }
+    return offer
+  }
+
+  const interviewAdd = route.match(/^\/api\/offers\/(\d+)\/interviews$/)
+  if (interviewAdd && method === 'POST') {
+    const offer = offerById(interviewAdd[1])
+    if (!offer) throw new Error('Offre introuvable')
+    offer.interviews = [
+      ...(offer.interviews || []),
+      { date: body.date, format: body.format || '', interlocuteur: body.interlocuteur || '', notes: body.notes || '', compte_rendu: '', ressenti: '', suite: '' },
+    ].sort((a, b) => (a.date > b.date ? 1 : -1))
+    return offer
+  }
+  const interviewDel = route.match(/^\/api\/offers\/(\d+)\/interviews\/(\d+)$/)
+  if (interviewDel && method === 'DELETE') {
+    const offer = offerById(interviewDel[1])
+    if (!offer) throw new Error('Offre introuvable')
+    offer.interviews = (offer.interviews || []).filter((_, i) => i !== Number(interviewDel[2]))
     return offer
   }
 

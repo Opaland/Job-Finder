@@ -90,6 +90,9 @@ class Offer(Base):
     # Analyse d'écart CV ↔ offre générée par l'IA (compétences manquantes, conseils ATS).
     gap_analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Entretiens passés et à venir : [{date, format, interlocuteur, notes}].
+    interviews: Mapped[list] = mapped_column(JSON, default=list)
+
     other_sources: Mapped[list] = mapped_column(JSON, default=list)
 
 

@@ -39,8 +39,18 @@ class OfferDetail(OfferSummary):
     gap_analysis: str | None
     next_action_note: str | None
     other_sources: list
+    interviews: list
     status_history: list
     last_seen_at: datetime
+
+
+class InterviewIn(BaseModel):
+    """Entretien planifié ou passé, rattaché à une offre."""
+
+    date: datetime
+    format: str = ""          # visio, téléphone, sur site…
+    interlocuteur: str = ""
+    notes: str = ""
 
 
 class ManualOffer(BaseModel):

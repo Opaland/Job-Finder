@@ -59,7 +59,7 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
 - [x] **Sprint 10** : durcissement final — tests supplémentaires, revue de
   code globale, documentation et site à jour, tag v2.0.
 
-## V3
+## V2.1 — Sprints 11 à 20
 
 ### EPIC G — Capture & candidature
 
@@ -101,6 +101,66 @@ description, export Word des lettres, export Excel du suivi, site GitHub Pages
   (`scripts/revue_ia.py`), smoke test navigateur (`scripts/smoke_ui.mjs`),
   règles et hooks Claude Code (`.claude/`), test de couverture du mode démo,
   build démo ajouté à la CI.
+
+## V3 — Décrocher le poste
+
+Cap : passer de « collecter des offres » à « piloter une recherche d'emploi »,
+avec ce qui compte quand on cherche vraiment — préparer et suivre les entretiens,
+comprendre le marché QA lyonnais, prouver ses démarches, et gagner du temps
+chaque jour.
+
+### EPIC L — Entretiens et suivi de candidature
+
+- [ ] **Sprint 21** : entretiens datés par offre (date, format, interlocuteur),
+  carte « Prochains entretiens » sur le tableau de bord.
+- [ ] **Sprint 22** : compte-rendu d'entretien structuré (déroulé, ressenti,
+  suite annoncée) et relance calée sur la suite annoncée.
+- [ ] **Sprint 23** : checklist de candidature par offre (CV adapté, lettre
+  prête, envoyée, relancée) avec avancement visible dans la liste.
+- [ ] **Sprint 24** : historique des lettres générées — comparer et restaurer
+  une version précédente.
+
+### EPIC M — Comprendre le marché
+
+- [ ] **Sprint 25** : compétences les plus demandées dans les offres collectées
+  (classement, et lesquelles manquent au CV).
+- [ ] **Sprint 26** : entreprises qui recrutent le plus + fourchettes de salaire
+  observées par intitulé de poste.
+- [ ] **Sprint 27** : synthèse des analyses d'écart IA — les manques qui
+  reviennent, pour orienter formation et CV.
+- [ ] **Sprint 28** : fraîcheur des offres et repérage des annonces fantômes
+  (republiées en boucle depuis des mois).
+
+### EPIC N — Preuves et administratif
+
+- [ ] **Sprint 29** : export PDF « justificatif de recherche d'emploi » —
+  candidatures, relances et entretiens sur une période (France Travail).
+- [ ] **Sprint 30** : import / export CSV des offres (reprise d'un suivi tenu
+  ailleurs, ou sauvegarde lisible).
+- [ ] **Sprint 31** : taux de conversion par source — quelle source donne
+  réellement des entretiens.
+
+### EPIC O — Efficacité quotidienne
+
+- [ ] **Sprint 32** : recherches sauvegardées (filtres nommés, rappelés en un clic).
+- [ ] **Sprint 33** : comparateur de deux offres côte à côte.
+- [ ] **Sprint 34** : raccourcis clavier et palette de commandes.
+- [ ] **Sprint 35** : email de rappel la veille d'un entretien ou d'une action datée.
+
+### EPIC P — IA au service de la préparation
+
+- [ ] **Sprint 36** : simulation d'entretien — Claude pose les questions, tu
+  réponds, il commente.
+- [ ] **Sprint 37** : reformulation ATS des expériences du CV pour une offre donnée.
+- [ ] **Sprint 38** : bilan hebdomadaire commenté par l'IA (ce qui avance, ce
+  qui bloque, quoi faire la semaine prochaine).
+
+### EPIC Q — Mobile et release
+
+- [ ] **Sprint 39** : application installable (PWA) et interface soignée sur
+  téléphone.
+- [ ] **Sprint 40** : durcissement, revue globale, documentation et démo à jour,
+  release v3.0.
 
 ### Réserve (non planifié)
 

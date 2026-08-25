@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, load_only
 
 from ..database import get_db
 from ..models import OFFER_STATUSES, STATUS_LABELS, Offer, Profile, local_now
-from ..schemas import ManualOffer, OfferDetail, OfferSummary, OfferUpdate
+from ..schemas import InterviewIn, ManualOffer, OfferDetail, OfferSummary, OfferUpdate
 from ..services.claude_ai import ai_cover_letter, ai_email, ai_gap_analysis, ai_interview_prep, cli_available
 from ..services.enrich import fetch_full_description
 from ..services.journal import log_event
@@ -326,6 +326,49 @@ def enrich_offer(offer_id: int, db: Session = Depends(get_db)):
     offer.ai_reason = ""
     profile = db.get(Profile, 1)
     rescore_offer(offer, profile_to_dict(profile))
+    db.commit()
+    return offer
+
+
+def _offre(db: Session, offer_id: int) -> Offer:
+    offer = db.get(Offer, offer_id)
+    if not offer:
+        raise HTTPException(404, "Offre introuvable")
+    return offer
+
+
+@router.post("/{offer_id}/interviews", response_model=OfferDetail, status_code=201)
+def add_interview(offer_id: int, payload: InterviewIn, db: Session = Depends(get_db)):
+    """Planifie (ou consigne) un entretien pour cette offre."""
+    offer = _offre(db, offer_id)
+    entretiens = list(offer.interviews or [])
+    entretiens.append({
+        "date": payload.date.isoformat(),
+        "format": payload.format.strip()[:60],
+        "interlocuteur": payload.interlocuteur.strip()[:120],
+        "notes": payload.notes,
+        "compte_rendu": "",
+        "ressenti": "",
+        "suite": "",
+    })
+    # Toujours trié par date : l'affichage et « le prochain entretien » en dépendent.
+    entretiens.sort(key=lambda e: e.get("date") or "")
+    offer.interviews = entretiens
+    db.commit()
+    log_event(db, "entretien", f"Entretien noté pour « {offer.title} » "
+                               f"({offer.company or 'entreprise inconnue'}) le "
+                               f"{payload.date.strftime('%d/%m/%Y à %H:%M')}.", offer.id)
+    return offer
+
+
+@router.delete("/{offer_id}/interviews/{index}", response_model=OfferDetail)
+def delete_interview(offer_id: int, index: int, db: Session = Depends(get_db)):
+    offer = _offre(db, offer_id)
+    entretiens = list(offer.interviews or [])
+    if not 0 <= index < len(entretiens):
+        raise HTTPException(404, "Cet entretien n'existe pas (la liste a peut-être changé).")
+    entretiens.pop(index)
+    offer.interviews = entretiens
     db.commit()
     return offer
 

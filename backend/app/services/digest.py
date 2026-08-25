@@ -106,6 +106,28 @@ def offers_to_relaunch(db: Session) -> list[Offer]:
     return result
 
 
+def next_interviews(db: Session, jours: int = 21) -> list[dict]:
+    """Entretiens à venir (aujourd'hui inclus), le plus proche d'abord."""
+    debut = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
+    fin = debut + timedelta(days=jours)
+    a_venir = []
+    for offer in db.query(Offer).all():
+        for entretien in offer.interviews or []:
+            quand = parse_iso_dt(entretien.get("date"))
+            if quand is None or not (debut <= quand <= fin):
+                continue
+            a_venir.append({
+                **_offer_brief(offer),
+                "status": offer.status,
+                "date": quand.isoformat(),
+                "format": entretien.get("format", ""),
+                "interlocuteur": entretien.get("interlocuteur", ""),
+                "aujourdhui": quand.date() == debut.date(),
+            })
+    a_venir.sort(key=lambda e: e["date"])
+    return a_venir
+
+
 def actions_due(db: Session) -> list[dict]:
     """Actions datées arrivées à échéance (aujourd'hui inclus), les plus urgentes d'abord."""
     end_of_today = local_now().replace(hour=23, minute=59, second=59, microsecond=0)
@@ -229,6 +251,7 @@ def build_digest(db: Session, for_date: str | None = None) -> Digest:
         ],
         "gems": [_offer_brief(o) for o in gem_list],
         "todo_today": todo,
+        "interviews": next_interviews(db),
         "focus": daily_focus(db, todo=todo, gem_list=gem_list, relaunch=relaunch),
         "weekly": {
             "goal": (db.get(Profile, 1).weekly_goal if db.get(Profile, 1) else 5) or 0,

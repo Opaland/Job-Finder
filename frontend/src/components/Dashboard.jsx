@@ -133,6 +133,33 @@ export default function Dashboard({ scanning, goToOffers }) {
         </div>
       )}
 
+      {p.interviews?.length > 0 && (
+        <div className="card" style={{ borderColor: '#aceebb' }}>
+          <h2 style={{ color: '#1a7f37' }}>🗣️ Prochains entretiens ({p.interviews.length})</h2>
+          <table className="simple">
+            <tbody>
+              {p.interviews.map((e, i) => (
+                <tr key={i}>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <b>{new Date(e.date).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' })}</b>
+                    {' '}
+                    {new Date(e.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    {e.aujourdhui && <span className="chip" style={{ marginLeft: 6 }}>aujourd'hui</span>}
+                  </td>
+                  <td>
+                    <a href={e.url} target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>{e.title}</a>
+                    <div className="hint">
+                      {e.company}{e.format ? ` · ${e.format}` : ''}{e.interlocuteur ? ` · ${e.interlocuteur}` : ''}
+                    </div>
+                  </td>
+                  <td>{Math.round(e.final_score)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {p.weekly?.goal > 0 && (
         <div className="card">
           <h2>Objectif de la semaine</h2>

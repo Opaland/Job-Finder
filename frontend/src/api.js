@@ -43,6 +43,11 @@ export const api = {
   generateEmail: (id, kind) => request(`/api/offers/${id}/email?kind=${kind}`, { method: 'POST' }),
   gapAnalysis: (id) => request(`/api/offers/${id}/gap-analysis`, { method: 'POST' }),
 
+  addInterview: (id, body) =>
+    request(`/api/offers/${id}/interviews`, { method: 'POST', body: JSON.stringify(body) }),
+  deleteInterview: (id, index) =>
+    request(`/api/offers/${id}/interviews/${index}`, { method: 'DELETE' }),
+
   contacts: (company) => request(`/api/contacts${company ? `?company=${encodeURIComponent(company)}` : ''}`),
   addContact: (body) => request('/api/contacts', { method: 'POST', body: JSON.stringify(body) }),
   deleteContact: (id) => request(`/api/contacts/${id}`, { method: 'DELETE' }),
