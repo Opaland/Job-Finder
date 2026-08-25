@@ -12,10 +12,12 @@ function Barre({ part, couleur }) {
 
 export default function Marche() {
   const [skills, setSkills] = useState(null)
+  const [qui, setQui] = useState(null)
   const [erreur, setErreur] = useState(null)
 
   useEffect(() => {
     api.marketSkills().then(setSkills).catch((e) => setErreur(e.message))
+    api.marketCompanies().then(setQui).catch(() => {})
   }, [])
 
   if (erreur) return <p className="error-text">Erreur : {erreur}</p>
@@ -52,6 +54,50 @@ export default function Marche() {
                   <td style={{ textTransform: 'capitalize', fontWeight: 600 }}>{c.competence}</td>
                   <td style={{ width: 140 }}><Barre part={c.part} couleur="#bc4c00" /></td>
                   <td style={{ whiteSpace: 'nowrap' }}>{c.offres} offre(s) · {c.part} %</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {qui?.salaires?.length > 0 && (
+        <div className="card">
+          <h2>Salaires observés</h2>
+          <p className="hint" style={{ marginTop: 0 }}>
+            Lus dans les {qui.offres_avec_salaire} annonce(s) qui affichent une rémunération,
+            ramenés à un montant annuel brut. Utile avant de donner tes prétentions.
+          </p>
+          <table className="simple">
+            <tbody>
+              {qui.salaires.map((s) => (
+                <tr key={s.intitule}>
+                  <td style={{ textTransform: 'capitalize', fontWeight: 600 }}>{s.intitule}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    {(s.minimum / 1000).toFixed(0)}K → {(s.maximum / 1000).toFixed(0)}K €
+                  </td>
+                  <td style={{ whiteSpace: 'nowrap', fontWeight: 700 }}>
+                    médiane {(s.median / 1000).toFixed(0)}K €
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {qui?.entreprises?.length > 0 && (
+        <div className="card">
+          <h2>Qui recrute</h2>
+          <table className="simple">
+            <tbody>
+              {qui.entreprises.map((e) => (
+                <tr key={e.entreprise}>
+                  <td style={{ fontWeight: 600 }}>{e.entreprise}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{e.offres} offre(s)</td>
+                  <td style={{ whiteSpace: 'nowrap' }} className="hint">
+                    score moyen {e.score_moyen}
+                  </td>
                 </tr>
               ))}
             </tbody>

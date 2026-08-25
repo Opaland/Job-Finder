@@ -60,3 +60,51 @@ def test_route_api(client, db):
     resp = client.get("/api/market/skills?limit=5")
     assert resp.status_code == 200
     assert len(resp.json()["competences"]) <= 5
+
+
+# --- Sprint 26 : salaires et entreprises ------------------------------------
+
+def test_lecture_des_salaires_formats_reels():
+    from app.services.marche import montants_annuels
+    assert montants_annuels("45 000 - 55 000 € / an") == [45000, 55000]
+    assert montants_annuels("45K€ à 60K€") == [45000, 60000]
+    assert montants_annuels("Mensuel de 3500,00 Euros à 4200,00 Euros") == [42000, 50400]
+    assert montants_annuels("Selon profil") == []
+    assert montants_annuels("2 ans d'expérience") == []   # aucune unité monétaire
+
+
+def test_montants_aberrants_ecartes():
+    from app.services.marche import montants_annuels
+    assert montants_annuels("1 200 € par an") == []        # sous le plancher
+    assert montants_annuels("900 000 € / an") == []        # au-dessus du plafond
+
+
+def test_qui_recrute_et_mediane(client, db):
+    from app.models import Offer
+    from app.services.marche import qui_recrute
+    for i, (entreprise, salaire, score) in enumerate([
+        ("ACME", "45 000 - 55 000 € / an", 80.0),
+        ("ACME", "50 000 € / an", 70.0),
+        ("Bêta", "", 60.0),
+    ]):
+        db.add(Offer(fingerprint=f"fp-s{i}", source="manuelle", source_id=f"s{i}",
+                     title="Test Manager", company=entreprise, salary_text=salaire, final_score=score))
+    db.commit()
+
+    resultat = qui_recrute(db)
+    premiere = resultat["entreprises"][0]
+    assert premiere["entreprise"] == "ACME"
+    assert premiere["offres"] == 2
+    assert premiere["score_moyen"] == 75.0
+    assert resultat["offres_avec_salaire"] == 2
+    salaires = resultat["salaires"][0]
+    assert salaires["minimum"] == 45000 and salaires["maximum"] == 55000
+    assert salaires["median"] == 50000
+
+
+def test_entreprise_vide_regroupee(client, db):
+    from app.models import Offer
+    from app.services.marche import qui_recrute
+    db.add(Offer(fingerprint="fp-x", source="manuelle", source_id="x", title="QA", company="", final_score=50.0))
+    db.commit()
+    assert qui_recrute(db)["entreprises"][0]["entreprise"] == "Entreprise non précisée"

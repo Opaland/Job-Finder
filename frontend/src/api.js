@@ -88,6 +88,7 @@ export const api = {
   testEmail: () => request('/api/digests/test-email', { method: 'POST' }),
 
   marketSkills: () => request('/api/market/skills'),
+  marketCompanies: () => request('/api/market/companies'),
 
   sources: () => request('/api/sources'),
   stats: () => request('/api/stats'),

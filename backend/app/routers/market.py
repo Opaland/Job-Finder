@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..services.marche import competences_demandees
+from ..services.marche import competences_demandees, qui_recrute
 
 router = APIRouter(prefix="/api/market", tags=["marché"])
 
@@ -12,3 +12,9 @@ router = APIRouter(prefix="/api/market", tags=["marché"])
 def skills(limit: int = 25, db: Session = Depends(get_db)):
     """Compétences les plus demandées, et lesquelles manquent au CV."""
     return competences_demandees(db, limite=min(limit, 60))
+
+
+@router.get("/companies")
+def companies(limit: int = 20, db: Session = Depends(get_db)):
+    """Entreprises qui recrutent le plus et salaires observés par intitulé."""
+    return qui_recrute(db, limite=min(limit, 60))

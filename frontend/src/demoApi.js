@@ -284,6 +284,27 @@ export async function demoRequest(path, options = {}) {
       manquantes: classement.filter((c) => !c.dans_le_cv).slice(0, 10),
     }
   }
+  if (route === '/api/market/companies') {
+    const par = {}
+    state.offers.forEach((o) => {
+      const nom = o.company || 'Entreprise non précisée'
+      par[nom] = par[nom] || { entreprise: nom, offres: 0, scores: [] }
+      par[nom].offres += 1
+      par[nom].scores.push(o.final_score)
+    })
+    const entreprises = Object.values(par)
+      .map((e) => ({ entreprise: e.entreprise, offres: e.offres,
+                     score_moyen: Math.round((e.scores.reduce((a, b) => a + b, 0) / e.scores.length) * 10) / 10 }))
+      .sort((a, b) => b.offres - a.offres)
+    return {
+      entreprises,
+      salaires: [
+        { intitule: 'test manager', offres: 2, minimum: 50000, median: 55000, maximum: 62000 },
+        { intitule: 'qa lead', offres: 1, minimum: 45000, median: 48000, maximum: 52000 },
+      ],
+      offres_avec_salaire: 3,
+    }
+  }
   if (route === '/api/stats') return computeStats()
   if (route === '/api/journal') {
     const kind = params_get(query, 'kind')
