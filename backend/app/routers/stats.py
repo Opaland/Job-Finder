@@ -290,19 +290,18 @@ async def restore(file: UploadFile):
     engine.dispose()
     ensure_schema(engine)
 
-    from ..database import SessionLocal
     from ..services.journal import log_event
     from ..services.seeding import ensure_profile
 
-    session = SessionLocal()
-    try:
+    # Session liée au moteur qu'on vient de migrer, et non à SessionLocal :
+    # ce sont deux objets distincts, et n'importe quel écart entre les deux
+    # ferait travailler la suite sur une autre base que celle restaurée.
+    with Session(bind=engine) as session:
         # Une sauvegarde peut venir d'une base sans ligne de profil (table créée
         # mais jamais amorcée) : sans elle, toute l'application renverrait des 500.
         ensure_profile(session)
         log_event(session, "restauration",
                   f"Base restaurée depuis une sauvegarde ({offer_count} offres) — copie de sécurité : {safety_name}.")
-    finally:
-        session.close()
 
     return {
         "restored": True,
