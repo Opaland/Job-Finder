@@ -11,7 +11,7 @@ publique peut changer. Si le connecteur ne renvoie rien :
 from __future__ import annotations
 
 from ..config import settings
-from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, profile_queries
+from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, profile_queries, resume_erreur
 
 # Clé de recherche publique observée sur le site (peut changer, cf. docstring).
 DEFAULT_PUBLIC_KEY = "02f0dd12736ad34acd7018e12a3b1f47"
@@ -93,7 +93,7 @@ class WTTJConnector(Connector):
                             result.offers.append(offer)
             except Exception as exc:  # noqa: BLE001
                 result.errors.append(
-                    f"Recherche WTTJ impossible ({exc}). La clé Algolia publique a peut-être changé : "
+                    f"Recherche WTTJ impossible ({resume_erreur(exc)}). La clé Algolia publique a peut-être changé : "
                     "voir le README, section Welcome to the Jungle."
                 )
 

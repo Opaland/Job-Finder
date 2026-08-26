@@ -11,7 +11,10 @@ fait 4 requêtes par scan).
 from __future__ import annotations
 
 from ..config import settings
-from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, parse_published, profile_queries
+from .base import (
+    Connector, ConnectorResult, RawOffer,
+    dedupe_raw, parse_published, profile_queries, resume_erreur,
+)
 
 SEARCH_URL = "https://jsearch.p.rapidapi.com/search"
 
@@ -77,7 +80,7 @@ class JSearchConnector(Connector):
                     for item in resp.json().get("data", []):
                         result.offers.append(self._parse(item))
                 except Exception as exc:  # noqa: BLE001
-                    result.errors.append(f"Requête {query['query']} : {exc}")
+                    result.errors.append(f"Requête {query['query']} : {resume_erreur(exc)}")
 
         result.offers = dedupe_raw(result.offers)
         return result

@@ -13,7 +13,10 @@ from urllib.parse import quote_plus
 
 from bs4 import BeautifulSoup
 
-from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, profile_queries
+from .base import (
+    Connector, ConnectorResult, RawOffer,
+    aucune_offre, dedupe_raw, profile_queries, resume_erreur,
+)
 
 SEARCH_URL = "https://www.hellowork.com/fr-fr/emploi/recherche.html?k={kw}&l={loc}"
 OFFER_RE = re.compile(r"/fr-fr/emplois/(\d+)\.html")
@@ -76,9 +79,9 @@ class HelloWorkConnector(Connector):
                     resp.raise_for_status()
                     result.offers.extend(self._parse_page(resp.text))
                 except Exception as exc:  # noqa: BLE001
-                    result.errors.append(f"Recherche « {kw} / {loc} » : {exc}")
+                    result.errors.append(f"Recherche « {kw} / {loc} » : {resume_erreur(exc)}")
 
         result.offers = dedupe_raw(result.offers)
         if not result.offers and not result.errors:
-            result.errors.append("Aucune offre extraite (structure du site probablement modifiée).")
+            result.errors.append(aucune_offre("la structure du site HelloWork a probablement changé."))
         return result

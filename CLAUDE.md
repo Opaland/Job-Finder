@@ -11,6 +11,8 @@ Application **locale et mono-utilisateur** de recherche d'emploi QA pour Cédric
 python -m pytest tests/ -q              # tests (obligatoire avant tout push)
 python -m uvicorn app.main:app --port 8000
 python -m app.cli scan                  # scan + digest sans interface
+python -m app.cli sources               # diagnostic des sources (OK / SUSPECT / KO)
+python -m app.cli sources --brut        # + fige les réponses dans data/diagnostic/
 
 # Frontend (depuis frontend/)
 npm run dev                             # dev avec proxy /api -> :8000
@@ -45,7 +47,11 @@ l'image (défaut), les routes IA renvoient leur 503 français et le scan saute l
 
 - `backend/app/connectors/` — un fichier par site d'emploi (France Travail, Adzuna, JSearch,
   WTTJ, APEC, HelloWork). Contrat : `fetch(profile) -> ConnectorResult` ; un connecteur ne doit
-  JAMAIS lever au-delà de son résultat (les erreurs vont dans `result.errors`).
+  JAMAIS lever au-delà de son résultat (les erreurs vont dans `result.errors`, formatées avec
+  `resume_erreur()` — jamais `str(exc)` brut, illisible dans l'UI). `capture_reponses()`
+  (connectors/base.py) fige les réponses réelles pour en faire des fixtures.
+- `backend/app/services/diagnostic.py` — « que renvoie vraiment chaque source ? ». Détecte la
+  source qui *réussit à vide* (champ manquant sur toutes les offres), invisible pendant un scan.
 - `backend/app/services/scoring.py` — score 0-100 déterministe et expliqué (breakdown en
   français). Toute modification doit passer par `rescore_offer()` (services/scan.py), utilisé par
   le scan, le recalcul global et l'enrichissement.

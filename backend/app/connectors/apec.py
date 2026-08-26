@@ -7,7 +7,10 @@ toute erreur est simplement remontée dans les statistiques du scan.
 from __future__ import annotations
 
 from ..config import settings  # noqa: F401  (pas de clé nécessaire, import gardé pour homogénéité)
-from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, profile_queries
+from .base import (
+    Connector, ConnectorResult, RawOffer,
+    aucune_offre, dedupe_raw, profile_queries, resume_erreur,
+)
 
 SEARCH_URL = "https://www.apec.fr/cms/webservices/rechercheOffre"
 DETAIL_URL = "https://www.apec.fr/candidat/recherche-emplois.html/emplois/detail-offre/{id}"
@@ -84,9 +87,9 @@ class ApecConnector(Connector):
                         if offer:
                             result.offers.append(offer)
                 except Exception as exc:  # noqa: BLE001
-                    result.errors.append(f"Requête « {payload.get('motsCles')} » : {exc}")
+                    result.errors.append(f"Requête « {payload.get('motsCles')} » : {resume_erreur(exc)}")
 
         result.offers = dedupe_raw(result.offers)
         if not result.offers and not result.errors:
-            result.errors.append("Aucune offre APEC (le format du service a peut-être changé).")
+            result.errors.append(aucune_offre("le format du service APEC a peut-être changé."))
         return result

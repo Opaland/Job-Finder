@@ -124,6 +124,21 @@ l'onglet **Sources & réglages** sans bloquer le reste.
 - **APEC / HelloWork** : rien à configurer. En cas de panne durable, demande à Claude Code de mettre à
   jour le connecteur (`backend/app/connectors/apec.py` ou `hellowork.py`).
 
+### 3.5 Vérifier que les sources répondent vraiment
+
+```bash
+cd backend
+python -m app.cli sources          # ce que chaque source renvoie réellement
+python -m app.cli sources --brut   # + fige les réponses dans data/diagnostic/
+```
+
+Le diagnostic distingue trois cas : **OK**, **KO** (la source ne répond pas, avec la raison) et
+surtout **SUSPECT** — la source répond mais ce qu'elle renvoie est inexploitable (aucune offre, ou
+un champ vide sur *toutes* les offres, signe que le site a changé de format). C'est le cas qui ne
+fait pas de bruit : un scan normal se contente d'afficher « 0 nouvelle offre ».
+
+À lancer après avoir rempli les clés, et à relancer le jour où une source semble muette.
+
 ## 4. Email quotidien
 
 Le digest est envoyé chaque matin après le scan (si le SMTP est configuré). Avec Gmail :

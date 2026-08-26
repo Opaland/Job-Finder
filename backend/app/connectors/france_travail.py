@@ -7,7 +7,10 @@ dans le fichier .env.
 from __future__ import annotations
 
 from ..config import settings
-from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, parse_published, profile_queries
+from .base import (
+    Connector, ConnectorResult, RawOffer,
+    dedupe_raw, parse_published, profile_queries, resume_erreur,
+)
 
 TOKEN_URL = "https://entreprise.francetravail.fr/connexion/oauth2/access_token?realm=%2Fpartenaire"
 SEARCH_URL = "https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search"
@@ -69,7 +72,7 @@ class FranceTravailConnector(Connector):
             try:
                 token = self._token(client)
             except Exception as exc:  # noqa: BLE001
-                result.errors.append(f"Authentification France Travail impossible : {exc}")
+                result.errors.append(f"Authentification France Travail impossible : {resume_erreur(exc)}")
                 return result
             headers = {"Authorization": f"Bearer {token}"}
 
@@ -90,7 +93,7 @@ class FranceTravailConnector(Connector):
                     for item in resp.json().get("resultats", []):
                         result.offers.append(self._parse(item))
                 except Exception as exc:  # noqa: BLE001
-                    result.errors.append(f"Requête {params.get('motsCles')} : {exc}")
+                    result.errors.append(f"Requête {params.get('motsCles')} : {resume_erreur(exc)}")
 
         result.offers = dedupe_raw(result.offers)
         return result

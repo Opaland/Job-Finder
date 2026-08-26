@@ -7,7 +7,10 @@ au-delà des sites interrogés directement.
 from __future__ import annotations
 
 from ..config import settings
-from .base import Connector, ConnectorResult, RawOffer, dedupe_raw, parse_published, profile_queries
+from .base import (
+    Connector, ConnectorResult, RawOffer,
+    dedupe_raw, parse_published, profile_queries, resume_erreur,
+)
 
 BASE_URL = "https://api.adzuna.com/v1/api/jobs/fr/search/{page}"
 
@@ -68,7 +71,7 @@ class AdzunaConnector(Connector):
                     for item in resp.json().get("results", []):
                         result.offers.append(self._parse(item))
                 except Exception as exc:  # noqa: BLE001
-                    result.errors.append(f"Requête {query.get('what')} : {exc}")
+                    result.errors.append(f"Requête {query.get('what')} : {resume_erreur(exc)}")
 
         result.offers = dedupe_raw(result.offers)
         return result
