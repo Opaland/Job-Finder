@@ -20,7 +20,7 @@ if errorlevel 1 goto echec
 
 echo -- Tests backend (pytest)
 pushd backend
-"%PY%" -m pytest tests\ -q
+"%PY%" -m pytest tests\ -q -rs
 if errorlevel 1 ( popd & goto echec )
 popd
 

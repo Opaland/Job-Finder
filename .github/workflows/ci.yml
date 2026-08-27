@@ -19,9 +19,13 @@ jobs:
       - name: Installer les dépendances
         working-directory: backend
         run: pip install -r requirements.txt
+      # `-rs` : afficher la RAISON de chaque test ignoré. Depuis que la suite
+      # appelle les vraies sources, un test peut être ignoré parce qu'un site
+      # bloque le runner — sans cette option, la CI serait verte sans dire ce
+      # qu'elle n'a pas vérifié, ce qui est précisément le piège qu'on combat.
       - name: Tests
         working-directory: backend
-        run: python -m pytest tests/ -q
+        run: python -m pytest tests/ -q -rs
 
   frontend:
     runs-on: ubuntu-latest
