@@ -16,7 +16,15 @@ SEARCH_URL = "https://www.apec.fr/cms/webservices/rechercheOffre"
 DETAIL_URL = "https://www.apec.fr/candidat/recherche-emplois.html/emplois/detail-offre/{id}"
 
 # Coordonnées de Lyon pour la recherche géolocalisée.
-LYON = {"latitude": 45.7578137, "longitude": 4.8320114}
+# L'APEC filtre par DÉPARTEMENT (champ « lieux »), pas par rayon. Vérifié sur
+# l'API réelle le 27/08/2026 :
+#   - `distance` fait répondre HTTP 500, quelle que soit la valeur ;
+#   - `pointGeolocDeReference` seul est ignoré : une recherche « Lyon » renvoyait
+#     Nantes, Saran et Annemasse (1 offre sur 20 dans le Rhône) ;
+#   - `lieux: ["69"]` renvoie 20 offres sur 20 dans le Rhône.
+# Départements du bassin lyonnais, cohérents avec la zone reconnue par le
+# scoring (services/scoring.py, `_location_score`).
+DEPARTEMENTS_LYON = ["69", "01", "38", "42"]
 
 
 class ApecConnector(Connector):
@@ -59,8 +67,7 @@ class ApecConnector(Connector):
                 {
                     "activeFiltre": True,
                     "motsCles": kw,
-                    "pointGeolocDeReference": LYON,
-                    "distance": int(profile.get("radius_km", 40)),
+                    "lieux": DEPARTEMENTS_LYON,
                     "pagination": {"range": 50, "startIndex": 0},
                     "sorts": [{"type": "SCORE", "direction": "DESCENDING"}],
                 }

@@ -7,6 +7,7 @@ l'erreur est enregistrée dans les statistiques du scan.
 from __future__ import annotations
 
 import logging
+import os
 import re
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -252,7 +253,16 @@ class Connector:
     def client(self) -> httpx.Client:
         # retries=2 : nouvelles tentatives sur les erreurs de CONNEXION uniquement
         # (jamais sur un 4xx/5xx reçu, pour ne pas aggraver un blocage anti-robot).
-        transport = httpx.HTTPTransport(retries=2)
+        #
+        # `proxy` doit être passé explicitement : un transport construit à la
+        # main ne lit PAS HTTPS_PROXY, contrairement à celui que httpx fabrique
+        # tout seul. Sans ça la requête part en direct — invisible sur un poste
+        # sans proxy, mais derrière un proxy (entreprise, conteneur), les six
+        # sources répondaient 403 sans que rien n'explique pourquoi.
+        transport = httpx.HTTPTransport(
+            retries=2,
+            proxy=os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy") or None,
+        )
         return httpx.Client(
             headers=DEFAULT_HEADERS, timeout=30, follow_redirects=True, transport=transport,
             event_hooks={"response": [_enregistrer_reponse]},
