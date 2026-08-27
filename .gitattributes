@@ -1,0 +1,17 @@
+# Fins de ligne — le dépôt est en LF, la copie de travail reçoit ce qu'il faut.
+# Sans ces règles, tout dépend de core.autocrlf du poste : un .bat en LF fait
+# échouer cmd.exe sur les labels et les blocs entre parenthèses, et un .sh en
+# CRLF fait échouer bash sur « \r : commande introuvable » (le hook Git du
+# projet est un .sh lancé par Git Bash sous Windows).
+* text=auto eol=lf
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.sh  text eol=lf
+
+# Binaires : jamais de conversion.
+*.png binary
+*.pdf binary
+*.db  binary
+*.ico binary

@@ -210,13 +210,14 @@ Mode développement interface : `cd frontend && npm run dev` (proxy vers le back
 
 ## 8. Garde-fous qualité (scripts)
 
-Trois scripts, utilisables à la main ou par Claude Code :
+Quatre scripts, utilisables à la main ou par Claude Code :
 
 | Commande | Ce qu'elle fait |
 |---|---|
 | `scripts\verif.bat` (Windows) · `bash scripts/verif.sh` | Syntaxe + tests backend + build frontend + build démo — exactement ce que vérifie la CI. Ajouter `rapide` / `--rapide` pour un contrôle éclair avant un commit. |
 | `python scripts/revue_ia.py [commit]` | Revue du diff par **ta session Claude locale** (aucune clé API), avec la check-list du projet : dédoublonnage, heures locales, statuts centralisés, N+1 SQL, simulation démo. Constats en français, gravité par constat. |
 | `node scripts/smoke_ui.mjs [url]` | Parcourt les 7 onglets dans un vrai navigateur (Playwright) et signale toute erreur JS. Backend démarré requis. |
+| `python scripts/mesures.py [n]` | Chronomètre les opérations coûteuses (index de dédoublonnage, digest, pages Marché) sur `n` offres générées, dans une base jetable. Alerte au-delà d'une seconde. Mesuré à ce jour : tout reste sous 1 s jusqu'à 10 000 offres, le digest étant le plus lent (0,9 s). |
 
 Dans Claude Code, les mêmes contrôles sont accessibles par `/verif`, `/revue` et `/smoke`, et un
 hook bloque automatiquement un commit dont les tests sont rouges ou un push dont les builds cassent.

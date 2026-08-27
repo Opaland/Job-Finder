@@ -37,7 +37,8 @@ l'image (défaut), les routes IA renvoient leur 503 français et le scan saute l
   et push (complet) si elle est rouge.
 - `python scripts/revue_ia.py` — revue du diff par la session Claude locale (check-list du
   projet, sortie JSON en français). `node scripts/smoke_ui.mjs` — parcours navigateur des
-  7 onglets (Playwright).
+  7 onglets (Playwright). `python scripts/mesures.py [n]` — chronomètre les opérations
+  coûteuses sur n offres générées (alerte au-delà d'une seconde).
 - Skills projet : `/verif` (vérification + correction jusqu'au vert), `/revue` (agent
   `revue-jobfinder` + revue IA, applique les correctifs), `/smoke` (test navigateur réel).
 - Les règles détaillées vivent dans `.claude/rules/` (backend, frontend, qualité) : helpers

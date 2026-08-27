@@ -6,7 +6,10 @@ REM   scripts\verif.bat --rapide     idem (même option que la version bash)
 setlocal
 cd /d "%~dp0.."
 
-set "PY=backend\venv\Scripts\python.exe"
+REM Chemin ABSOLU : les etapes suivantes font "pushd backend", et un chemin
+REM relatif y pointerait vers backend\backend\venv (pytest ne demarrait jamais).
+set "RACINE=%CD%"
+set "PY=%RACINE%\backend\venv\Scripts\python.exe"
 if not exist "%PY%" set "PY=python"
 
 echo == Verification Job Finder ==
