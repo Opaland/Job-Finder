@@ -55,11 +55,21 @@ CONTRATS = {
 # perdait ses 15 points de localisation et sortait du digest. La seconde forme
 # doit occuper TOUT le texte, pour la même raison.
 LIEU_RE = re.compile(r"[^\W\d_].*-\s*\d{2,3}\s*$|^\d{5}$")
-# « il y a 13 jours », mais aussi « plus de 1 mois » : HelloWork bascule sur
-# cette seconde forme au-delà d'un mois. Elle n'était pas reconnue — l'offre
-# perdait sa date, sortait des tranches de fraîcheur du marché, et échappait
-# donc à la détection des annonces fantômes, qui vise précisément les vieilles.
-PUBLIEE_RE = re.compile(r"(?:il y a|plus de)\s+(\d+)\s*(minute|heure|jour|semaine|mois)", re.IGNORECASE)
+# Les trois tournures relevées sur les cartes HelloWork, aux deux extrémités :
+#   « il y a 13 jours »   — le cas courant ;
+#   « plus de 1 mois »    — au-delà d'un mois ;
+#   « moins d'une heure » — l'offre du jour, SANS chiffre.
+# Les deux dernières n'étaient pas reconnues : l'offre perdait sa date. Côté
+# vieilles annonces, elle échappait à la détection des fantômes, qui vise
+# précisément celles-là ; côté fraîches, elle tombait en fin de tri « les plus
+# récentes » alors qu'elle venait de paraître.
+#
+# Le motif s'applique au texte NORMALISÉ (`normalize`) : l'apostrophe y devient
+# une espace, ce qui range « moins d'une heure » et « moins d’une heure » —
+# apostrophe droite ou typographique — sur la même forme.
+PUBLIEE_RE = re.compile(
+    r"(?:il y a|plus de|moins de|moins d)\s+(?:(\d+)|une?)\s*(minute|heure|jour|semaine|mois)"
+)
 JOURS_PAR_UNITE = {"minute": 0, "heure": 0, "jour": 1, "semaine": 7, "mois": 30}
 # Dates nommées, comparées après `normalize` (qui remplace l'apostrophe par une
 # espace) : « Aujourd'hui » et « aujourd’hui » donnent tous deux « aujourd hui ».
@@ -197,7 +207,7 @@ class HelloWorkConnector(Connector):
                 deja_vus = {title, location, contract}
                 company = next(
                     (t for t in textes[1:]
-                     if t not in deja_vus and not PUBLIEE_RE.search(t)
+                     if t not in deja_vus and not PUBLIEE_RE.search(normalize(t))
                      and "teletravail" not in normalize(t) and len(t) < 80),
                     "",
                 )
@@ -241,12 +251,14 @@ class HelloWorkConnector(Connector):
         from ..models import local_now
 
         for texte in textes:
-            trouve = PUBLIEE_RE.search(texte)
+            bas = normalize(texte)
+            trouve = PUBLIEE_RE.search(bas)
             if trouve:
-                nombre, unite = int(trouve.group(1)), trouve.group(2).lower()
-                return local_now() - timedelta(days=nombre * JOURS_PAR_UNITE.get(unite, 0))
-            if normalize(texte) in JOURS_NOMMES:
-                return local_now() - timedelta(days=JOURS_NOMMES[normalize(texte)])
+                # Pas de chiffre dans « moins d'une heure » : la quantité vaut 1.
+                nombre = int(trouve.group(1)) if trouve.group(1) else 1
+                return local_now() - timedelta(days=nombre * JOURS_PAR_UNITE.get(trouve.group(2), 0))
+            if bas in JOURS_NOMMES:
+                return local_now() - timedelta(days=JOURS_NOMMES[bas])
         return None
 
     @staticmethod

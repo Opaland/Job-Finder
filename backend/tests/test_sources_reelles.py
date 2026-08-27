@@ -23,11 +23,13 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from app.connectors import ALL_CONNECTORS
 from app.connectors.apec import ApecConnector
 from app.connectors.base import client_http
 from app.connectors.hellowork import HelloWorkConnector
 from app.database import Base
 from app.models import Offer, Profile, local_now
+from app.services.diagnostic import diagnostiquer_source, verdict
 from app.services.enrich import fetch_full_description
 
 PROFIL = {"search_queries": ["test manager", "QA", "responsable test"]}
@@ -335,6 +337,41 @@ def test_l_enrichissement_d_une_page_hellowork_remet_l_avis_ia_a_zero(db, hellow
     assert donnees["ai_score"] is None
     assert donnees["ai_reason"] == ""
     assert donnees["final_score"] == donnees["score"]
+
+
+# --- Les sources à clé -------------------------------------------------------
+#
+# Tant que le .env est vide, ces tests s'ignorent en NOMMANT les variables qui
+# manquent. Le jour où une clé est renseignée, la source est éprouvée pour de
+# vrai sans rien avoir à activer : c'est le retour immédiat qui manque quand on
+# vient de coller une clé et qu'on se demande si elle marche.
+
+@pytest.mark.parametrize("connecteur", [c for c in ALL_CONNECTORS if c.needs_key],
+                         ids=lambda c: c.name)
+def test_une_source_a_cle_configuree_tient_son_contrat(connecteur):
+    """Même exigence que pour l'APEC : répondre, et remplir ses champs.
+
+    `diagnostiquer_source` est le code que la commande `sources` utilise déjà —
+    on éprouve donc aussi le diagnostic sur du vrai, pas seulement le connecteur.
+    """
+    if not connecteur.is_configured():
+        pytest.skip(f"{connecteur.label} : {_cles_manquantes(connecteur)}")
+
+    resultat = diagnostiquer_source(connecteur, PROFIL)
+    etat, explication = verdict(resultat)
+
+    if etat == "ko":
+        pytest.skip(f"{connecteur.label} injoignable : {explication}")
+    assert etat == "ok", f"{connecteur.label} — {explication}"
+    assert not resultat["champs_vides"], (
+        f"{connecteur.label} remplit mal : {resultat['champs_vides']}"
+    )
+
+
+def _cles_manquantes(connecteur) -> str:
+    """Le connecteur nomme lui-même ses variables d'environnement."""
+    resultat = connecteur.fetch({})
+    return resultat.errors[0] if resultat.errors else "clé absente du .env"
 
 
 # --- Le scan complet, sur les vraies sources ---------------------------------

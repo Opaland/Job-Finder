@@ -113,12 +113,32 @@ def test_les_anciennetes_donnent_les_bons_ecarts(offres):
     ("plus de 2 mois", 60),
     ("Aujourd'hui", 0),
     ("Hier", 1),
+    # Attrapé en vrai par test_sources_reelles.py, le 27/08/2026 : HelloWork
+    # écrit cette forme SANS CHIFFRE pour une offre parue dans l'heure. Non
+    # reconnue, l'offre perdait sa date — donc les plus fraîches, celles qui
+    # comptent le plus, tombaient en fin de tri « les plus récentes ».
+    ("moins d'une heure", 0),
+    ("moins d’une heure", 0),        # apostrophe typographique du site
+    ("moins d'un jour", 1),
+    ("moins de 24 heures", 0),
 ])
 def test_chaque_unite_de_temps_a_sa_valeur(mention, jours):
     """Aplatir les unités (semaine = mois = 1 jour) ne se voit sur aucune page
     dont toutes les offres sont datées en jours — c'est le cas de la fixture."""
     date = HelloWorkConnector._publiee_le([mention])
     assert round((local_now() - date).total_seconds() / 86400) == jours
+
+
+def test_une_offre_parue_dans_l_heure_garde_une_date():
+    """Le cas complet, depuis la carte : c'est celui que HelloWork a servi le
+    jour où le test réel est tombé."""
+    page = page_synthetique(
+        "Voir offre de Ingénieur QA Automatisation H/F à Lyon - 69, chez Viveris, pour un CDI",
+        textes=["moins d'une heure"],
+    )
+    offre = HelloWorkConnector()._parse_page(page)[0]
+    assert offre.published_at is not None
+    assert round((local_now() - offre.published_at).total_seconds() / 86400) == 0
 
 
 def test_une_carte_sans_date_ne_bloque_pas():
