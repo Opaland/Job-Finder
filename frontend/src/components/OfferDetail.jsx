@@ -161,7 +161,8 @@ export default function OfferDetail({ offerId, onClose }) {
               disabled={busy !== null}
               onClick={() => runAction('enrich', async () => {
                 setOffer(await api.enrichOffer(offer.id))
-              }, 'Description complète récupérée — score recalculé.')}
+              }, "Description complète récupérée — score recalculé. L'avis de Claude, "
+                 + 'qui portait sur l\'extrait, sera refait au prochain scan.')}
             >
               {busy === 'enrich' ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Récupération…</>) : 'Récupérer la description complète depuis le site'}
             </button>
@@ -473,6 +474,8 @@ export default function OfferDetail({ offerId, onClose }) {
             <button
               className="fav" title="Supprimer cet entretien" style={{ fontSize: 14 }}
               onClick={async () => {
+                // La suppression emporte le compte-rendu de l'entretien avec elle.
+                if (!window.confirm("Supprimer cet entretien et son compte-rendu ?")) return
                 try { setOffer(await api.deleteInterview(offer.id, i)); setReport(null) } catch (err) { showToast(err.message, true) }
               }}
             >✕</button>

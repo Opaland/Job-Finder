@@ -39,9 +39,14 @@ def competences_demandees(db: Session, limite: int = 25) -> dict:
     profile = db.get(Profile, 1)
     du_cv = {normalize(s) for s in (profile.skills or [])} if profile else set()
 
+    # Seules les offres encore ouvertes et pas manifestement hors sujet
+    # comptent : sans ce filtre, la page conseillait de se former à « Java »
+    # à cause d'une offre de développeur notée 20/100.
     compteur: dict[str, int] = {}
     total = 0
-    for (titre, description) in db.query(Offer.title, Offer.description).all():
+    for (titre, description) in db.query(Offer.title, Offer.description).filter(
+        Offer.status.notin_(STATUTS_CLOS), Offer.final_score >= SCORE_PLANCHER
+    ).all():
         total += 1
         for competence in competences_citees(normalize(f"{titre or ''} {description or ''}")):
             compteur[competence] = compteur.get(competence, 0) + 1
@@ -70,34 +75,62 @@ def competences_demandees(db: Session, limite: int = 25) -> dict:
 # « 3 800 € brut mensuel ». On en extrait des montants ANNUELS comparables.
 _UNITE = re.compile(r"(k\s*€|k€|\bk\b|€|euros?|eur\b)", re.IGNORECASE)
 _NOMBRE = re.compile(r"\d+(?:[\s\u00a0\u202f.]\d{3})*(?:[.,]\d+)?")
+# Un nombre AVEC son unité éventuelle, pour ne plus prendre « 39h » ou « 35 h »
+# pour un salaire sous prétexte qu'un « K€ » traîne ailleurs dans le libellé.
+_NOMBRE_ET_UNITE = re.compile(
+    r"(\d+(?:[\s\u00a0\u202f.]\d{3})*(?:[.,]\d+)?)\s*(k\s*€|k€|k\b|€|euros?|eur\b)?",
+    re.IGNORECASE,
+)
+# Ce qui peut séparer les deux bornes d'une fourchette : « 45 - 55 K€ »,
+# « de 45 à 55 K€ ». La première borne hérite alors de l'unité de la seconde.
+_SEPARATEUR_FOURCHETTE = re.compile(r"^[\s\-–—/]*(?:a|à|et|jusqu.a)?[\s\-–—/]*$", re.IGNORECASE)
 _MENSUEL = re.compile(r"(mensuel|par mois|/\s*mois|au mois)", re.IGNORECASE)
 
 # Bornes de plausibilité pour un salaire annuel brut en France (hors extrêmes).
 SALAIRE_MIN, SALAIRE_MAX = 15_000, 250_000
+
+# En dessous de ce score, une offre est hors sujet : elle ne doit pas peser sur
+# les conseils de formation (le plafond « hors QA » du scoring vaut 20).
+SCORE_PLANCHER = 25
 
 
 def montants_annuels(texte: str) -> list[int]:
     """Montants annuels plausibles trouvés dans un libellé de salaire.
 
     Sans unité monétaire dans le texte, on ne devine rien : mieux vaut aucune
-    donnée qu'un « 2 ans d'expérience » compté comme un salaire.
+    donnée qu'un « 2 ans d'expérience » compté comme un salaire. Et chaque
+    nombre doit porter SA propre unité (ou être la borne basse d'une fourchette
+    dont la borne haute en porte une) : « De 45K€ à 55K€ — 39h/semaine »
+    donnait auparavant un minimum de 39 000 €.
+
+    Limite connue : une prime libellée en euros dans un texte au mois reste
+    comptée comme un salaire — l'écrit ne permet pas de les distinguer.
     """
     if not texte or not _UNITE.search(texte):
         return []
-    en_milliers = bool(re.search(r"k\s*€|k€|\bk\b", texte, re.IGNORECASE))
     mensuel = bool(_MENSUEL.search(texte))
 
+    trouves = [m for m in _NOMBRE_ET_UNITE.finditer(texte) if m.group(1)]
     montants = []
-    for brut in _NOMBRE.findall(texte):
-        nombre = re.sub(r"[\s\u00a0\u202f.](?=\d{3}\b)", "", brut).replace(",", ".")
+    for rang, correspondance in enumerate(trouves):
+        unite = correspondance.group(2)
+        if unite is None and rang + 1 < len(trouves):
+            suivant = trouves[rang + 1]
+            entre_deux = texte[correspondance.end(1):suivant.start(1)]
+            if _SEPARATEUR_FOURCHETTE.match(entre_deux):
+                unite = suivant.group(2)
+        if unite is None:
+            continue                            # « 39h », « 3 ans » : pas un salaire
+
+        nombre = re.sub(r"[\s\u00a0\u202f.](?=\d{3}\b)", "", correspondance.group(1)).replace(",", ".")
         try:
             valeur = float(nombre)
         except ValueError:
             continue
-        if en_milliers and valeur < 1000:      # « 45K€ », « 45 - 55 K€ »
-            valeur *= 1000
-        if mensuel and valeur < SALAIRE_MIN:   # « 3 800 € brut mensuel »
-            valeur *= 12
+        if unite.lower().replace(" ", "").startswith("k") and valeur < 1000:
+            valeur *= 1000                      # « 45K€ », « 45 - 55 K€ »
+        if mensuel and valeur < SALAIRE_MIN:
+            valeur *= 12                        # « 3 800 € brut mensuel »
         if SALAIRE_MIN <= valeur <= SALAIRE_MAX:
             montants.append(int(round(valeur)))
     return sorted(set(montants))

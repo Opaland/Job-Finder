@@ -132,7 +132,11 @@ def test_offre_manuelle_jamais_hors_ligne(db, monkeypatch):
 
 
 def test_offre_disparue_jamais_fermee(db, monkeypatch):
-    """Une offre plus vue à la source passe hors-ligne mais garde son statut."""
+    """Une offre plus vue à la source passe hors-ligne mais garde son statut.
+
+    La source doit avoir réellement ramené des offres : c'est ce qui permet de
+    conclure que celle-ci a bien disparu.
+    """
     monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([_offer()])])
     run_scan(db, trigger="manuel")
     offer = db.query(Offer).one()
@@ -140,12 +144,33 @@ def test_offre_disparue_jamais_fermee(db, monkeypatch):
     offer.last_seen_at = local_now() - timedelta(days=30)
     db.commit()
 
-    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([])])
+    # La source répond normalement, avec d'autres offres : l'ancienne a disparu.
+    autre = _offer(source_id="autre-annonce", title="QA Engineer")
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([autre])])
     run_scan(db, trigger="manuel")
     db.expire_all()  # l'UPDATE en masse ne rafraîchit pas les objets déjà chargés
+    ancienne = db.query(Offer).filter(Offer.source_id != "autre-annonce").one()
+    assert ancienne.still_online is False
+    assert ancienne.status == "postulee"      # la règle absolue tient
+
+
+def test_une_source_qui_ne_ramene_rien_ne_declare_personne_hors_ligne(db, monkeypatch):
+    """Régression : une source dont le format change répond « 200 OK, 0 offre ».
+
+    Le scan ne peut RIEN en conclure. Avant ce correctif, toutes ses offres —
+    pourtant bien en ligne — se couvraient du chip « Plus en ligne ? » au 15e
+    jour, sans qu'aucune erreur ne soit affichée nulle part.
+    """
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([_offer()])])
+    run_scan(db, trigger="manuel")
     offer = db.query(Offer).one()
-    assert offer.still_online is False
-    assert offer.status == "postulee"  # le statut n'est JAMAIS modifié par un scan
+    offer.last_seen_at = local_now() - timedelta(days=30)
+    db.commit()
+
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([])])
+    run_scan(db, trigger="manuel")
+    db.expire_all()
+    assert db.query(Offer).one().still_online is True
 
 
 def test_connecteur_en_erreur_ne_bloque_pas(db, monkeypatch):

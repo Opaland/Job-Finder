@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
@@ -82,11 +84,16 @@ async def upload_cv(file: UploadFile, db: Session = Depends(get_db)):
     if len(text.strip()) < 100:
         raise HTTPException(400, "Le texte extrait est trop court — le fichier est-il bien ton CV ?")
 
-    saved = DATA_DIR / "uploads" / (file.filename or "cv.txt")
+    # Seul le nom de base est retenu : un fichier nomme « ../jobfinder.db »
+    # ecrasait la base, et « dossier/cv.txt » faisait une 500. Les deux
+    # separateurs sont neutralises : la meme image Docker tourne sous Linux,
+    # ou Path() ne reconnait pas l'antislash de Windows.
+    nom = Path((file.filename or "cv.txt").replace("\\", "/")).name or "cv.txt"
+    saved = DATA_DIR / "uploads" / nom
     saved.write_bytes(content)
 
     profile = db.get(Profile, 1)
-    profile.cv_filename = file.filename or "cv.txt"
+    profile.cv_filename = nom
     profile.cv_text = text
     profile.cv_updated_at = local_now()
     profile.skills = extract_skills(text)

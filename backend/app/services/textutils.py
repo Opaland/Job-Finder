@@ -94,3 +94,20 @@ def titles_similar(a: str, b: str, threshold: float = 0.88) -> bool:
     if set(ca.split()) == set(cb.split()):
         return True  # mêmes mots, ordre différent
     return difflib.SequenceMatcher(None, ca, cb).ratio() >= threshold
+
+
+# Caractères par lesquels un tableur interprète une cellule comme une formule.
+_DEBUTS_DE_FORMULE = ("=", "+", "-", "@", "\t", "\r")
+
+
+def cellule_sure(valeur):
+    """Neutralise une cellule que le tableur prendrait pour une formule.
+
+    Les titres d'offres viennent du HTML scrapé d'HelloWork et de l'APEC :
+    entrée non maîtrisée. Un titre commençant par « = » s'exécute à l'ouverture
+    du CSV dans Excel. Le classeur .xlsx a déjà sa protection (offers.py) ;
+    ce helper la rend disponible partout.
+    """
+    if isinstance(valeur, str) and valeur.startswith(_DEBUTS_DE_FORMULE):
+        return "'" + valeur
+    return valeur

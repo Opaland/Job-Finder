@@ -36,8 +36,22 @@ def test_changement_de_statut_journalise(env):
     entries = env["client"].get("/api/journal").json()
     assert len(entries) == 1
     assert entries[0]["kind"] == "statut"
-    assert "nouvelle → postulee" in entries[0]["message"]
+    # Les libellés affichés, pas les codes internes : le Journal se lit.
+    assert "Nouvelle → Postulée" in entries[0]["message"]
     assert entries[0]["offer_id"] == offer_id
+
+
+def test_ouvrir_une_offre_ne_remplit_pas_le_journal(env):
+    """« nouvelle → vue » est de la lecture, pas une démarche : après une
+    matinée de tri, le Journal doit rester lisible."""
+    offer_id = env["db"].query(Offer).one().id
+    env["client"].patch(f"/api/offers/{offer_id}", json={"status": "vue"})
+    assert env["client"].get("/api/journal").json() == []
+
+    # En revanche, tout le reste est bien tracé.
+    env["client"].patch(f"/api/offers/{offer_id}", json={"status": "a_postuler"})
+    entrees = env["client"].get("/api/journal").json()
+    assert len(entrees) == 1 and "À postuler" in entrees[0]["message"]
 
 
 def test_filtre_par_type(env):

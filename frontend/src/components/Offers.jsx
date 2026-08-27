@@ -109,6 +109,9 @@ export default function Offers({ scanning }) {
   }
 
   const supprimerRecherche = async (nom) => {
+    // Ce menu est collé à celui qui RAPPELLE une recherche : un clic dans le
+    // mauvais et le filtrage patiemment réglé était perdu sans un mot.
+    if (!window.confirm(`Supprimer définitivement la recherche « ${nom} » ?`)) return
     try {
       const p = await api.updateProfile({ saved_searches: recherches.filter((r) => r.nom !== nom) })
       setRecherches(p.saved_searches || [])

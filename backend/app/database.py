@@ -35,6 +35,22 @@ def _json_vide(column) -> str | None:
     return None
 
 
+def _valeur_neutre(column, target_engine):
+    """Valeur de remplacement pour une colonne NOT NULL ajoutée à des lignes existantes."""
+    from .models import local_now
+
+    type_sql = column.type.compile(target_engine.dialect).upper()
+    if "DATETIME" in type_sql or "TIMESTAMP" in type_sql:
+        # Chaîne ISO plutôt que datetime : les adaptateurs implicites de sqlite3
+        # sont dépréciés depuis Python 3.12.
+        return local_now().isoformat(sep=" ", timespec="seconds")
+    if "INT" in type_sql or "FLOAT" in type_sql or "NUMERIC" in type_sql or "REAL" in type_sql:
+        return 0
+    if "BOOL" in type_sql:
+        return 0
+    return ""
+
+
 def ensure_schema(target_engine) -> None:
     """Migration légère : ajoute à la base existante les colonnes apparues dans les modèles.
 
@@ -66,15 +82,20 @@ def ensure_schema(target_engine) -> None:
                 # recevraient NULL et l'API les rejetterait au premier affichage.
                 elif (vide := _json_vide(column)) is not None:
                     default_clause = f" DEFAULT '{vide}'"
-                if not column.nullable and not default_clause:
-                    logger.warning(
-                        "Migration : %s.%s est NOT NULL sans défaut scalaire — "
-                        "les lignes existantes recevront NULL",
-                        table.name, column.name,
-                    )
                 conn.execute(
                     text(f"ALTER TABLE {table.name} ADD COLUMN {column.name} {col_type}{default_clause}")
                 )
+                # Un NOT NULL sans défaut scalaire (un `default=local_now`, par
+                # exemple) laissait les lignes existantes à NULL : les schémas de
+                # réponse les rejettent, et toutes les pages tombaient en 500.
+                # On comble plutôt que de se contenter d'un avertissement.
+                if not column.nullable and not default_clause:
+                    neutre = _valeur_neutre(column, target_engine)
+                    conn.execute(text(
+                        f"UPDATE {table.name} SET {column.name} = :v WHERE {column.name} IS NULL"
+                    ), {"v": neutre})
+                    logger.info("Migration : %s.%s comblée pour les lignes existantes",
+                                table.name, column.name)
                 logger.info("Migration : colonne %s.%s ajoutée", table.name, column.name)
 
         # Rattrapage : toute colonne JSON à NULL est remise à sa valeur vide.

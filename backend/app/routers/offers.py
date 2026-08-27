@@ -174,6 +174,9 @@ def export_xlsx(db: Session = Depends(get_db)):
         for col, value in enumerate(values, start=1):
             cell = ws.cell(row=row, column=col, value=value)
             if isinstance(value, str) and value.startswith("="):
+                # `data_type` suffit ici, et ne modifie pas la valeur : dans un
+                # .xlsx, l'apostrophe de `cellule_sure` (réservée au CSV, où
+                # Excel la masque) s'afficherait telle quelle.
                 cell.data_type = "s"  # texte collecté, jamais une formule Excel
             cell.alignment = Alignment(vertical="top", wrap_text=col in (2, 13, 14))
     ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{max(len(offers) + 1, 2)}"
@@ -237,9 +240,16 @@ def update_offer(offer_id: int, update: OfferUpdate, db: Session = Depends(get_d
         offer.next_action_note = update.next_action_note
 
     db.commit()
-    if status_change:
+    # Ouvrir une offre la passe de « nouvelle » à « vue » : c'est de la lecture,
+    # pas une démarche. La journaliser noyait le Journal — la mémoire de ce que
+    # Cédric a réellement fait — sous des dizaines de lignes après une matinée
+    # de tri. Les autres changements sont journalisés avec leurs libellés
+    # affichés, pas avec les codes internes.
+    lecture = status_change == ("nouvelle", "vue")
+    if status_change and not lecture:
+        avant, apres = (STATUS_LABELS.get(c, c) for c in status_change)
         log_event(db, "statut", f"« {offer.title} » ({offer.company or 'entreprise inconnue'}) : "
-                                f"{status_change[0]} → {status_change[1]}", offer.id)
+                                f"{avant} → {apres}", offer.id)
     return offer
 
 
@@ -464,9 +474,15 @@ def delete_interview(offer_id: int, index: int, db: Session = Depends(get_db)):
     entretiens = list(offer.interviews or [])
     if not 0 <= index < len(entretiens):
         raise HTTPException(404, "Cet entretien n'existe pas (la liste a peut-être changé).")
-    entretiens.pop(index)
+    supprime = entretiens.pop(index)
     offer.interviews = entretiens
     db.commit()
+    # L'ajout et le compte-rendu sont journalisés : la suppression emporte le
+    # compte-rendu avec elle, elle doit l'être aussi.
+    quand = (supprime.get("date") or "")[:10]
+    log_event(db, "entretien",
+              f"Entretien supprimé pour « {offer.title} »"
+              + (f" (prévu le {quand})." if quand else "."), offer.id)
     return offer
 
 

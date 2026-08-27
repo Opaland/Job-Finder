@@ -147,9 +147,11 @@ PARAMS_SENSIBLES = frozenset({
 MASQUE = "MASQUE"
 
 _CHAMPS_SECRETS = re.compile(
-    r'("(?:access_token|refresh_token|id_token|api_key|client_secret)"\s*:\s*")[^"]*(")',
+    r'("(?:access_?token|refresh_?token|id_?token|api_?key|client_?secret|apikey)"\s*:\s*")[^"]*(")',
     re.IGNORECASE,
 )
+# « Authorization: Bearer xxx » recopié dans un corps de réponse.
+_JETONS_A_LEXECUTION = re.compile(rb"(Bearer\s+)[A-Za-z0-9._\-]{8,}", re.IGNORECASE)
 
 
 def _url_masquee(url: httpx.URL) -> str:
@@ -164,16 +166,39 @@ def _url_masquee(url: httpx.URL) -> str:
     return f"{base}?{query}"
 
 
+def _valeurs_sensibles() -> list[bytes]:
+    """Les secrets réellement configurés, du plus long au plus court.
+
+    Masquer par NOM de champ ne suffit pas : une page d'erreur HTML qui recopie
+    l'URL appelée, un JSON d'erreur, une réponse text/plain contenant un
+    « Bearer … » laissaient passer la clé. On efface donc les valeurs elles-mêmes,
+    quel que soit le format de la réponse.
+    """
+    from ..config import settings
+
+    champs = (
+        "ft_client_id", "ft_client_secret", "adzuna_app_id", "adzuna_app_key",
+        "rapidapi_key", "wttj_algolia_api_key", "smtp_user", "smtp_password",
+    )
+    valeurs = {str(getattr(settings, champ, "") or "") for champ in champs}
+    # En dessous de 8 caractères, le risque de masquer du texte anodin dépasse
+    # le gain (et aucune clé d'API réelle n'est si courte).
+    return sorted((v.encode("utf-8") for v in valeurs if len(v) >= 8), key=len, reverse=True)
+
+
 def _corps_masque(reponse: httpx.Response) -> bytes:
-    """Corps de réponse, jetons d'authentification masqués."""
-    if "json" not in reponse.headers.get("content-type", ""):
-        return reponse.content
-    try:
-        texte = reponse.content.decode("utf-8")
-    except UnicodeDecodeError:
-        return reponse.content
-    masque, remplacements = _CHAMPS_SECRETS.subn(rf"\1{MASQUE}\2", texte)
-    return masque.encode("utf-8") if remplacements else reponse.content
+    """Corps de réponse, secrets effacés — quel que soit le type de contenu."""
+    contenu = reponse.content
+    for secret in _valeurs_sensibles():
+        contenu = contenu.replace(secret, MASQUE.encode("utf-8"))
+    # Jetons obtenus à l'exécution (donc absents de la configuration).
+    contenu = _JETONS_A_LEXECUTION.sub(rf"\1{MASQUE}".encode("utf-8"), contenu)
+    if "json" in reponse.headers.get("content-type", ""):
+        try:
+            contenu = _CHAMPS_SECRETS.sub(rf"\1{MASQUE}\2", contenu.decode("utf-8")).encode("utf-8")
+        except UnicodeDecodeError:
+            pass
+    return contenu
 
 
 def _extension(reponse: httpx.Response) -> str:

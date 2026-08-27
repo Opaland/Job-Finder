@@ -11,7 +11,7 @@ from ..models import OFFER_STATUSES, STATUS_LABELS, Offer, Profile, local_now
 from ..services.justificatif import justificatif_pdf
 from ..services.journal import log_event
 from ..services.scan import find_twin, index_offres_connues, profile_to_dict, rescore_offer
-from ..services.textutils import fingerprint, normalize
+from ..services.textutils import cellule_sure, fingerprint, normalize
 
 router = APIRouter(prefix="/api/exports", tags=["exports"])
 
@@ -40,7 +40,7 @@ def justificatif(
 # Colonnes du CSV, dans l'ordre. Ce sont aussi celles acceptées à l'import.
 CSV_COLONNES = [
     "titre", "entreprise", "lieu", "contrat", "salaire", "teletravail",
-    "statut", "score", "source", "publiee_le", "url", "notes",
+    "statut", "score", "source", "publiee_le", "url", "notes", "description",
 ]
 
 
@@ -53,15 +53,19 @@ def export_csv(db: Session = Depends(get_db)):
     for o in db.query(
         Offer.title, Offer.company, Offer.location, Offer.contract_type, Offer.salary_text,
         Offer.remote, Offer.status, Offer.final_score, Offer.source, Offer.published_at,
-        Offer.url, Offer.notes,
+        Offer.url, Offer.notes, Offer.description,
     ).order_by(Offer.final_score.desc()).all():
-        writer.writerow([
+        # La description est exportée : sans elle, un aller-retour CSV faisait
+        # recalculer le score sur du vide (84 -> 69 sur une offre réelle).
+        # `cellule_sure` neutralise les titres commençant par « = » : Excel les
+        # exécuterait à l'ouverture (le .xlsx a déjà cette protection).
+        writer.writerow([cellule_sure(v) for v in (
             o.title, o.company, o.location, o.contract_type, o.salary_text,
             "oui" if o.remote else "non", STATUS_LABELS.get(o.status, o.status),
             round(o.final_score), o.source,
             o.published_at.strftime("%d/%m/%Y") if o.published_at else "",
-            o.url, o.notes,
-        ])
+            o.url, o.notes, o.description,
+        )])
     return Response(
         content="\ufeff" + tampon.getvalue(),
         media_type="text/csv; charset=utf-8",
@@ -78,7 +82,9 @@ async def import_csv(file: UploadFile, db: Session = Depends(get_db)):
 
     dialecte = ";" if contenu.count(";") >= contenu.count(",") else ","
     lignes = list(csv.DictReader(io.StringIO(contenu), delimiter=dialecte))
-    if not lignes or "titre" not in {c.lower() for c in (lignes[0] or {})}:
+    # `c` vaut None pour les colonnes en trop (csv.DictReader les range sous
+    # cette clé) : une note contenant un « ; » non échappé faisait une 500.
+    if not lignes or "titre" not in {c.lower() for c in (lignes[0] or {}) if c}:
         raise HTTPException(
             400,
             "Colonnes attendues introuvables. La première ligne doit contenir au moins "
@@ -95,7 +101,11 @@ async def import_csv(file: UploadFile, db: Session = Depends(get_db)):
 
     ajoutees, doublons, ignorees = 0, 0, 0
     for ligne in lignes:
-        valeurs = {(cle or "").strip().lower(): (valeur or "").strip() for cle, valeur in ligne.items()}
+        valeurs = {
+            cle.strip().lower(): (valeur or "").strip()
+            for cle, valeur in ligne.items()
+            if cle and isinstance(valeur, str)
+        }
         titre = valeurs.get("titre", "")
         if not titre:
             ignorees += 1

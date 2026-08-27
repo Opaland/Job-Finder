@@ -73,10 +73,24 @@ def gems(db: Session) -> list[Offer]:
     )
 
 
+def debut_de_semaine() -> datetime:
+    """Lundi 00h00 de la semaine en cours.
+
+    Une seule définition de « la semaine » pour toute l'application : le
+    tableau de bord affichait côte à côte un objectif compté depuis lundi et un
+    bilan compté sur 7 jours glissants, face au même objectif. Chaque lundi
+    matin, le bilan montrait encore les candidatures de la semaine passée — et
+    un ✅ mensonger.
+    """
+    maintenant = local_now()
+    return (maintenant - timedelta(days=maintenant.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+
+
 def applications_this_week(db: Session) -> int:
     """Nombre d'offres postulées depuis lundi (d'après l'historique des statuts)."""
-    now = local_now()
-    monday = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+    monday = debut_de_semaine()
     count = 0
     # Seule la colonne d'historique est lue : inutile de matérialiser les offres.
     for (history,) in db.query(Offer.status_history).filter(
@@ -122,7 +136,11 @@ def next_interviews(db: Session, jours: int = 21) -> list[dict]:
     debut = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
     fin = debut + timedelta(days=jours)
     a_venir = []
-    for offer in db.query(Offer).options(_brief_only(Offer.status, Offer.interviews)).all():
+    # Une offre refusée ou fermée ne doit plus annoncer d'entretien : le rappel
+    # de la veille filtre déjà (rappels.py), le digest ne le faisait pas.
+    for offer in db.query(Offer).options(
+        _brief_only(Offer.status, Offer.interviews)
+    ).filter(Offer.status.notin_(STATUTS_CLOS)).all():
         for entretien in offer.interviews or []:
             quand = parse_iso_dt(entretien.get("date"))
             if quand is None or not (debut <= quand <= fin):
@@ -387,8 +405,12 @@ def send_digest_email(db: Session, digest: Digest) -> bool:
 
 
 def resume_semaine(db: Session) -> dict:
-    """Chiffres de la semaine écoulée, matière première du bilan IA."""
-    debut = local_now() - timedelta(days=7)
+    """Chiffres de la semaine en cours, matière première du bilan IA.
+
+    Même fenêtre que l'objectif hebdomadaire (depuis lundi) : les deux sont
+    affichés l'un sous l'autre au tableau de bord.
+    """
+    debut = debut_de_semaine()
     nouvelles = db.query(func.count(Offer.id)).filter(Offer.collected_at >= debut).scalar() or 0
 
     candidatures = relances = entretiens_passes = 0

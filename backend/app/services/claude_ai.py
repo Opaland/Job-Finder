@@ -32,8 +32,14 @@ def _run_claude(prompt: str, timeout: int = 300) -> str | None:
     if exe is None:
         return None
     try:
+        # Le prompt part sur STDIN, jamais en argument : il contient le CV
+        # (adresse, telephone, email), et argv est lisible par tout processus
+        # du poste (/proc/<pid>/cmdline, Win32_Process.CommandLine, antivirus,
+        # dumps de plantage). Ca leve aussi la limite de 32 767 caracteres de
+        # la ligne de commande Windows, dont la lettre de motivation approche.
         proc = subprocess.run(
-            [exe, "-p", prompt, "--output-format", "json"],
+            [exe, "-p", "--output-format", "json"],
+            input=prompt,
             capture_output=True,
             text=True,
             encoding="utf-8",

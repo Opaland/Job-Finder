@@ -45,6 +45,7 @@ export default function ProfilePage() {
   const [weightDefaults, setWeightDefaults] = useState(null)
   const [saving, setSaving] = useState(false)
   const [showCv, setShowCv] = useState(false)
+  const [modifie, setModifie] = useState(false)
   const fileRef = useRef(null)
   const showToast = useToast()
 
@@ -53,9 +54,22 @@ export default function ProfilePage() {
     api.scoringDefaults().then(setWeightDefaults).catch(() => {})
   }, [showToast])
 
+  // La lettre type est le texte le plus long de l'appli, et un seul bouton
+  // « Enregistrer » vit tout en bas : sans ce garde, fermer l'onglet ou
+  // recharger la page emportait tout sans un mot.
+  useEffect(() => {
+    if (!modifie) return undefined
+    const prevenir = (e) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', prevenir)
+    return () => window.removeEventListener('beforeunload', prevenir)
+  }, [modifie])
+
   if (!profile) return <p>Chargement…</p>
 
-  const set = (key, value) => setProfile((p) => ({ ...p, [key]: value }))
+  const set = (key, value) => {
+    setModifie(true)
+    setProfile((p) => ({ ...p, [key]: value }))
+  }
 
   const save = async () => {
     setSaving(true)
@@ -77,6 +91,7 @@ export default function ProfilePage() {
         search_queries: profile.search_queries || [],
       }
       setProfile(await api.updateProfile(body))
+      setModifie(false)
       showToast('Profil enregistré — les scores des offres ont été recalculés.')
     } catch (err) {
       showToast(err.message, true)
@@ -88,7 +103,15 @@ export default function ProfilePage() {
   const uploadCv = async (file) => {
     if (!file) return
     try {
-      setProfile(await api.uploadCv(file))
+      // Fusion, pas remplacement : importer un CV pendant qu'on retouche le
+      // profil écrasait silencieusement toutes les retouches non enregistrées.
+      // Tant qu'il y a des modifications en attente, on ne reprend du serveur
+      // que ce que l'import vient réellement de produire.
+      const retour = await api.uploadCv(file)
+      const issuDuCv = ['cv_text', 'cv_filename', 'cv_updated_at', 'skills']
+      setProfile((p) => (modifie
+        ? { ...p, ...Object.fromEntries(issuDuCv.map((champ) => [champ, retour[champ]])) }
+        : retour))
       showToast('CV importé : texte extrait, compétences détectées et scores recalculés.')
     } catch (err) {
       showToast(`Import impossible : ${err.message}`, true)

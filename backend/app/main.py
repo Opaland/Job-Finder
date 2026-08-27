@@ -66,9 +66,23 @@ def health():
 if FRONTEND_DIST.exists():
     app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
 
+    RACINE_WEB = FRONTEND_DIST.resolve()
+
     @app.get("/{path:path}", include_in_schema=False)
     def spa(path: str):
-        file = FRONTEND_DIST / path
-        if path and file.is_file():
-            return FileResponse(file)
-        return FileResponse(FRONTEND_DIST / "index.html")
+        """Sert un fichier du build, ou l'application pour toute autre adresse.
+
+        Le chemin est confine sous frontend/dist. Sans ce garde-fou,
+        « /../../data/jobfinder.db » renvoyait la base entiere (CV, lettres,
+        notes, contacts) et « /../../.env » les cles API et le mot de passe
+        Gmail. Ce n'est pas couvert par le choix « pas de durcissement » de
+        l'application : les deploiements systemd et Docker ecoutent sur
+        0.0.0.0, donc n'importe quel appareil du reseau local pouvait les lire.
+        """
+        try:
+            fichier = (RACINE_WEB / path).resolve()
+        except (OSError, ValueError, RuntimeError):
+            fichier = None
+        if path and fichier is not None and fichier.is_relative_to(RACINE_WEB) and fichier.is_file():
+            return FileResponse(fichier)
+        return FileResponse(RACINE_WEB / "index.html")

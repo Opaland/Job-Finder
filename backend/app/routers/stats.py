@@ -26,6 +26,10 @@ from ..services.textutils import parse_iso_dt
 
 router = APIRouter(prefix="/api", tags=["statistiques"])
 
+# Colonnes sans lesquelles une base restaurée rendrait l'application inutilisable.
+COLONNES_INDISPENSABLES = {"id", "fingerprint", "source", "source_id", "title", "collected_at"}
+COPIES_DE_SECURITE_GARDEES = 3
+
 # Libellés servis par les connecteurs eux-mêmes : une seule source de vérité.
 from ..connectors import ALL_CONNECTORS
 
@@ -252,6 +256,18 @@ async def restore(file: UploadFile):
             tables = {row[0] for row in check.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             if not {"offers", "profile"} <= tables:
                 raise HTTPException(400, "Cette base n'est pas une sauvegarde Job Finder (tables offres/profil absentes).")
+            # Les noms de tables ne suffisent pas : une base étrangère ayant par
+            # hasard une table « offers » était acceptée, migrée, et laissait
+            # toutes les pages en erreur 500 sans issue depuis l'interface.
+            colonnes = {row[1] for row in check.execute("PRAGMA table_info(offers)")}
+            manquantes = COLONNES_INDISPENSABLES - colonnes
+            if manquantes:
+                raise HTTPException(
+                    400,
+                    "Cette base a bien une table « offers » mais pas le bon format "
+                    f"(colonnes manquantes : {', '.join(sorted(manquantes))}). "
+                    "Choisis un fichier issu du bouton de sauvegarde de l'application.",
+                )
             offer_count = check.execute("SELECT COUNT(*) FROM offers").fetchone()[0]
         except sqlite3.DatabaseError:
             raise HTTPException(400, "Fichier SQLite illisible ou corrompu — restauration annulée.")
@@ -284,6 +300,13 @@ async def restore(file: UploadFile):
             src.close()
     finally:
         Path(tmp_path).unlink(missing_ok=True)
+
+    # Les copies de sécurité contiennent CV, lettres et notes : n'en garder que
+    # quelques-unes évite d'en semer indéfiniment dans data/ (et dans les
+    # sauvegardes du NAS, qui les répliquent chacune).
+    copies = sorted(db_path.parent.glob("avant_restauration_*.db"), reverse=True)
+    for vieille in copies[COPIES_DE_SECURITE_GARDEES:]:
+        vieille.unlink(missing_ok=True)
 
     # Purge les connexions du pool puis migre la base restaurée si elle vient
     # d'une version antérieure de l'application.

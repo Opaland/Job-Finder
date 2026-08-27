@@ -65,6 +65,23 @@ def rescore_offer(offer: Offer, profile_dict: dict) -> None:
     offer.final_score = combined_score(offer.score, offer.ai_score)
 
 
+def enrichir_description(offer: Offer, raw, profile_dict: dict) -> bool:
+    """Complète la description si la source en fournit une plus riche, et re-score.
+
+    Appelé par les deux branches du scan : l'offre revue sur sa propre source,
+    et l'offre retrouvée sur une AUTRE source (le jumeau). Sans cela, une offre
+    d'abord collectée en extrait chez HelloWork puis retrouvée complète chez
+    France Travail gardait son score d'extrait pour toujours.
+    """
+    if len(raw.description or "") <= len(offer.description or ""):
+        return False
+    offer.description = raw.description
+    offer.ai_score = None      # l'avis IA portait sur l'extrait
+    offer.ai_reason = ""
+    rescore_offer(offer, profile_dict)
+    return True
+
+
 def index_offres_connues(db: Session):
     """Index en mémoire des offres connues, construits en un seul parcours.
 
@@ -188,14 +205,7 @@ def _executer_scan(db: Session, trigger: str) -> ScanRun:
                     existing = db.get(Offer, existing_id)
                     existing.last_seen_at = local_now()
                     existing.still_online = True
-                    # On complète la description si la source en fournit une plus
-                    # riche — et on re-score : sans cela une offre reçue d'abord
-                    # en extrait garderait un score bas pour toujours.
-                    if len(raw.description or "") > len(existing.description or ""):
-                        existing.description = raw.description
-                        existing.ai_score = None   # l'avis IA portait sur l'extrait
-                        existing.ai_reason = ""
-                        rescore_offer(existing, profile_dict)
+                    enrichir_description(existing, raw, profile_dict)
                     source_stat["seen"] += 1
                     continue
 
@@ -208,9 +218,12 @@ def _executer_scan(db: Session, trigger: str) -> ScanRun:
                     # supplémentaire sans créer de doublon.
                     twin.last_seen_at = local_now()
                     twin.still_online = True
+                    # L'autre source apporte souvent une description plus
+                    # complète : même traitement que sur la source d'origine.
+                    enrichir_description(twin, raw, profile_dict)
                     others = list(twin.other_sources or [])
                     entry = {"source": raw.source, "url": raw.url}
-                    if entry not in others and raw.url != twin.url:
+                    if raw.url and entry not in others and raw.url != twin.url:
                         others.append(entry)
                         twin.other_sources = others
                     source_stat["seen"] += 1
@@ -246,13 +259,14 @@ def _executer_scan(db: Session, trigger: str) -> ScanRun:
             db.commit()
             stats[connector.name] = source_stat
 
-        # Marque hors-ligne les offres non revues depuis 15 jours (sans toucher au
-        # statut) — uniquement pour les sources réellement scannées avec succès :
-        # une offre manuelle ou d'une source désactivée/en panne ne peut pas être
-        # « revue », elle ne doit donc pas être signalée « plus en ligne ».
+        # Marque hors-ligne les offres non revues depuis 15 jours (sans toucher
+        # au statut) — uniquement pour les sources qui ont RÉELLEMENT ramené des
+        # offres. Une source qui répond « 200 OK, 0 offre » parce que son format
+        # a changé n'a rien balayé : sans cette exigence, toutes ses offres —
+        # bien en ligne — se seraient signalées « plus en ligne » au 15e jour.
         swept_sources = [
             name for name, s in stats.items()
-            if not s.get("skipped") and (s.get("fetched", 0) > 0 or not s.get("errors"))
+            if not s.get("skipped") and s.get("fetched", 0) > 0
         ]
         if swept_sources:
             cutoff = local_now() - timedelta(days=15)

@@ -8,10 +8,21 @@ async function request(path, options = {}) {
     const { demoRequest } = await import('./demoApi.js')
     return demoRequest(path, options)
   }
-  const res = await fetch(path, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  })
+  let res
+  try {
+    res = await fetch(path, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options,
+    })
+  } catch {
+    // Panne la plus probable de l'appli : la fenêtre du serveur est fermée.
+    // Sans ce garde, l'écran affichait « Failed to fetch » — en anglais, sans
+    // rien à faire.
+    throw new Error(
+      "Le serveur Job Finder ne répond pas. Vérifie que la fenêtre noire est "
+      + 'toujours ouverte (sinon relance start.bat), puis recharge la page.',
+    )
+  }
   if (!res.ok) {
     let detail = `${res.status} ${res.statusText}`
     try {

@@ -62,9 +62,13 @@ def extract_skills(cv_text: str) -> list[str]:
     for skill in SKILL_TAXONOMY:
         if contains_word(cv_norm, skill):
             found.append(skill)
-    # Dédoublonne les variantes (karate/karatedsl, gitlab/gitlab ci...)
+    # Dédoublonne les variantes (« karate » sous « karate dsl », « gitlab » sous
+    # « gitlab ci »). Le test doit porter sur des MOTS entiers : un simple test
+    # de sous-chaîne avalait « java » à cause de « javascript », « soap » à
+    # cause de « soapui » et « squash » à cause de « squash tm » — jusqu'à faire
+    # passer une offre sous le seuil des pépites.
     deduped: list[str] = []
-    for s in sorted(found, key=len, reverse=True):
-        if not any(s in longer for longer in deduped):
-            deduped.append(s)
+    for competence in sorted(found, key=len, reverse=True):
+        if not any(contains_word(plus_long, competence) for plus_long in deduped):
+            deduped.append(competence)
     return sorted(deduped)

@@ -39,6 +39,10 @@ l'image (défaut), les routes IA renvoient leur 503 français et le scan saute l
   projet, sortie JSON en français). `node scripts/smoke_ui.mjs` — parcours navigateur des
   7 onglets (Playwright). `python scripts/mesures.py [n]` — chronomètre les opérations
   coûteuses sur n offres générées (alerte au-delà d'une seconde).
+  `python scripts/mutation.py [modules]` — test de mutation : injecte des fautes
+  plausibles et vérifie que la suite les attrape. Repères actuels : scoring 76 %,
+  textutils 58 %, diagnostic 42 %. Un survivant = une ligne cassable sans que
+  rien ne le signale.
 - Skills projet : `/verif` (vérification + correction jusqu'au vert), `/revue` (agent
   `revue-jobfinder` + revue IA, applique les correctifs), `/smoke` (test navigateur réel).
 - Les règles détaillées vivent dans `.claude/rules/` (backend, frontend, qualité) : helpers
