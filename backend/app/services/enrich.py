@@ -18,6 +18,31 @@ from ..connectors.base import DEFAULT_HEADERS
 # seul le bandeau de site (header direct du body) est retiré plus bas.
 NOISE_TAGS = ["script", "style", "nav", "footer", "aside", "form", "noscript", "svg", "iframe", "button"]
 
+# Une page rendue côté client ne livre que son décor. L'APEC renvoie ainsi
+# 417 caractères de bandeau cookies — plus longs que le résumé réel de 283
+# caractères fourni par son API. Sans ce garde-fou, l'enrichissement écrasait
+# la vraie description par « J'ai pris connaissance des informations légales »,
+# ET remettait l'avis IA à zéro au passage.
+MARQUEURS_DE_DECOR = (
+    "informations légales", "conditions générales", "gestion des cookies",
+    "accepter les cookies", "une erreur inattendue est survenue",
+    "activez javascript", "enable javascript", "veuillez activer",
+)
+LONGUEUR_MINIMALE = 300      # seuil d'origine : une annonce courte reste une annonce
+
+
+def ressemble_a_une_offre(texte: str) -> bool:
+    """Le texte extrait est-il une vraie annonce, ou le décor de la page ?
+
+    Le décor se reconnaît en tête de texte : on ne regarde que le début, pour
+    ne pas rejeter une vraie annonce qui mentionnerait les conditions générales
+    en bas de page.
+    """
+    if len(texte) < LONGUEUR_MINIMALE:
+        return False
+    debut = texte[:800].lower()
+    return not any(marqueur in debut for marqueur in MARQUEURS_DE_DECOR)
+
 
 def _clean_text(text: str) -> str:
     text = re.sub(r"[ \t]+", " ", text)
@@ -67,4 +92,4 @@ def fetch_full_description(url: str) -> str | None:
             text = extract_main_text(resp.text)
     except Exception:  # noqa: BLE001 — best-effort, l'extrait existant reste en place
         return None
-    return text if len(text) >= 300 else None
+    return text if ressemble_a_une_offre(text) else None

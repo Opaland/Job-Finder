@@ -228,3 +228,43 @@ def test_titres_echappes_dans_l_email(db):
     assert "Test Manager &lt;H/F&gt; R&amp;D" in html
     assert "ACME &amp; Fils" in html
     assert "<H/F>" not in html
+
+
+def test_le_decor_de_page_n_est_pas_pris_pour_une_offre():
+    """Une page rendue côté client (APEC) ne livre que son bandeau cookies.
+    Il faisait 417 caractères contre 283 pour le vrai résumé : l'enrichissement
+    l'écrasait, et remettait l'avis IA à zéro au passage."""
+    from app.services.enrich import ressemble_a_une_offre
+
+    bandeau = (
+        "Les informations légales ont changé\nJ'ai pris connaissance des\n"
+        "informations légales\nque ce soit les conditions générales d'utilisation, "
+        "la Politique de protection de données à caractère personnel ainsi que la "
+        "gestion des cookies et je les accepte.\nVous devez accepter les informations "
+        "légales\nUne erreur inattendue est survenue. Merci de réessayer ultérieurement."
+    )
+    assert ressemble_a_une_offre(bandeau) is False
+
+
+def test_une_vraie_annonce_est_acceptee():
+    from app.services.enrich import ressemble_a_une_offre
+
+    annonce = (
+        "Test Manager : en un coup d'oeil. Premier éditeur français de cybersécurité, "
+        "nous recherchons un Test Manager pour piloter la stratégie de test de nos "
+        "produits. Vous animerez une équipe QA, définirez le plan de test, suivrez la "
+        "couverture et l'automatisation Selenium et Cypress, et travaillerez avec les "
+        "équipes de développement en méthode agile. Environnement CI/CD GitLab, Jira, "
+        "tests API. Poste basé à Lyon, télétravail 3 jours par semaine. "
+    ) * 2
+    assert ressemble_a_une_offre(annonce) is True
+
+
+def test_une_annonce_qui_mentionne_les_conditions_generales_en_bas_reste_acceptee():
+    """Le décor se reconnaît EN TÊTE : on ne rejette pas une vraie annonce
+    parce qu'elle cite les conditions générales dans son pied de page."""
+    from app.services.enrich import ressemble_a_une_offre
+
+    annonce = ("Nous recherchons un Test Manager expérimenté pour piloter notre "
+               "stratégie qualité. " * 12) + "\nMentions et conditions générales d'utilisation."
+    assert ressemble_a_une_offre(annonce) is True

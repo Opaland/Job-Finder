@@ -13,7 +13,9 @@ from .base import (
 )
 
 SEARCH_URL = "https://www.apec.fr/cms/webservices/rechercheOffre"
-DETAIL_URL = "https://www.apec.fr/candidat/recherche-emplois.html/emplois/detail-offre/{id}"
+# Au SINGULIER : la forme au pluriel (« recherche-emplois / emplois ») renvoie
+# un 404. Chaque offre APEC portait donc un lien mort — vérifié le 27/08/2026.
+DETAIL_URL = "https://www.apec.fr/candidat/recherche-emploi.html/emploi/detail-offre/{id}"
 
 # Coordonnées de Lyon pour la recherche géolocalisée.
 # L'APEC filtre par DÉPARTEMENT (champ « lieux »), pas par rayon. Vérifié sur
