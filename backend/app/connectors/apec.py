@@ -9,7 +9,7 @@ from __future__ import annotations
 from ..config import settings  # noqa: F401  (pas de clé nécessaire, import gardé pour homogénéité)
 from .base import (
     Connector, ConnectorResult, RawOffer,
-    aucune_offre, dedupe_raw, profile_queries, resume_erreur,
+    aucune_offre, dedupe_raw, parse_published, profile_queries, resume_erreur,
 )
 
 SEARCH_URL = "https://www.apec.fr/cms/webservices/rechercheOffre"
@@ -25,6 +25,14 @@ DETAIL_URL = "https://www.apec.fr/candidat/recherche-emplois.html/emplois/detail
 # Départements du bassin lyonnais, cohérents avec la zone reconnue par le
 # scoring (services/scoring.py, `_location_score`).
 DEPARTEMENTS_LYON = ["69", "01", "38", "42"]
+
+# `typeContrat` est un CODE numérique, pas un libellé : injecté tel quel, il
+# donnait un contrat « 101888 » que le scoring ne reconnaissait pas (2 points au
+# lieu des 5 d'un CDI recherché). Correspondances établies sur 100 offres
+# réelles le 27/08/2026 : 101888 domine à 97 %, et l'unique offre en 101887
+# s'intitule « CDD - Ingénieur Chercheur… ». Un code inconnu laisse le contrat
+# VIDE — « non précisé » est plus juste qu'une valeur inventée.
+CONTRATS_APEC = {"101888": "CDI", "101887": "CDD"}
 
 
 class ApecConnector(Connector):
@@ -46,6 +54,7 @@ class ApecConnector(Connector):
         contract = item.get("typeContrat") or ""
         if isinstance(contract, dict):
             contract = contract.get("libelle", "")
+        contract = CONTRATS_APEC.get(str(contract), "" if str(contract).isdigit() else str(contract))
         return RawOffer(
             source=self.name,
             source_id=numero,
@@ -56,6 +65,9 @@ class ApecConnector(Connector):
             url=DETAIL_URL.format(id=numero),
             contract_type=str(contract),
             salary_text=str(salary),
+            # L'API donne la date : sans elle, toutes les offres paraissaient
+            # publiées à l'instant, et le tri « les plus récentes » ne triait rien.
+            published_at=parse_published(item.get("datePublication") or item.get("dateValidation")),
         )
 
     def fetch(self, profile: dict) -> ConnectorResult:
