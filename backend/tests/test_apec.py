@@ -10,7 +10,6 @@ pourrait très bien ne plus s'en servir.
 import pytest
 
 from app.connectors.apec import CONTRATS_APEC, ApecConnector
-from app.services.diagnostic import diagnostiquer_source, verdict
 
 # Offre réelle, telle que l'API la renvoie (champs conservés à l'identique).
 OFFRE_REELLE = {
@@ -28,69 +27,37 @@ OFFRE_REELLE = {
 PROFIL = {"search_queries": ["test manager"]}
 
 
-class _ReponseBidon:
-    def __init__(self, data):
-        self._data = data
-
-    def raise_for_status(self):
-        return None
-
-    def json(self):
-        return self._data
-
-
-class _ClientBidon:
-    """Client HTTP factice qui retient ce qui a été ENVOYÉ à l'APEC."""
-
-    def __init__(self, resultats=()):
-        self.payloads = []
-        self._data = {"resultats": list(resultats)}
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *_):
-        return False
-
-    def post(self, url, json=None, **_):
-        self.payloads.append(json)
-        return _ReponseBidon(self._data)
-
-
-@pytest.fixture
-def apec_bouchonne(monkeypatch):
-    """Renvoie une fabrique : `apec_bouchonne(offres) -> client factice`."""
-    def brancher(resultats=()):
-        faux = _ClientBidon(resultats)
-        monkeypatch.setattr(ApecConnector, "client", lambda self: faux)
-        return faux
-    return brancher
-
-
 # --- Ce qu'on envoie à l'APEC ------------------------------------------------
 
-def test_la_recherche_lyonnaise_filtre_par_departement(apec_bouchonne):
+def test_la_recherche_lyonnaise_filtre_par_departement():
     """Régression df71b55 : `distance` fait répondre 500, et
     `pointGeolocDeReference` seul est ignoré — une recherche « Lyon » renvoyait
-    Nantes, Saran et Annemasse (1 offre sur 20 dans le Rhône)."""
-    faux = apec_bouchonne()
-    ApecConnector().fetch(PROFIL)
+    Nantes, Saran et Annemasse (1 offre sur 20 dans le Rhône).
 
-    lyonnais = faux.payloads[0]
+    `payloads()` est une fonction pure : on lit la vraie requête, sans réseau et
+    sans faux client. Que l'APEC l'accepte vraiment est vérifié pour de bon
+    dans test_sources_reelles.py."""
+    lyonnais = ApecConnector.payloads(PROFIL)[0]
     assert set(lyonnais["lieux"]) == {"69", "01", "38", "42"}
     assert "distance" not in lyonnais
     assert "pointGeolocDeReference" not in lyonnais
 
 
-def test_la_recherche_teletravail_reste_nationale(apec_bouchonne):
+def test_la_recherche_teletravail_reste_nationale():
     """Le télétravail n'a pas de département : la brider sur Lyon reviendrait à
     supprimer la seule jambe du scan qui ramène des offres hors du Rhône."""
-    faux = apec_bouchonne()
-    ApecConnector().fetch(PROFIL)
-
-    national = faux.payloads[-1]
+    national = ApecConnector.payloads(PROFIL)[-1]
     assert "lieux" not in national
     assert "télétravail" in national["motsCles"]
+
+
+def test_chaque_requete_de_recherche_porte_un_mot_cle_du_profil():
+    """Un profil sans requête retomberait sur les mots-clés par défaut ; on
+    vérifie surtout qu'aucune requête ne part à vide."""
+    requetes = ApecConnector.payloads({"search_queries": ["test manager", "QA"]})
+    assert [r["motsCles"] for r in requetes] == [
+        "test manager", "QA", "test manager télétravail",
+    ]
 
 
 # --- Ce qu'on lit dans la réponse -------------------------------------------
@@ -177,21 +144,3 @@ def test_une_offre_sans_date_de_publication_utilise_la_validation():
 
 def test_une_offre_sans_titre_est_ignoree():
     assert ApecConnector()._parse({**OFFRE_REELLE, "intitule": ""}) is None
-
-
-# --- Le jour où l'APEC renomme ses champs ------------------------------------
-
-def test_un_renommage_de_champ_rend_la_source_suspecte(apec_bouchonne):
-    """Le vrai danger d'une source n'est pas la panne, c'est le succès à vide :
-    l'API répond 200, le scan annonce des offres collectées, et l'entreprise
-    comme le lieu sont vides sur toutes. Le diagnostic doit le voir."""
-    apec_bouchonne([{
-        "numeroOffre": "X1", "intitule": "Lead QA",
-        "lieu": "Lyon", "entrepriseNom": "ACME", "datePubli": "2026-08-04",
-    }])
-    resultat = diagnostiquer_source(ApecConnector(), PROFIL)
-
-    assert resultat["offres"] == 1
-    assert "company" in resultat["champs_vides"]
-    assert "location" in resultat["champs_vides"]
-    assert verdict(resultat)[0] == "suspect"

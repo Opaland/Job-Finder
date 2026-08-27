@@ -249,18 +249,27 @@ class HelloWorkConnector(Connector):
                 return local_now() - timedelta(days=JOURS_NOMMES[normalize(texte)])
         return None
 
-    def fetch(self, profile: dict) -> ConnectorResult:
-        result = ConnectorResult()
+    @staticmethod
+    def recherches(profile: dict) -> list[tuple[str, str]]:
+        """Les URL interrogées, sans rien appeler : (libellé, URL).
+
+        Fonction pure, donc vérifiable sans réseau ET sans client bouchonné.
+        C'est ici que se joue la distinction entre le LIEU et le FILTRE
+        télétravail — confondre les deux vidait deux recherches sur cinq.
+        """
         keywords = profile_queries(profile)
-        recherches = [
+        return [
             (f"{kw} / Lyon", SEARCH_URL.format(kw=quote_plus(kw), loc=quote_plus("Lyon")))
             for kw in keywords[:3]
         ] + [
             (f"{kw} / télétravail complet", REMOTE_URL.format(kw=quote_plus(kw)))
             for kw in keywords[:2]
         ]
+
+    def fetch(self, profile: dict) -> ConnectorResult:
+        result = ConnectorResult()
         with self.client() as client:
-            for libelle, url in recherches:
+            for libelle, url in self.recherches(profile):
                 try:
                     resp = client.get(url)
                     resp.raise_for_status()

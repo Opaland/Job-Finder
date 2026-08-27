@@ -9,6 +9,14 @@
   `database.SessionLocal` vers une base vide. Ne pas le contourner — sans lui,
   un test qui retombe par erreur sur `data/jobfinder.db` passe au vert en local
   (le fichier existe) et casse en CI (`data/` y est vide).
+- **Pas de client HTTP bouchonné** : un faux client prouve qu'on envoie ce qu'on
+  croit envoyer, jamais que la source l'accepte — les trois défauts de la V1
+  étaient précisément de ce genre. Ce qui se vérifie hors réseau passe par une
+  fonction pure (`ApecConnector.payloads()`, `HelloWorkConnector.recherches()`)
+  ou par une page réelle figée dans `tests/fixtures/` ; le reste passe par
+  `tests/test_sources_reelles.py`, qui appelle les vrais sites. Un connecteur
+  factice (`FausseSource`, `FakeConnector`) reste légitime : c'est l'ENTRÉE du
+  code testé — diagnostic, orchestration du scan — pas un substitut de réseau.
 - **Réutiliser avant d'écrire** : chercher un helper existant (grep dans
   `services/textutils.py`, `services/scan.py`, `connectors/base.py`,
   `frontend/src/api.js`) avant d'écrire une fonction. Un copier-coller avec

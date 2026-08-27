@@ -238,55 +238,38 @@ def test_une_page_sans_offre_ne_leve_pas():
 
 
 # --- Ce qu'on demande à HelloWork -------------------------------------------
+#
+# `recherches()` est une fonction pure : les URL se lisent sans réseau et sans
+# faux client. Que HelloWork réponde vraiment à ces URL est vérifié pour de bon
+# dans test_sources_reelles.py.
 
-class _ReponsePage:
-    def __init__(self, html):
-        self.text = html
-
-    def raise_for_status(self):
-        return None
-
-
-class _ClientBidon:
-    """Client factice qui retient les URL appelées."""
-
-    def __init__(self, html):
-        self.urls = []
-        self._html = html
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *_):
-        return False
-
-    def get(self, url, **_):
-        self.urls.append(url)
-        return _ReponsePage(self._html)
-
-
-def test_le_teletravail_est_un_filtre_pas_un_lieu(monkeypatch):
+def test_le_teletravail_est_un_filtre_pas_un_lieu():
     """Régression mesurée le 27/08/2026 : « l=Télétravail » répond 200 avec
     « 0 offre ». Deux des cinq recherches ne ramenaient donc jamais rien, et
-    aucune erreur ne le signalait — les recherches lyonnaises, elles, marchaient.
-    Le filtre dédié « t=Complet » renvoie bien des offres."""
-    faux = _ClientBidon(PAGE)
-    monkeypatch.setattr(HelloWorkConnector, "client", lambda self: faux)
-    HelloWorkConnector().fetch({"search_queries": ["test manager", "qa"]})
+    aucune erreur ne le signalait — les recherches lyonnaises, elles,
+    marchaient. Le filtre dédié est « t=Complet »."""
+    urls = [url for _, url in HelloWorkConnector.recherches({"search_queries": ["test manager", "qa"]})]
 
-    teletravail = [u for u in faux.urls if "t=Complet" in u]
+    teletravail = [u for u in urls if "t=Complet" in u]
     assert len(teletravail) == 2
-    assert not any("l=T%C3%A9l%C3%A9travail" in u for u in faux.urls)
+    assert not any("l=T%C3%A9l%C3%A9travail" in u for u in urls)
     assert all("&l=" not in u for u in teletravail)
 
 
-def test_les_recherches_lyonnaises_gardent_le_lieu(monkeypatch):
-    faux = _ClientBidon(PAGE)
-    monkeypatch.setattr(HelloWorkConnector, "client", lambda self: faux)
-    HelloWorkConnector().fetch({"search_queries": ["test manager", "qa", "testeur"]})
+def test_les_recherches_lyonnaises_gardent_le_lieu():
+    recherches = HelloWorkConnector.recherches({"search_queries": ["test manager", "qa", "testeur"]})
+    lyonnaises = [url for libelle, url in recherches if "Lyon" in libelle]
 
-    lyonnaises = [u for u in faux.urls if "l=Lyon" in u]
     assert len(lyonnaises) == 3
+    assert all("l=Lyon" in u for u in lyonnaises)
+
+
+def test_les_mots_cles_sont_encodes_pour_l_url():
+    """« responsable qualité » contient un espace et un accent : mal encodé,
+    HelloWork renvoie une page d'erreur au lieu de résultats."""
+    _, url = HelloWorkConnector.recherches({"search_queries": ["responsable qualité"]})[0]
+    assert "k=responsable+qualit%C3%A9" in url
+    assert " " not in url
 
 
 # --- Le salaire, seul chiffre que HelloWork donne ----------------------------

@@ -35,6 +35,12 @@ l'image (défaut), les routes IA renvoient leur 503 français et le scan saute l
   démo, la même chose que la CI. `--rapide` : syntaxe + tests seulement. Un hook
   (`.claude/hooks/verif-avant-git.sh`) la lance automatiquement et **bloque** commit (rapide)
   et push (complet) si elle est rouge.
+- `backend/tests/test_sources_reelles.py` appelle **vraiment** apec.fr, hellowork.com et la
+  CLI `claude` (~25 s). Aucun client HTTP bouchonné dans toute la suite : ce qui se vérifie
+  sans réseau passe par les fonctions pures `ApecConnector.payloads()` /
+  `HelloWorkConnector.recherches()` et par la page réelle figée dans `tests/fixtures/`.
+  Une source injoignable fait **ignorer** le test (avec la raison) ; une source qui répond
+  mal le fait **échouer**.
 - `python scripts/revue_ia.py` — revue du diff par la session Claude locale (check-list du
   projet, sortie JSON en français). `node scripts/smoke_ui.mjs` — parcours navigateur des
   7 onglets (Playwright). `python scripts/mesures.py [n]` — chronomètre les opérations

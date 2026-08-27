@@ -18,28 +18,21 @@ def test_valeurs_non_texte_ignorees():
     assert profile_queries(profile) == ["QA"]
 
 
-def test_connecteurs_utilisent_les_requetes(monkeypatch):
-    """Le connecteur HelloWork construit ses recherches depuis le profil."""
+def test_les_connecteurs_utilisent_les_requetes_du_profil():
+    """Les deux connecteurs sans clé construisent leurs recherches depuis le
+    profil. `recherches()` et `payloads()` sont des fonctions pures : plus
+    besoin de bouchonner un client HTTP pour lire ce qui part."""
+    from app.connectors.apec import ApecConnector
     from app.connectors.hellowork import HelloWorkConnector
 
-    captured = []
+    profil = {"search_queries": ["automatisation des tests", "QA santé"]}
 
-    class FakeResponse:
-        status_code = 200
-        text = "<html></html>"
-        def raise_for_status(self): pass
+    urls = [url for _, url in HelloWorkConnector.recherches(profil)]
+    assert any("automatisation+des+tests" in u for u in urls)
+    assert any("QA+sant" in u for u in urls)
+    assert not any("test+manager" in u for u in urls)      # défauts non utilisés
 
-    class FakeClient:
-        def __enter__(self): return self
-        def __exit__(self, *args): return False
-        def get(self, url):
-            captured.append(url)
-            return FakeResponse()
-
-    connector = HelloWorkConnector()
-    monkeypatch.setattr(connector, "client", lambda: FakeClient())
-    connector.fetch({"search_queries": ["automatisation des tests", "QA santé"]})
-
-    assert any("automatisation+des+tests" in u for u in captured)
-    assert any("QA+sant" in u for u in captured)
-    assert not any("test+manager" in u for u in captured)  # défauts non utilisés
+    motscles = [p["motsCles"] for p in ApecConnector.payloads(profil)]
+    assert "automatisation des tests" in motscles
+    assert "QA santé" in motscles
+    assert "test manager" not in motscles

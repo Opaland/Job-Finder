@@ -79,22 +79,27 @@ class ApecConnector(Connector):
             published_at=parse_published(item.get("datePublication") or item.get("dateValidation")),
         )
 
-    def fetch(self, profile: dict) -> ConnectorResult:
-        result = ConnectorResult()
-        payloads = []
+    @staticmethod
+    def payloads(profile: dict) -> list[dict]:
+        """Les requêtes envoyées à l'APEC, sans rien appeler.
+
+        Fonction pure, donc vérifiable sans réseau ET sans client bouchonné :
+        c'est ici que se joue le filtre géographique, la partie qui a déjà
+        régressé une fois (une recherche « Lyon » renvoyait Nantes).
+        """
         keywords = profile_queries(profile)
-        for kw in keywords[:4]:
-            payloads.append(
-                {
-                    "activeFiltre": True,
-                    "motsCles": kw,
-                    "lieux": DEPARTEMENTS_LYON,
-                    "pagination": {"range": 50, "startIndex": 0},
-                    "sorts": [{"type": "SCORE", "direction": "DESCENDING"}],
-                }
-            )
-        # Recherche nationale télétravail.
-        payloads.append(
+        requetes = [
+            {
+                "activeFiltre": True,
+                "motsCles": kw,
+                "lieux": DEPARTEMENTS_LYON,
+                "pagination": {"range": 50, "startIndex": 0},
+                "sorts": [{"type": "SCORE", "direction": "DESCENDING"}],
+            }
+            for kw in keywords[:4]
+        ]
+        # Recherche nationale télétravail : pas de « lieux », c'est volontaire.
+        requetes.append(
             {
                 "activeFiltre": True,
                 "motsCles": f"{keywords[0]} télétravail",
@@ -102,9 +107,12 @@ class ApecConnector(Connector):
                 "sorts": [{"type": "DATE", "direction": "DESCENDING"}],
             }
         )
+        return requetes
 
+    def fetch(self, profile: dict) -> ConnectorResult:
+        result = ConnectorResult()
         with self.client() as client:
-            for payload in payloads:
+            for payload in self.payloads(profile):
                 try:
                     resp = client.post(SEARCH_URL, json=payload)
                     resp.raise_for_status()

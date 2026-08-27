@@ -178,42 +178,6 @@ def test_header_annonce_preserve_mais_bandeau_site_retire():
     assert "Bandeau du site" not in text
 
 
-def test_enrich_reinitialise_avis_ia(db, monkeypatch):
-    """Après enrichissement, l'avis IA (calculé sur l'ancien extrait) est retiré."""
-    from fastapi.testclient import TestClient
-
-    import app.routers.offers as offers_router
-    from app.database import get_db
-    from app.main import app as fastapi_app
-
-    offer = Offer(
-        fingerprint="fp-enrich", source="test", source_id="enrich-1",
-        title="Test Manager", company="ACME", description="Extrait court.",
-        url="https://example.com/offre", score=60, final_score=45,
-        ai_score=30.0, ai_reason="Description trop vague.",
-    )
-    db.add(offer)
-    db.commit()
-
-    long_text = "Description complète du poste de Test Manager, Selenium, management. " * 10
-    monkeypatch.setattr(offers_router, "fetch_full_description", lambda url: long_text)
-    def override_db():
-        yield db
-
-    fastapi_app.dependency_overrides[get_db] = override_db
-    try:
-        client = TestClient(fastapi_app)
-        resp = client.post(f"/api/offers/{offer.id}/enrich")
-        assert resp.status_code == 200, resp.text
-        data = resp.json()
-        assert data["ai_score"] is None
-        assert data["ai_reason"] == ""
-        assert data["description"].startswith("Description complète")
-        assert data["final_score"] == data["score"]
-    finally:
-        fastapi_app.dependency_overrides.clear()
-
-
 def test_titres_echappes_dans_l_email(db):
     """Un titre contenant « & » ou « <…> » ne doit pas casser l'email."""
     db.add(Offer(
@@ -260,6 +224,18 @@ def test_une_vraie_annonce_est_acceptee():
     assert ressemble_a_une_offre(annonce) is True
 
 
+def test_une_page_qui_reclame_javascript_n_est_pas_une_offre():
+    """Autre visage du même défaut : la page ne parle pas de cookies mais
+    réclame JavaScript. Sans ce cas, retirer ces marqueurs de la liste passait
+    inaperçu — le message d'attente devenait la description de l'offre."""
+    from app.services.enrich import ressemble_a_une_offre
+
+    ecran = ("Cette page nécessite JavaScript pour fonctionner correctement. "
+             "Veuillez activer JavaScript dans les paramètres de votre navigateur, "
+             "puis recharger la page pour consulter cette annonce. " * 3)
+    assert ressemble_a_une_offre(ecran) is False
+
+
 def test_une_annonce_qui_mentionne_les_conditions_generales_en_bas_reste_acceptee():
     """Le décor se reconnaît EN TÊTE : on ne rejette pas une vraie annonce
     parce qu'elle cite les conditions générales dans son pied de page."""
@@ -270,13 +246,20 @@ def test_une_annonce_qui_mentionne_les_conditions_generales_en_bas_reste_accepte
     assert ressemble_a_une_offre(annonce) is True
 
 
-# --- Le bandeau de cookies pris pour une offre (régression c60ba8c) ----------
+# --- La route d'enrichissement, sur de vraies requêtes HTTP -------------------
 #
-# Les trois tests précédents n'éprouvent que `ressemble_a_une_offre`. Les deux
-# suivants passent par le VRAI chemin de code — celui qui portait le défaut :
-# `fetch_full_description`, puis la route d'enrichissement. Sans eux, remplacer
-# le garde-fou par le `len(text) >= 300` d'origine laissait la suite verte.
+# Le chemin complet (route → fetch_full_description → httpx → extract_main_text
+# → garde-fou) doit être vérifiable sans dépendre d'apec.fr. On sert donc les
+# deux pages depuis un VRAI serveur HTTP local : rien n'est bouchonné, et le
+# résultat ne dépend ni du réseau ni de l'humeur d'un site tiers.
+#
+# Bouchonner `fetch_full_description`, c'est court-circuiter précisément la
+# fonction qui portait le défaut — c'est ce que faisait l'ancien test, et c'est
+# pour ça qu'il n'a rien vu.
 
+# Bandeau réel de l'APEC : 417 caractères, PLUS LONGS que le résumé de 283
+# caractères fourni par son API. Le garde « déjà aussi complet » ne protège donc
+# pas — c'est tout le sujet.
 BANDEAU_APEC = (
     "J'ai pris connaissance des informations légales, que ce soit les conditions "
     "générales d'utilisation, la Politique de protection de données à caractère "
@@ -285,110 +268,106 @@ BANDEAU_APEC = (
     "Une erreur inattendue est survenue. Merci de réessayer ultérieurement. "
     "Veuillez activer JavaScript dans votre navigateur pour accéder à cette page."
 )
-PAGE_BANDEAU = f"<html><body><div><p>{BANDEAU_APEC}</p></div></body></html>"
-
-# 283 caractères : la longueur exacte à laquelle l'API de l'APEC tronque son
-# résumé. Le bandeau étant plus long, le garde « déjà aussi complet » (409) ne
-# protège pas — c'est tout le sujet.
+ANNONCE_COMPLETE = (
+    "Vous piloterez la stratégie de test d'une plateforme critique : rédaction du "
+    "plan de test, animation de l'équipe QA, automatisation Selenium et Cypress, "
+    "intégration continue, suivi des anomalies sous Jira. " * 8
+)
+# 283 caractères : la longueur exacte à laquelle l'API de l'APEC tronque son résumé.
 RESUME_TRONQUE = "Nous recherchons un Lead QA pour piloter la stratégie de test. " * 4 + "Fin."
 
-
-class _ReponsePage:
-    def __init__(self, html):
-        self.text = html
-        self.headers = {"content-type": "text/html; charset=utf-8"}
-
-    def raise_for_status(self):
-        return None
+PAGES = {
+    "/bandeau": f"<html><body><div><p>{BANDEAU_APEC}</p></div></body></html>",
+    "/annonce": f"<html><body><article><p>{ANNONCE_COMPLETE}</p></article></body></html>",
+}
 
 
-class _ClientPage:
-    def __init__(self, html):
-        self._html = html
+@pytest.fixture(scope="module")
+def serveur_de_pages():
+    """Un vrai serveur HTTP local, le temps du module."""
+    import threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-    def __enter__(self):
-        return self
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            corps = PAGES.get(self.path, "<html><body>introuvable</body></html>").encode("utf-8")
+            self.send_response(200 if self.path in PAGES else 404)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(corps)))
+            self.end_headers()
+            self.wfile.write(corps)
 
-    def __exit__(self, *_):
-        return False
+        def log_message(self, *_):
+            pass                                  # pas de bruit dans la sortie des tests
 
-    def get(self, url, **_):
-        return _ReponsePage(self._html)
-
-
-@pytest.fixture()
-def page_servie(monkeypatch):
-    """Sert un HTML donné à `fetch_full_description`, sans réseau."""
-    from app.services import enrich as enrich_module
-
-    def brancher(html):
-        monkeypatch.setattr(enrich_module, "client_http", lambda timeout=20: _ClientPage(html))
-    return brancher
-
-
-def test_le_bandeau_de_cookies_ne_devient_pas_une_description(page_servie):
-    from app.services.enrich import extract_main_text, fetch_full_description
-
-    # Le bandeau dépasse le seuil de longueur : seul le garde-fou peut le refuser.
-    assert len(extract_main_text(PAGE_BANDEAU)) > 300
-    page_servie(PAGE_BANDEAU)
-    assert fetch_full_description("https://www.apec.fr/offre/1") is None
+    serveur = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=serveur.serve_forever, daemon=True).start()
+    yield f"http://127.0.0.1:{serveur.server_address[1]}"
+    serveur.shutdown()
 
 
-def test_une_vraie_page_d_offre_est_bien_recuperee(page_servie):
-    """Le garde-fou ne doit pas non plus tout refuser."""
-    from app.services.enrich import fetch_full_description
-
-    annonce = ("Vous piloterez la stratégie de test d'une plateforme critique : plan "
-               "de test, animation de l'équipe QA, automatisation Selenium. " * 6)
-    page_servie(f"<html><body><article><p>{annonce}</p></article></body></html>")
-    texte = fetch_full_description("https://www.hellowork.com/fr-fr/emplois/1.html")
-    assert texte is not None and "stratégie de test" in texte
-
-
-def test_une_page_qui_reclame_javascript_est_rejetee(page_servie):
-    """Autre visage du même défaut : la page ne dit pas « cookies » mais
-    « activez JavaScript ». Sans ce cas, retirer ces marqueurs de la liste
-    passait inaperçu."""
-    from app.services.enrich import fetch_full_description
-
-    ecran = ("Cette page nécessite JavaScript pour fonctionner correctement. "
-             "Veuillez activer JavaScript dans les paramètres de votre navigateur, "
-             "puis recharger la page pour consulter cette annonce. " * 3)
-    page_servie(f"<html><body><div><p>{ecran}</p></div></body></html>")
-    assert fetch_full_description("https://www.exemple.fr/offre/1") is None
+def _offre_enrichie(db, url, description):
+    offre = Offer(
+        fingerprint=f"fp-{url[-8:]}", source="apec", source_id=url[-8:],
+        title="Lead QA", company="O2MAX", description=description, url=url,
+        score=60, final_score=45, ai_score=30.0, ai_reason="Avis existant.",
+    )
+    db.add(offre)
+    db.commit()
+    return offre
 
 
-def test_l_enrichissement_refuse_le_bandeau_et_preserve_l_avis_ia(db, page_servie):
-    """Le scénario complet : sans le garde-fou, la description réelle était
-    remplacée par le bandeau ET l'avis IA repartait à zéro — deux pertes
-    irrécupérables, l'utilisateur n'ayant aucun moyen de revenir en arrière."""
+def _enrichir(db, offre):
     from fastapi.testclient import TestClient
 
     from app.main import app as fastapi_app
     from app.routers.offers import get_db
-
-    offer = Offer(
-        fingerprint="fp-bandeau", source="apec", source_id="bandeau-1",
-        title="Lead QA", company="O2MAX", description=RESUME_TRONQUE,
-        url="https://www.apec.fr/candidat/recherche-emploi.html/emploi/detail-offre/1",
-        score=60, final_score=45, ai_score=30.0, ai_reason="Avis existant.",
-    )
-    db.add(offer)
-    db.commit()
-    page_servie(PAGE_BANDEAU)
 
     def override_db():
         yield db
 
     fastapi_app.dependency_overrides[get_db] = override_db
     try:
-        reponse = TestClient(fastapi_app).post(f"/api/offers/{offer.id}/enrich")
+        return TestClient(fastapi_app).post(f"/api/offers/{offre.id}/enrich")
     finally:
         fastapi_app.dependency_overrides.clear()
 
-    assert reponse.status_code == 502
-    db.refresh(offer)
-    assert offer.description == RESUME_TRONQUE
-    assert offer.ai_score == 30.0
-    assert offer.ai_reason == "Avis existant."
+
+def test_le_bandeau_de_cookies_ne_remplace_pas_la_description(db, serveur_de_pages):
+    """Sans le garde-fou, la description réelle était remplacée par le bandeau
+    ET l'avis IA repartait à zéro — deux pertes irrécupérables, l'utilisateur
+    n'ayant aucun moyen de revenir en arrière."""
+    offre = _offre_enrichie(db, f"{serveur_de_pages}/bandeau", RESUME_TRONQUE)
+
+    reponse = _enrichir(db, offre)
+
+    assert reponse.status_code == 502, reponse.text
+    db.refresh(offre)
+    assert offre.description == RESUME_TRONQUE
+    assert offre.ai_score == 30.0
+    assert offre.ai_reason == "Avis existant."
+
+
+def test_une_vraie_annonce_remplace_la_description_et_remet_l_avis_ia_a_zero(db, serveur_de_pages):
+    """L'autre moitié du contrat : le garde-fou ne doit pas tout refuser, et
+    l'avis IA portait sur l'ancien extrait — il est recalculé, pas conservé."""
+    offre = _offre_enrichie(db, f"{serveur_de_pages}/annonce", "Extrait court.")
+
+    reponse = _enrichir(db, offre)
+
+    assert reponse.status_code == 200, reponse.text
+    donnees = reponse.json()
+    assert "stratégie de test" in donnees["description"]
+    assert donnees["ai_score"] is None
+    assert donnees["ai_reason"] == ""
+    assert donnees["final_score"] == donnees["score"]
+
+
+def test_une_page_introuvable_laisse_l_offre_intacte(db, serveur_de_pages):
+    """Un 404 sur la page d'origine ne doit rien abîmer non plus."""
+    offre = _offre_enrichie(db, f"{serveur_de_pages}/disparue", RESUME_TRONQUE)
+
+    assert _enrichir(db, offre).status_code == 502
+    db.refresh(offre)
+    assert offre.description == RESUME_TRONQUE
+    assert offre.ai_score == 30.0
