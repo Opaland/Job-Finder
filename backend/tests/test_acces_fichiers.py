@@ -4,6 +4,11 @@ L'application n'a volontairement ni authentification ni durcissement — c'est u
 choix assumé pour un usage local. Mais les déploiements systemd et Docker
 écoutent sur 0.0.0.0 : servir un fichier hors du build, ou écrire hors du
 dossier d'uploads, n'est pas « pas de durcissement », c'est un défaut.
+
+Ces tests comparent chaque réponse au vrai `index.html`, donc ils ont besoin
+d'une interface présente. La CI en fabrique une minimale exprès (voir
+`.github/workflows/ci.yml`) : sans elle, les sept tests les plus sensibles du
+dépôt étaient ignorés en silence à chaque push.
 """
 from pathlib import Path
 

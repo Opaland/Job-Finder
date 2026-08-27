@@ -19,6 +19,18 @@ jobs:
       - name: Installer les dépendances
         working-directory: backend
         run: pip install -r requirements.txt
+      # Les tests d'accès aux fichiers ne s'exécutent que si une interface est
+      # présente (ils comparent chaque réponse au vrai index.html). Le job
+      # backend ne builde pas le frontend : les 7 tests de régression de la
+      # traversée de chemin — celle qui servait la base de données entière —
+      # étaient donc silencieusement ignorés en CI. Une interface minimale
+      # suffit : ce qu'ils vérifient, c'est le confinement, pas le contenu.
+      - name: Interface minimale (tests d'accès aux fichiers)
+        run: |
+          mkdir -p frontend/dist/assets
+          echo '<!doctype html><title>Job Finder</title>' > frontend/dist/index.html
+          echo 'body{}' > frontend/dist/assets/index.css
+
       # `-rs` : afficher la RAISON de chaque test ignoré. Depuis que la suite
       # appelle les vraies sources, un test peut être ignoré parce qu'un site
       # bloque le runner — sans cette option, la CI serait verte sans dire ce
