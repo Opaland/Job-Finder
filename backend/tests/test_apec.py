@@ -1,9 +1,16 @@
 """Connecteur APEC — défauts constatés sur l'API réelle le 27/08/2026.
 
-Ces trois défauts étaient invisibles sans vrais appels : ils ne font pas
-échouer le scan, ils le font réussir avec des données fausses.
+Ces défauts étaient invisibles sans vrais appels : ils ne font pas échouer le
+scan, ils le font réussir avec des données fausses.
+
+Les tests portent sur le CHEMIN DE CODE, pas sur les constantes du module :
+ré-affirmer `DEPARTEMENTS_LYON == [...]` ne prouve rien, puisque le payload
+pourrait très bien ne plus s'en servir.
 """
-from app.connectors.apec import CONTRATS_APEC, DEPARTEMENTS_LYON, DETAIL_URL, ApecConnector
+import pytest
+
+from app.connectors.apec import CONTRATS_APEC, ApecConnector
+from app.services.diagnostic import diagnostiquer_source, verdict
 
 # Offre réelle, telle que l'API la renvoie (champs conservés à l'identique).
 OFFRE_REELLE = {
@@ -18,31 +25,127 @@ OFFRE_REELLE = {
     "typeContrat": 101888,
 }
 
+PROFIL = {"search_queries": ["test manager"]}
+
+
+class _ReponseBidon:
+    def __init__(self, data):
+        self._data = data
+
+    def raise_for_status(self):
+        return None
+
+    def json(self):
+        return self._data
+
+
+class _ClientBidon:
+    """Client HTTP factice qui retient ce qui a été ENVOYÉ à l'APEC."""
+
+    def __init__(self, resultats=()):
+        self.payloads = []
+        self._data = {"resultats": list(resultats)}
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+    def post(self, url, json=None, **_):
+        self.payloads.append(json)
+        return _ReponseBidon(self._data)
+
+
+@pytest.fixture
+def apec_bouchonne(monkeypatch):
+    """Renvoie une fabrique : `apec_bouchonne(offres) -> client factice`."""
+    def brancher(resultats=()):
+        faux = _ClientBidon(resultats)
+        monkeypatch.setattr(ApecConnector, "client", lambda self: faux)
+        return faux
+    return brancher
+
+
+# --- Ce qu'on envoie à l'APEC ------------------------------------------------
+
+def test_la_recherche_lyonnaise_filtre_par_departement(apec_bouchonne):
+    """Régression df71b55 : `distance` fait répondre 500, et
+    `pointGeolocDeReference` seul est ignoré — une recherche « Lyon » renvoyait
+    Nantes, Saran et Annemasse (1 offre sur 20 dans le Rhône)."""
+    faux = apec_bouchonne()
+    ApecConnector().fetch(PROFIL)
+
+    lyonnais = faux.payloads[0]
+    assert set(lyonnais["lieux"]) == {"69", "01", "38", "42"}
+    assert "distance" not in lyonnais
+    assert "pointGeolocDeReference" not in lyonnais
+
+
+def test_la_recherche_teletravail_reste_nationale(apec_bouchonne):
+    """Le télétravail n'a pas de département : la brider sur Lyon reviendrait à
+    supprimer la seule jambe du scan qui ramène des offres hors du Rhône."""
+    faux = apec_bouchonne()
+    ApecConnector().fetch(PROFIL)
+
+    national = faux.payloads[-1]
+    assert "lieux" not in national
+    assert "télétravail" in national["motsCles"]
+
+
+# --- Ce qu'on lit dans la réponse -------------------------------------------
+
+def test_les_champs_essentiels_sont_mappes():
+    offre = ApecConnector()._parse(OFFRE_REELLE)
+    assert offre.source_id == "178970208W"
+    assert offre.title == "Lead test - Secteur monétique F/H"
+    assert offre.company == "O2MAX"
+    assert offre.location == "Lyon 01 - 69"
+    assert offre.salary_text == "40 - 45 k€ brut annuel"
+
 
 def test_le_lien_de_l_offre_n_est_pas_un_404():
-    """Régression : la forme au PLURIEL (« recherche-emplois / emplois »)
-    renvoie un 404. Chaque offre APEC portait donc un lien mort."""
-    assert "recherche-emploi.html/emploi/detail-offre" in DETAIL_URL
-    assert "recherche-emplois" not in DETAIL_URL and "/emplois/" not in DETAIL_URL
+    """Régression c60ba8c : la forme au PLURIEL (« recherche-emplois / emplois »)
+    renvoie un 404. Chaque offre APEC portait un lien mort — on épingle donc
+    l'URL COMPLÈTE produite, pas la constante du module."""
+    offre = ApecConnector()._parse(OFFRE_REELLE)
+    assert offre.url == (
+        "https://www.apec.fr/candidat/recherche-emploi.html"
+        "/emploi/detail-offre/178970208W"
+    )
 
 
 def test_le_code_de_contrat_devient_un_libelle():
     """Régression : `typeContrat` vaut 101888, pas « CDI ». Injecté tel quel,
     le scoring n'y voyait pas un CDI et donnait 2 points au lieu de 5."""
-    offre = ApecConnector()._parse(OFFRE_REELLE)
-    assert offre.contract_type == "CDI"
+    assert ApecConnector()._parse(OFFRE_REELLE).contract_type == "CDI"
+
+
+def test_le_code_cdd_reste_un_cdd():
+    """Les deux codes doivent se distinguer : les confondre transformerait
+    silencieusement tous les CDD en CDI dans le tableau de bord."""
+    offre = ApecConnector()._parse({**OFFRE_REELLE, "typeContrat": 101887})
+    assert offre.contract_type == "CDD"
+    assert CONTRATS_APEC["101887"] != CONTRATS_APEC["101888"]
+
+
+@pytest.mark.parametrize("code", [597137, 597139])
+def test_les_codes_d_alternance_sont_reconnus(code):
+    """Relevé sur ~600 offres lyonnaises : 25 intitulés sur 26 en 597137 et 3
+    sur 3 en 597139 disent « en alternance ». Laissés inconnus, ils sortaient
+    « non précisé » — et le scoring donne PLUS de points à un contrat non
+    précisé qu'à un contrat identifié comme différent de la recherche."""
+    assert ApecConnector()._parse({**OFFRE_REELLE, "typeContrat": code}).contract_type == "Alternance"
 
 
 def test_un_code_de_contrat_inconnu_laisse_le_champ_vide():
     """« Non précisé » est plus juste qu'un numéro affiché à l'utilisateur."""
-    offre = ApecConnector()._parse({**OFFRE_REELLE, "typeContrat": 999999})
-    assert offre.contract_type == ""
+    assert ApecConnector()._parse({**OFFRE_REELLE, "typeContrat": 999999}).contract_type == ""
 
 
 def test_un_libelle_deja_textuel_est_conserve():
     """Si l'API se met à renvoyer des libellés, on ne les jette pas."""
-    offre = ApecConnector()._parse({**OFFRE_REELLE, "typeContrat": "CDD"})
-    assert offre.contract_type == "CDD"
+    assert ApecConnector()._parse({**OFFRE_REELLE, "typeContrat": "CDD"}).contract_type == "CDD"
 
 
 def test_la_date_de_publication_est_lue():
@@ -54,23 +157,41 @@ def test_la_date_de_publication_est_lue():
     assert offre.published_at.tzinfo is None      # heures naïves partout
 
 
-def test_les_champs_essentiels_sont_mappes():
-    offre = ApecConnector()._parse(OFFRE_REELLE)
-    assert offre.source_id == "178970208W"
-    assert offre.title == "Lead test - Secteur monétique F/H"
-    assert offre.company == "O2MAX"
-    assert offre.location == "Lyon 01 - 69"
-    assert offre.salary_text == "40 - 45 k€ brut annuel"
-    assert offre.source_id in offre.url
+def test_une_publication_de_fin_de_soiree_reste_au_bon_jour():
+    """L'APEC répond en UTC (« +0000 »). Retirer le fuseau sans CONVERTIR
+    datait de la veille toute offre publiée après 22 h — et la déplaçait donc
+    dans le tri « les plus récentes »."""
+    offre = ApecConnector()._parse(
+        {**OFFRE_REELLE, "datePublication": "2026-08-04T23:38:14.000+0000"}
+    )
+    assert offre.published_at.strftime("%Y-%m-%d %H:%M") == "2026-08-05 01:38"
+
+
+def test_une_offre_sans_date_de_publication_utilise_la_validation():
+    sans_publication = {k: v for k, v in OFFRE_REELLE.items() if k != "datePublication"}
+    offre = ApecConnector()._parse(
+        {**sans_publication, "dateValidation": "2026-07-01T10:00:00.000+0000"}
+    )
+    assert offre.published_at.strftime("%Y-%m-%d") == "2026-07-01"
 
 
 def test_une_offre_sans_titre_est_ignoree():
     assert ApecConnector()._parse({**OFFRE_REELLE, "intitule": ""}) is None
 
 
-def test_le_filtre_geographique_couvre_le_bassin_lyonnais():
-    """L'APEC filtre par département : `distance` fait répondre 500, et
-    `pointGeolocDeReference` seul est ignoré (Lyon renvoyait Nantes)."""
-    assert "69" in DEPARTEMENTS_LYON
-    assert set(DEPARTEMENTS_LYON) <= {"69", "01", "38", "42", "07", "26"}
-    assert CONTRATS_APEC["101888"] == "CDI"
+# --- Le jour où l'APEC renomme ses champs ------------------------------------
+
+def test_un_renommage_de_champ_rend_la_source_suspecte(apec_bouchonne):
+    """Le vrai danger d'une source n'est pas la panne, c'est le succès à vide :
+    l'API répond 200, le scan annonce des offres collectées, et l'entreprise
+    comme le lieu sont vides sur toutes. Le diagnostic doit le voir."""
+    apec_bouchonne([{
+        "numeroOffre": "X1", "intitule": "Lead QA",
+        "lieu": "Lyon", "entrepriseNom": "ACME", "datePubli": "2026-08-04",
+    }])
+    resultat = diagnostiquer_source(ApecConnector(), PROFIL)
+
+    assert resultat["offres"] == 1
+    assert "company" in resultat["champs_vides"]
+    assert "location" in resultat["champs_vides"]
+    assert verdict(resultat)[0] == "suspect"

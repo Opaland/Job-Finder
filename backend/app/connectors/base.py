@@ -7,7 +7,6 @@ l'erreur est enregistrée dans les statistiques du scan.
 from __future__ import annotations
 
 import logging
-import os
 import re
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -15,6 +14,8 @@ from datetime import datetime
 from pathlib import Path
 
 import httpx
+
+from ..services.textutils import naif
 
 logger = logging.getLogger("jobfinder.connecteurs")
 
@@ -49,15 +50,18 @@ class ConnectorResult:
 
 
 def parse_published(value) -> datetime | None:
-    """Date de publication ISO d'une API (suffixe Z accepté), ramenée en naïf.
+    """Date de publication ISO d'une API (suffixe Z accepté), en heure de Paris.
 
-    Les heures de l'application sont toutes naïves (voir models.local_now) : on
-    retire le fuseau plutôt que de mélanger aware et naïf dans les comparaisons.
+    Les heures de l'application sont toutes naïves (voir models.local_now) :
+    `naif()` CONVERTIT vers Europe/Paris avant de retirer le fuseau. Retirer le
+    fuseau sans convertir décalait les dates de 2 heures — l'APEC répond en
+    « +0000 » — et faisait changer de jour toute offre publiée après 22 h UTC,
+    donc changer de place dans le tri « les plus récentes ».
     """
     if not value:
         return None
     try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).replace(tzinfo=None)
+        return naif(datetime.fromisoformat(str(value).replace("Z", "+00:00")))
     except ValueError:
         return None
 
@@ -237,6 +241,37 @@ def _enregistrer_reponse(reponse: httpx.Response) -> None:
         logger.exception("Capture de la réponse brute impossible")
 
 
+RETRIES_RESEAU = 2
+
+
+def client_http(timeout: int = 30) -> httpx.Client:
+    """Le client HTTP du projet — un seul, pour les connecteurs ET l'enrichissement.
+
+    Deux besoins que httpx ne sait pas satisfaire ensemble :
+
+    - `retries` (nouvelles tentatives sur les erreurs de CONNEXION seulement,
+      jamais sur un 4xx/5xx reçu, pour ne pas aggraver un blocage anti-robot)
+      n'existe que sur un transport construit à la main ;
+    - la lecture de HTTPS_PROXY / no_proxy, elle, n'a lieu QUE si httpx fabrique
+      son transport lui-même — passer `transport=` la désactive entièrement.
+
+    Passer par `mounts` prend les deux : httpx ajoute ses propres montages
+    déduits de l'environnement (le proxy, et les exclusions de no_proxy montées
+    en direct), et notre transport sert de recours pour tout le reste.
+    Précédemment le proxy était relu à la main dans un `transport=` : les
+    exclusions de no_proxy sautaient, et TOUT partait au proxy — y compris ce
+    qui devait rester en direct. (`retries` est de toute façon ignoré par httpx
+    dès qu'un proxy est utilisé : il ne passe pas l'option à httpcore.HTTPProxy.)
+    """
+    return httpx.Client(
+        headers=DEFAULT_HEADERS,
+        timeout=timeout,
+        follow_redirects=True,
+        mounts={"all://": httpx.HTTPTransport(retries=RETRIES_RESEAU)},
+        event_hooks={"response": [_enregistrer_reponse]},
+    )
+
+
 class Connector:
     """Interface d'un connecteur. `name` est l'identifiant technique, `label` le nom affiché."""
 
@@ -251,22 +286,7 @@ class Connector:
         raise NotImplementedError
 
     def client(self) -> httpx.Client:
-        # retries=2 : nouvelles tentatives sur les erreurs de CONNEXION uniquement
-        # (jamais sur un 4xx/5xx reçu, pour ne pas aggraver un blocage anti-robot).
-        #
-        # `proxy` doit être passé explicitement : un transport construit à la
-        # main ne lit PAS HTTPS_PROXY, contrairement à celui que httpx fabrique
-        # tout seul. Sans ça la requête part en direct — invisible sur un poste
-        # sans proxy, mais derrière un proxy (entreprise, conteneur), les six
-        # sources répondaient 403 sans que rien n'explique pourquoi.
-        transport = httpx.HTTPTransport(
-            retries=2,
-            proxy=os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy") or None,
-        )
-        return httpx.Client(
-            headers=DEFAULT_HEADERS, timeout=30, follow_redirects=True, transport=transport,
-            event_hooks={"response": [_enregistrer_reponse]},
-        )
+        return client_http()
 
 
 def dedupe_raw(offers: list[RawOffer]) -> list[RawOffer]:

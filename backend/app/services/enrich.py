@@ -8,10 +8,9 @@ from __future__ import annotations
 
 import re
 
-import httpx
 from bs4 import BeautifulSoup
 
-from ..connectors.base import DEFAULT_HEADERS
+from ..connectors.base import client_http
 
 # Balises dont le contenu n'est jamais du texte d'offre. « header » n'y figure
 # pas : dans une annonce HTML5, <header> contient souvent le titre du poste —
@@ -29,18 +28,26 @@ MARQUEURS_DE_DECOR = (
     "activez javascript", "enable javascript", "veuillez activer",
 )
 LONGUEUR_MINIMALE = 300      # seuil d'origine : une annonce courte reste une annonce
+# Où chercher les marqueurs. Une fenêtre fixe ne peut pas convenir aux deux
+# cas : trop courte, elle rate un bandeau RGPD bavard qui n'avoue sa nature
+# qu'après un millier de caractères ; trop longue, elle rejette une vraie
+# annonce qui cite les conditions générales dans son pied de page. La MOITIÉ du
+# texte tranche les deux : dans du décor, le marqueur est l'essentiel du
+# contenu ; dans une annonce, c'est une ligne de fin. Le plafond évite de
+# balayer inutilement une page de 50 000 caractères.
+FENETRE_MAX_DE_DECOR = 2000
 
 
 def ressemble_a_une_offre(texte: str) -> bool:
     """Le texte extrait est-il une vraie annonce, ou le décor de la page ?
 
-    Le décor se reconnaît en tête de texte : on ne regarde que le début, pour
-    ne pas rejeter une vraie annonce qui mentionnerait les conditions générales
-    en bas de page.
+    Le décor se reconnaît à ce qu'il OCCUPE la page : on cherche les marqueurs
+    dans la première moitié du texte. Une vraie annonce qui mentionne les
+    conditions générales dans son pied de page reste acceptée.
     """
     if len(texte) < LONGUEUR_MINIMALE:
         return False
-    debut = texte[:800].lower()
+    debut = texte[: min(len(texte) // 2, FENETRE_MAX_DE_DECOR)].lower()
     return not any(marqueur in debut for marqueur in MARQUEURS_DE_DECOR)
 
 
@@ -84,7 +91,7 @@ def fetch_full_description(url: str) -> str | None:
     if not url or not url.startswith("http"):
         return None
     try:
-        with httpx.Client(headers=DEFAULT_HEADERS, timeout=20, follow_redirects=True) as client:
+        with client_http(timeout=20) as client:
             resp = client.get(url)
             resp.raise_for_status()
             if "text/html" not in resp.headers.get("content-type", "text/html"):

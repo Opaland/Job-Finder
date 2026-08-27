@@ -30,11 +30,18 @@ DEPARTEMENTS_LYON = ["69", "01", "38", "42"]
 
 # `typeContrat` est un CODE numérique, pas un libellé : injecté tel quel, il
 # donnait un contrat « 101888 » que le scoring ne reconnaissait pas (2 points au
-# lieu des 5 d'un CDI recherché). Correspondances établies sur 100 offres
-# réelles le 27/08/2026 : 101888 domine à 97 %, et l'unique offre en 101887
-# s'intitule « CDD - Ingénieur Chercheur… ». Un code inconnu laisse le contrat
-# VIDE — « non précisé » est plus juste qu'une valeur inventée.
-CONTRATS_APEC = {"101888": "CDI", "101887": "CDD"}
+# lieu des 5 d'un CDI recherché). Correspondances établies sur ~600 offres
+# réelles du bassin lyonnais le 27/08/2026, en croisant le code avec l'intitulé :
+#   101888 → CDI (535 intitulés) ; 101887 → CDD (14, dont « CDD - Ingénieur… ») ;
+#   597137 → 25 intitulés sur 26 disent « en alternance » ; 597139 → 3 sur 3.
+# Deux codes restent inconnus faute d'échantillon parlant : 101889 (7 intitulés,
+# aucun en alternance — probablement intérim ou mission) et 597138 (1 seul).
+# Un code inconnu laisse le contrat VIDE — « non précisé » est plus juste qu'une
+# valeur inventée.
+CONTRATS_APEC = {
+    "101888": "CDI", "101887": "CDD",
+    "597137": "Alternance", "597139": "Alternance",
+}
 
 
 class ApecConnector(Connector):
