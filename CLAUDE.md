@@ -57,7 +57,11 @@ l'image (défaut), les routes IA renvoient leur 503 français et le scan saute l
 ## Architecture
 
 - `backend/app/connectors/` — un fichier par site d'emploi (France Travail, Adzuna, JSearch,
-  WTTJ, APEC, HelloWork). Contrat : `fetch(profile) -> ConnectorResult` ; un connecteur ne doit
+  WTTJ, APEC, HelloWork). **État réel au dernier relevé** : APEC (~181 offres) et HelloWork
+  (~57) répondent sans clé ; WTTJ est en panne (403, clé Algolia publique invalide et plus
+  exposée par le site) ; les trois autres attendent leurs clés dans `.env`. L'APEC tronque
+  ses descriptions à 283 caractères et refuse la page de détail (401) — ce n'est pas un bug
+  du connecteur, ne pas « réparer ». Contrat : `fetch(profile) -> ConnectorResult` ; un connecteur ne doit
   JAMAIS lever au-delà de son résultat (les erreurs vont dans `result.errors`, formatées avec
   `resume_erreur()` — jamais `str(exc)` brut, illisible dans l'UI). `capture_reponses()`
   (connectors/base.py) fige les réponses réelles pour en faire des fixtures.

@@ -49,17 +49,33 @@ class ApecConnector(Connector):
     label = "APEC"
     needs_key = False
 
+    @staticmethod
+    def _premier_texte(item: dict, *cles: str) -> str:
+        """Première valeur NON BLANCHE parmi ces clés, débarrassée de ses espaces.
+
+        Une offre confidentielle renvoie `"nomCommercial": " "` — une espace.
+        Un simple `or` la retenait : l'entreprise valait alors " ", que tout le
+        reste du code prend pour un nom (`if offer.company` est vrai), d'où une
+        ligne vide dans « qui recrute » et un nom manquant sans que rien ne le
+        signale. Chaîne vide = absence, et ça se voit.
+        """
+        for cle in cles:
+            valeur = item.get(cle)
+            if isinstance(valeur, list):
+                valeur = ", ".join(str(x) for x in valeur)
+            if valeur is not None and str(valeur).strip():
+                return str(valeur).strip()
+        return ""
+
     def _parse(self, item: dict) -> RawOffer | None:
-        numero = str(item.get("numeroOffre") or item.get("id") or "")
-        title = item.get("intitule") or item.get("titre") or ""
+        numero = self._premier_texte(item, "numeroOffre", "id")
+        title = self._premier_texte(item, "intitule", "titre")
         if not numero or not title:
             return None
-        company = item.get("enseigne") or item.get("nomCommercial") or ""
-        location = item.get("lieuTexte") or item.get("lieux") or ""
-        if isinstance(location, list):
-            location = ", ".join(str(x) for x in location)
-        desc = item.get("texteOffre") or item.get("descriptif") or ""
-        salary = item.get("salaireTexte") or ""
+        company = self._premier_texte(item, "enseigne", "nomCommercial")
+        location = self._premier_texte(item, "lieuTexte", "lieux")
+        desc = self._premier_texte(item, "texteOffre", "descriptif")
+        salary = self._premier_texte(item, "salaireTexte")
         contract = item.get("typeContrat") or ""
         if isinstance(contract, dict):
             contract = contract.get("libelle", "")
@@ -67,13 +83,13 @@ class ApecConnector(Connector):
         return RawOffer(
             source=self.name,
             source_id=numero,
-            title=str(title),
-            company=str(company),
-            location=str(location),
-            description=str(desc),
+            title=title,
+            company=company,
+            location=location,
+            description=desc,
             url=DETAIL_URL.format(id=numero),
             contract_type=str(contract),
-            salary_text=str(salary),
+            salary_text=salary,
             # L'API donne la date : sans elle, toutes les offres paraissaient
             # publiées à l'instant, et le tri « les plus récentes » ne triait rien.
             published_at=parse_published(item.get("datePublication") or item.get("dateValidation")),

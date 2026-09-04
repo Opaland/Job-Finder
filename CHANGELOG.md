@@ -1,5 +1,58 @@
 # Changelog
 
+## v3.1 — Validation sur les vraies sources
+
+Jusqu'ici l'application n'avait jamais parlé aux vrais sites : tout était vérifié
+sur des données fabriquées. Cette version confronte les six connecteurs au réel,
+et corrige ce que ça a révélé.
+
+**Défauts trouvés en interrogeant les vrais sites**
+- Les six sources répondaient 403 derrière un proxy : le client HTTP ne lisait
+  pas la configuration réseau de la machine. Un `HTTPS_PROXY` sans schéma faisait
+  même *lever* le scan, et les exclusions `no_proxy` étaient ignorées.
+- Chaque offre APEC portait un **lien mort** (404) : une forme au pluriel dans
+  l'URL de détail.
+- Une recherche « Lyon » sur l'APEC renvoyait Nantes, Saran et Annemasse — 1 offre
+  sur 20 dans le Rhône. Le filtre se fait par département, pas par rayon.
+- L'enrichissement d'une offre APEC remplaçait la vraie description par le
+  **bandeau de cookies** de la page (417 caractères contre 283) et remettait
+  l'avis IA à zéro au passage.
+- HelloWork ne ramenait **jamais** d'offre en télétravail : deux recherches sur
+  cinq interrogeaient un lieu nommé « Télétravail », qui n'existe pas.
+- Les champs HelloWork étaient devinés à leur position dans la carte ; ils sont
+  maintenant lus dans l'`aria-label`, qui les donne en clair.
+- Les dates des API étaient dépouillées de leur fuseau sans conversion : deux
+  heures d'écart, et un changement de jour pour toute offre publiée après 22 h.
+- « moins d'une heure » et « plus de 1 mois » n'étaient pas reconnus : les offres
+  les plus fraîches comme les plus anciennes perdaient leur date.
+- Le salaire affiché par HelloWork était jeté ; il est conservé (27 offres sur 55).
+
+**Les tests parlent aux vrais sites**
+- Plus aucun client HTTP bouchonné dans la suite. Ce qui se vérifie sans réseau
+  passe par des fonctions pures ou par une page réelle figée ; le reste appelle
+  vraiment apec.fr, hellowork.com et la CLI `claude`.
+- Une source injoignable fait *ignorer* le test en disant pourquoi ; une source
+  qui répond mal le fait **échouer**. Une source qui répond sans erreur et sans
+  offre échoue aussi : c'est le « succès à vide » que le diagnostic traque.
+- Un scan complet de bout en bout sur les vraies sources, avec la règle absolue
+  vérifiée pour de vrai : aucun statut touché, aucune offre supprimée.
+- La CI faisait tourner 292 tests en ignorant les 7 tests de traversée de chemin,
+  sans le dire. Elle les exécute désormais, et affiche la raison de chaque test
+  ignoré.
+- 305 tests, ≈ 25 s. 18 fautes plausibles injectées une à une : les 18 sont
+  attrapées.
+
+**Sécurité**
+- Correction d'une traversée de chemin : `/../../data/jobfinder.db` servait la
+  base de données entière. Et d'une écriture arbitraire à l'import de CV, où un
+  nom de fichier piégé écrasait la base.
+- Le CV ne transite plus par la ligne de commande de la CLI `claude` (il était
+  lisible dans la liste des processus).
+
+**Limites documentées** (§10 du README) : Welcome to the Jungle en panne côté
+site, descriptions APEC tronquées à 283 caractères, seuil des pépites (85)
+au-dessus du meilleur score réel observé (82).
+
 ## v3.0 — Décrocher le poste (sprints 21 à 40)
 
 **Entretiens et suivi (EPIC L)**

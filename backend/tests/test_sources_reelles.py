@@ -79,14 +79,41 @@ def db(tmp_path):
 
 # --- APEC --------------------------------------------------------------------
 
+# Sans ces trois-là une offre n'est pas exploitable du tout — et le connecteur
+# refuse déjà de la construire. Exigence : 100 %.
+CHAMPS_INDISPENSABLES = ("title", "url", "source_id")
+# Ceux-là peuvent manquer sur une annonce ISOLÉE en toute légitimité : l'APEC
+# publie des offres confidentielles (« nomCommercial » vide), et une annonce
+# peut taire son lieu. Ce que le diagnostic traque, c'est le champ vide sur
+# TOUTES les offres — la signature d'un mapping cassé. Le seuil laisse passer
+# l'exception sans laisser passer la panne : mesuré à 1 offre sur 169.
+# `description` en fait partie plutôt que d'être exigée à 100 % : c'est ce que
+# lisent le scoring et l'IA, et le seuil la protège tout aussi bien (une
+# description cassée s'effondrerait bien en dessous de 90 %). Relevé du jour :
+# APEC 169/169, HelloWork 57/57 — seule `company` descend à 168/169.
+CHAMPS_PRESQUE_TOUJOURS = ("company", "location", "description")
+PART_REMPLIE_MINIMALE = 0.9
+
+
+def _verifier_remplissage(offres, source: str) -> None:
+    for champ in CHAMPS_INDISPENSABLES:
+        manquants = [o for o in offres if not (getattr(o, champ) or "").strip()]
+        assert not manquants, f"{source} : {champ} vide sur {len(manquants)}/{len(offres)} offres"
+
+    for champ in CHAMPS_PRESQUE_TOUJOURS:
+        remplis = sum(1 for o in offres if (getattr(o, champ) or "").strip())
+        part = remplis / len(offres)
+        assert part >= PART_REMPLIE_MINIMALE, (
+            f"{source} : {champ} rempli sur {part:.0%} des offres seulement "
+            f"({remplis}/{len(offres)}) — le mapping ne correspond plus à la réponse. "
+            f"Exemples : {[o.title for o in offres if not (getattr(o, champ) or '').strip()][:3]}"
+        )
+
+
 def test_apec_remplit_tous_les_champs_essentiels(apec):
     """Le danger n'est pas la panne, c'est la source qui réussit à vide : un
     champ renommé et l'offre arrive sans entreprise, sans que rien ne le dise."""
-    for champ in ("title", "company", "location", "url", "source_id"):
-        remplis = sum(1 for o in apec if (getattr(o, champ) or "").strip())
-        assert remplis == len(apec), (
-            f"{champ} vide sur {len(apec) - remplis} offre(s) APEC sur {len(apec)}"
-        )
+    _verifier_remplissage(apec, "APEC")
 
 
 def test_les_offres_apec_restent_dans_le_bassin_lyonnais(apec):
@@ -179,11 +206,7 @@ def test_l_apec_donne_au_moins_une_offre_recente(apec):
 
 def test_hellowork_remplit_tous_les_champs_essentiels(hellowork):
     """La fixture figée ne peut pas voir une refonte du site : ce test, si."""
-    for champ in ("title", "company", "location", "description", "url", "source_id"):
-        remplis = sum(1 for o in hellowork if (getattr(o, champ) or "").strip())
-        assert remplis == len(hellowork), (
-            f"{champ} vide sur {len(hellowork) - remplis} offre(s) HelloWork sur {len(hellowork)}"
-        )
+    _verifier_remplissage(hellowork, "HelloWork")
 
 
 def test_hellowork_date_toutes_ses_offres(hellowork):

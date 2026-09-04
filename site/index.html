@@ -50,7 +50,7 @@
 <header class="wrap">
   <h1>Job<span>Finder</span> 🎯</h1>
   <p class="tagline">
-    L'application qui cherche à ta place : 6 sources d'offres d'emploi scannées chaque matin,
+    L'application qui cherche à ta place : les sites d'emploi scannés chaque matin,
     un classement 0-100 calibré sur ton CV, et des lettres de motivation générées par Claude.
   </p>
   <div class="cta">
@@ -65,8 +65,8 @@
 <section class="wrap">
   <h2>Ce qu'elle fait pour toi</h2>
   <div class="grid">
-    <div class="card"><div class="icon">🔎</div><h3>6 sources scannées</h3>
-      <p>France Travail, Adzuna, JSearch (offres LinkedIn / Indeed via Google for Jobs), Welcome to the Jungle, APEC, HelloWork — dédoublonnées automatiquement.</p></div>
+    <div class="card"><div class="icon">🔎</div><h3>6 sources, dédoublonnées</h3>
+      <p>France Travail, Adzuna, JSearch (offres LinkedIn / Indeed via Google for Jobs), APEC, HelloWork — une même offre vue deux fois ne fait qu'une fiche. APEC et HelloWork répondent sans aucune clé ; Welcome to the Jungle est en panne côté site (<a href="https://github.com/Opaland/Job-Finder#10-limites-connues-assumées">limites connues</a>).</p></div>
     <div class="card"><div class="icon">🧮</div><h3>Classement selon ton CV</h3>
       <p>Score 0-100 expliqué critère par critère : adéquation du poste, compétences citées, séniorité, localisation Lyon / remote, contrat, secteur.</p></div>
     <div class="card"><div class="icon">🤖</div><h3>IA en local, sans clé API</h3>
@@ -104,13 +104,13 @@
     <div class="step"><div><b>Installe les prérequis</b>
       <p><a href="https://www.python.org/downloads/">Python 3.11+</a> (coche « Add python.exe to PATH ») et <a href="https://nodejs.org">Node.js LTS</a>.</p></div></div>
     <div class="step"><div><b>Clone et lance</b>
-      <p><code>git clone https://github.com/Opaland/Job-Finder.git</code> puis
-      <code>git checkout claude/confident-ride-weseu3</code> et double-clique sur <code>start.bat</code> —
-      tout s'installe et l'appli s'ouvre sur <code>http://127.0.0.1:8000</code>.</p></div></div>
+      <p><code>git clone https://github.com/Opaland/Job-Finder.git</code> puis double-clique sur
+      <code>start.bat</code> — tout s'installe et l'appli s'ouvre sur
+      <code>http://127.0.0.1:8000</code>.</p></div></div>
     <div class="step"><div><b>Ajoute tes clés gratuites (~10 min)</b>
       <p>France Travail, Adzuna et JSearch dans le fichier <code>.env</code> —
       <a href="https://github.com/Opaland/Job-Finder#3-configurer-les-sources-clés-gratuites">guide pas-à-pas dans le README</a>.
-      Sans elles, seules les sources sans clé sont scannées.</p></div></div>
+      Sans elles, APEC et HelloWork sont déjà scannées — environ 240 offres lyonnaises.</p></div></div>
   </div>
 </section>
 

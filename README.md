@@ -36,14 +36,16 @@ Ton profil est **pré-chargé** : CV (texte + compétences détectées), lettre 
 Lyon + 40 km + full remote, contrats CDI + Freelance, postes cibles Test Manager / QA Lead / Responsable QA.
 Tout est modifiable dans l'onglet **Profil & CV**.
 
-> ⚠️ Sans clés API, seules les sources « sans clé » (Welcome to the Jungle, APEC, HelloWork) sont
-> interrogées. Pour une couverture complète, configure les clés gratuites — voir section 3 (≈ 10 minutes).
+> ⚠️ Sans aucune clé, l'application marche déjà : **APEC et HelloWork** répondent sans inscription
+> (≈ 240 offres lyonnaises au dernier relevé). Welcome to the Jungle, en revanche, est **actuellement
+> en panne** (voir §3.4). Pour la couverture complète, configure les clés gratuites — §3, ≈ 10 minutes.
+> `python -m app.cli sources` dit à tout moment ce que chaque source renvoie vraiment.
 
 ## 2. Ce que fait l'application
 
 | Fonction | Détail |
 |---|---|
-| **Scan multi-sites** | France Travail, Adzuna, JSearch (LinkedIn/Indeed via Google for Jobs), Welcome to the Jungle, APEC, HelloWork |
+| **Scan multi-sites** | France Travail, Adzuna, JSearch (LinkedIn/Indeed via Google for Jobs), Welcome to the Jungle, APEC, HelloWork — état réel de chacune en §3.4 et §10 |
 | **Classement 0-100** | Adéquation du titre (40), compétences du CV citées (25), séniorité (10), localisation Lyon/remote (15), contrat (5), secteur connu (5). Postes hors QA plafonnés à 20, juniors/stages à 30 |
 | **Affinage IA** | Ta session locale Claude Code donne un avis (0-100 + justification) sur les meilleures offres ; le score final est la moyenne règles/IA |
 | **« Pourquoi ce score ? »** | Chaque offre affiche le détail de son score, critère par critère |
@@ -54,7 +56,7 @@ Tout est modifiable dans l'onglet **Profil & CV**.
 | **Préparation d'entretien** | Fiche générée par Claude : pitch, points forts face à l'annonce, questions probables, vigilances, questions à poser |
 | **Pipeline Kanban** | Colonnes par statut, cartes en glisser-déposer |
 | **Statistiques** | KPI, activité 30 jours, pipeline, sources, distribution des scores, réactivité des entreprises (délais de réponse) |
-| **Pépites & objectif** | Offres score ≥ 85 mises en avant partout ; objectif de candidatures hebdomadaire avec jauge |
+| **Pépites & objectif** | Offres score ≥ 85 mises en avant partout ; objectif de candidatures hebdomadaire avec jauge. *Le meilleur score observé sur de vraies offres est 82 : la section reste vide tant que le seuil n'est pas abaissé (§10).* |
 | **Personnalisation** | Pondérations du score réglables, requêtes de scan configurables, mode sombre |
 | **Données** | Enrichissement de description depuis le site d'origine, export Excel du suivi, sauvegarde et restauration de la base en un clic, migration automatique du schéma |
 | **Notes & favoris** | Notes libres, favoris ★, historique des statuts par offre |
@@ -118,11 +120,24 @@ Ces trois connecteurs utilisent les services **non officiels** des sites eux-mê
 inscription mais peuvent casser quand les sites évoluent. Les erreurs éventuelles s'affichent dans
 l'onglet **Sources & réglages** sans bloquer le reste.
 
-- **WTTJ** : si la source tombe en erreur 4xx, la clé publique du site a changé. Ouvre
-  welcometothejungle.com → F12 → onglet Réseau → cherche une requête « algolia » → copie l'en-tête
-  `x-algolia-api-key` → colle-la dans `.env` (`WTTJ_ALGOLIA_API_KEY=`).
-- **APEC / HelloWork** : rien à configurer. En cas de panne durable, demande à Claude Code de mettre à
-  jour le connecteur (`backend/app/connectors/apec.py` ou `hellowork.py`).
+**APEC — opérationnelle** (181 offres au dernier relevé). Rien à configurer. Une limite à connaître :
+son service ne renvoie que les **283 premiers caractères** de l'annonce, et la page de détail refuse
+la lecture automatique (HTTP 401). Le score et l'avis IA travaillent donc sur un résumé, pas sur
+l'annonce entière — le lien de l'offre ouvre bien la page complète dans le navigateur.
+
+**HelloWork — opérationnelle** (57 offres au dernier relevé). Rien à configurer. La page de résultats
+ne porte qu'un entrefilet ; la description complète arrive à l'ouverture de l'offre (enrichissement),
+et fonctionne bien : ~4 700 caractères sur une annonce typique.
+
+**Welcome to the Jungle — en panne, et pas réparable simplement.** La recherche passe par un index
+Algolia dont la clé publique a changé, et le site ne l'expose plus dans ses pages : la méthode
+« F12 → Réseau → copier `x-algolia-api-key` » ne donne plus rien. Si tu récupères une clé valide par
+un autre moyen, elle se colle dans `.env` (`WTTJ_ALGOLIA_API_KEY=`) et le connecteur repart sans autre
+changement. En attendant, la source remonte un échec explicite et n'empêche rien.
+
+En cas de panne durable d'APEC ou HelloWork, demande à Claude Code de mettre à jour le connecteur
+(`backend/app/connectors/apec.py` ou `hellowork.py`) : les tests réels (§8) montrent précisément ce
+qui a bougé.
 
 ### 3.5 Vérifier que les sources répondent vraiment
 
@@ -138,6 +153,17 @@ un champ vide sur *toutes* les offres, signe que le site a changé de format). C
 fait pas de bruit : un scan normal se contente d'afficher « 0 nouvelle offre ».
 
 À lancer après avoir rempli les clés, et à relancer le jour où une source semble muette.
+
+La suite de tests fait la même vérification, en plus strict et sans rien à lire :
+
+```bash
+cd backend
+python -m pytest tests/test_sources_reelles.py -q -rs
+```
+
+Ces tests appellent **vraiment** les sites. Une source injoignable fait *ignorer* le test en disant
+pourquoi (`SKIPPED France Travail : Clés FT_CLIENT_ID / FT_CLIENT_SECRET absentes du .env`) ; une
+source qui répond mal fait **échouer**. C'est le retour immédiat quand on vient de coller une clé.
 
 ## 4. Email quotidien
 
@@ -199,7 +225,8 @@ Job-Finder/
 │   │   │   └── scheduler.py    Scan quotidien (APScheduler)
 │   │   └── routers/            Endpoints REST (/api/...)
 │   ├── seed/                   Profil initial : CV, lettre type, critères
-│   └── tests/                  pytest (scoring, dédoublonnage, statuts)
+│   └── tests/                  pytest — dont test_sources_reelles.py (vrais appels
+│       └── fixtures/           aux sites) et une page HelloWork réelle figée
 ├── frontend/                   React + Vite (tableau de bord, offres, profil, sources)
 ├── scripts/                    Vérification, revue IA, smoke test navigateur
 └── .claude/                    Règles, hooks et skills pour Claude Code
@@ -209,6 +236,14 @@ Lancer les tests : `cd backend && venv\Scripts\python -m pytest tests/ -q`
 Mode développement interface : `cd frontend && npm run dev` (proxy vers le backend sur :8000).
 
 ## 8. Garde-fous qualité (scripts)
+
+**Les tests parlent aux vrais sites.** `backend/tests/test_sources_reelles.py` appelle réellement
+apec.fr, hellowork.com et la CLI `claude` (≈ 25 s sur les ~305 tests). Il n'y a **aucun client HTTP
+bouchonné** dans la suite : un faux client prouve qu'on envoie ce qu'on croit envoyer, jamais que la
+source l'accepte — les défauts trouvés en validation étaient tous de ce genre (lien d'offre en 404,
+filtre géographique ignoré, bandeau de cookies pris pour une description). Ce qui se vérifie sans
+réseau passe par des fonctions pures (`ApecConnector.payloads()`, `HelloWorkConnector.recherches()`)
+ou par la page réelle figée dans `tests/fixtures/`.
 
 Cinq scripts, utilisables à la main ou par Claude Code :
 
@@ -346,9 +381,22 @@ un dossier partagé du NAS, manuellement ou via une tâche planifiée.
 
 ## 10. Limites connues (assumées)
 
+Relevées en interrogeant les vraies sources, pas déduites du code.
+
+- **Welcome to the Jungle est en panne.** Clé Algolia publique invalide et plus exposée par le site :
+  la source remonte un HTTP 403 explicite à chaque scan. Détail et contournement en §3.4.
+- **Les descriptions APEC sont tronquées à 283 caractères.** C'est ce que renvoie son service ; la page
+  de détail refuse la lecture automatique (401). Le score et l'avis IA lisent donc un résumé. Vérifié sur
+  30 offres : la troncature est systématique, ce n'est pas un défaut du connecteur.
+- **La section « Pépites » reste vide en pratique.** Le seuil est à 85 et le meilleur score observé sur
+  de vraies offres lyonnaises est **82**. Rien n'est cassé — le seuil est simplement plus haut que ce que
+  le marché QA lyonnais produit. À arbitrer : abaisser le seuil, ou l'assumer comme une exigence.
+- **Un contrat « non précisé » rapporte plus qu'un contrat identifié comme différent** (3/5 contre 2/5).
+  Une source qui cache le type de contrat est donc mieux notée qu'une source honnête. Deux codes APEC
+  restent d'ailleurs sans libellé faute d'échantillon parlant (10 offres sur ~600).
 - **LinkedIn / Indeed** : pas d'accès direct (interdit par leurs CGU et bloqué techniquement) — couverts
   indirectement via JSearch et Adzuna.
-- **WTTJ / APEC / HelloWork** : connecteurs best-effort sur les services non officiels des sites ; ils
-  peuvent casser sans préavis (l'erreur est alors visible dans Sources & réglages).
+- **APEC / HelloWork** : connecteurs best-effort sur les services non officiels des sites ; ils peuvent
+  casser sans préavis. Les tests réels (§8) et `python -m app.cli sources` le disent tout de suite.
 - Application **mono-utilisateur, 100 % locale**, sans authentification — ne pas l'exposer sur Internet
   en l'état.

@@ -142,5 +142,23 @@ def test_une_offre_sans_date_de_publication_utilise_la_validation():
     assert offre.published_at.strftime("%Y-%m-%d") == "2026-07-01"
 
 
+def test_une_offre_confidentielle_n_invente_pas_d_entreprise():
+    """L'APEC publie des annonces confidentielles : elle renvoie alors
+    `"nomCommercial": " "` — une ESPACE, pas une absence. Retenue telle quelle,
+    elle passait pour un nom d'entreprise partout (`if offer.company` est vrai),
+    d'où une ligne vide dans « qui recrute ». Vue en vrai, 1 offre sur 169."""
+    offre = ApecConnector()._parse({
+        "numeroOffre": "X1", "intitule": "Alternance – Juriste Droit des Affaires F/H",
+        "nomCommercial": " ", "lieuTexte": "Lyon 01 - 69",
+    })
+    assert offre.company == ""
+    assert offre.title == "Alternance – Juriste Droit des Affaires F/H"
+
+
+def test_les_espaces_autour_des_valeurs_sont_retirees():
+    offre = ApecConnector()._parse({**OFFRE_REELLE, "nomCommercial": "  O2MAX  "})
+    assert offre.company == "O2MAX"
+
+
 def test_une_offre_sans_titre_est_ignoree():
     assert ApecConnector()._parse({**OFFRE_REELLE, "intitule": ""}) is None
