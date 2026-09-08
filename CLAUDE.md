@@ -51,6 +51,15 @@ l'image (défaut), les routes IA renvoient leur 503 français et le scan saute l
   rien ne le signale.
 - Skills projet : `/verif` (vérification + correction jusqu'au vert), `/revue` (agent
   `revue-jobfinder` + revue IA, applique les correctifs), `/smoke` (test navigateur réel).
+- **Panel de relecteurs** (`.claude/agents/`), à lancer en parallèle pour un audit large —
+  chacun ne rend que des constats, aucun ne modifie de fichier : `chasseur-de-bugs`
+  (défauts de correction), `avocat-de-cedric` (pièges d'usage, chiffres trompeurs),
+  `gardien-des-donnees` (intégrité, fuites, dépôt public), `relecteur-de-tests` (ce que
+  les tests prouvent vraiment), `architecte-du-code` (structure, code mort, dette),
+  `ergonome-de-l-interface` (parcours, états vides, accessibilité, mobile),
+  `exploitant-de-la-machine` (démarrage, tâche planifiée, sauvegardes, pannes silencieuses),
+  `recruteur-lyonnais` (le seul qui juge la raison d'être : est-ce que ça aide vraiment à
+  décrocher le poste ?).
 - Les règles détaillées vivent dans `.claude/rules/` (backend, frontend, qualité) : helpers
   partagés à réutiliser, règle absolue du scan, heures locales, simulation démo obligatoire.
 
