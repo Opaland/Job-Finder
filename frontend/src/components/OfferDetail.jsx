@@ -82,7 +82,7 @@ export default function OfferDetail({ offerId, onClose }) {
     <>
       <div className="drawer-backdrop" onClick={onClose} />
       <div className="drawer">
-        <button className="close" onClick={onClose}>✕</button>
+        <button className="close" aria-label="Fermer" onClick={onClose}>✕</button>
 
         <span className="score-badge" style={{ background: scoreColor(offer.final_score) }}>
           {Math.round(offer.final_score)}

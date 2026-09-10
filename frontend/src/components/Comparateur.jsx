@@ -35,7 +35,7 @@ export default function Comparateur({ idA, idB, onClose }) {
     <>
       <div className="drawer-backdrop" onClick={onClose} />
       <div className="drawer" style={{ width: 'min(900px, 96vw)' }}>
-        <button className="close" onClick={onClose}>✕</button>
+        <button className="close" aria-label="Fermer" onClick={onClose}>✕</button>
         <h2>Comparer deux offres</h2>
         <p className="hint">Les valeurs en gras sont à l'avantage de l'offre concernée.</p>
 

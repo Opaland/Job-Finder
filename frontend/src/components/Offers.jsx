@@ -31,7 +31,7 @@ function AddOfferModal({ onClose, onCreated }) {
     <>
       <div className="drawer-backdrop" onClick={onClose} />
       <div className="drawer" style={{ width: 'min(560px, 94vw)' }}>
-        <button className="close" onClick={onClose}>✕</button>
+        <button className="close" aria-label="Fermer" onClick={onClose}>✕</button>
         <h2>Ajouter une offre à la main</h2>
         <p className="hint">
           Vue sur LinkedIn, Indeed ou ailleurs ? Colle l'annonce ici : elle sera scorée par rapport
