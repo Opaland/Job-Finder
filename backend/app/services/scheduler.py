@@ -26,6 +26,8 @@ HEURE_RAPPEL = (18, 0)
 
 
 def _daily_job():
+    from .emailer import smtp_configured
+    from .journal import log_event
     from .scan import run_full_scan
 
     db = SessionLocal()
@@ -33,10 +35,17 @@ def _daily_job():
         logger.info("Scan quotidien : démarrage")
         _, _, sent = run_full_scan(db, trigger="quotidien", send_email=True)
         logger.info("Scan quotidien terminé (email envoyé : %s)", sent)
+        if smtp_configured() and not sent:
+            # L'appli reste ouverte : pas de code de sortie qu'un Planificateur
+            # verrait, donc le journal (onglet Activité) est le seul endroit où
+            # ça peut se voir — sans lui, l'absence d'email passe pour « rien de
+            # nouveau aujourd'hui » plutôt que pour une panne d'envoi.
+            log_event(db, "scan", "Scan quotidien terminé, mais l'email du digest n'a pas pu être envoyé.")
     except RuntimeError as exc:
         logger.warning("Scan quotidien ignoré : %s", exc)
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
         logger.exception("Scan quotidien en erreur")
+        log_event(db, "scan", f"Scan quotidien en erreur : {exc}")
     finally:
         db.close()
 

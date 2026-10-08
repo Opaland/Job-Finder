@@ -55,10 +55,6 @@ class Settings(BaseSettings):
     scan_hour: str = "07:30"  # heure locale Europe/Paris
     timezone: str = "Europe/Paris"
 
-    # --- Serveur ---
-    host: str = "127.0.0.1"
-    port: int = 8000
-
 
 settings = Settings()
 DATA_DIR.mkdir(parents=True, exist_ok=True)

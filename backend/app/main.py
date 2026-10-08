@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import FRONTEND_DIST
-from .database import SessionLocal, engine, ensure_schema
+from .database import SessionLocal, engine, ensure_schema_avec_verrou
 from .routers import contacts, digests, exports, market, offers, profile, scans, sources, stats
 from .services.scheduler import start_scheduler, stop_scheduler
 from .services.seeding import ensure_profile
@@ -25,7 +25,7 @@ logging.basicConfig(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    ensure_schema(engine)
+    ensure_schema_avec_verrou(engine)
     db = SessionLocal()
     try:
         ensure_profile(db)

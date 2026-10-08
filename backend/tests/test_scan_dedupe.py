@@ -216,3 +216,33 @@ def test_description_enrichie_declenche_un_nouveau_score(db, monkeypatch):
     detail = " ".join(b["detail"] for b in offre.score_breakdown)
     assert "Aucune compétence" not in detail
     assert ia_avant is None or offre.ai_score is None    # avis IA périmé retiré
+
+
+def test_affinage_ia_respecte_un_budget_de_temps(db, monkeypatch):
+    """Un affinage IA anormalement lent s'arrête avant d'avoir tout traité.
+
+    Avec ai_max_offers_per_scan=15 et jusqu'à 300s de timeout CLI par offre, le
+    pire cas (75 min) dépasse l'ExecutionTimeLimit d'1h de la tâche planifiée
+    Windows — le scan doit s'arrêter de lui-même plutôt que de risquer de ne
+    jamais construire le digest/email. Les offres non affinées restent
+    candidates (ai_score=None) pour le prochain scan.
+    """
+    offres = [
+        _offer(source_id="1", title="Test Manager", company="Alpha"),
+        _offer(source_id="2", title="QA Lead", company="Beta"),
+    ]
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector(offres)])
+    monkeypatch.setattr(scan_module, "cli_available", lambda: True)
+    monkeypatch.setattr(scan_module, "ai_score_offer", lambda offer_dict, cv_text: (88.0, "raison test"))
+
+    # ai_debut=0, 1er tour (0 - 0 = 0, sous le budget) : affine la 1re offre.
+    # 2e tour (budget+1 - 0, dépassé) : s'arrête avant la 2e offre.
+    horloge = iter([0.0, 0.0, scan_module.AI_BUDGET_SECONDES + 1])
+    monkeypatch.setattr(scan_module.time, "monotonic", lambda: next(horloge))
+
+    run_scan(db, trigger="test")
+
+    offres_en_base = db.query(Offer).order_by(Offer.score.desc()).all()
+    scores_ia = [o.ai_score for o in offres_en_base]
+    assert scores_ia.count(88.0) == 1, "une seule offre aurait dû être affinée avant la coupure"
+    assert scores_ia.count(None) == 1, "l'offre restante doit rester candidate pour le prochain scan"

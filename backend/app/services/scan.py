@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from datetime import timedelta
 
 from sqlalchemy.orm import Session
@@ -25,6 +26,14 @@ logger = logging.getLogger("jobfinder.scan")
 # Un seul scan à la fois.
 _scan_lock = threading.Lock()
 _current_scan: dict = {"running": False, "scan_id": None}
+
+# Budget de temps de l'affinage IA : avec ai_max_offers_per_scan=15 et un timeout
+# CLI jusqu'à 300s par offre, le pire cas (75 min) dépasse l'ExecutionTimeLimit
+# d'1h de la tâche planifiée Windows (tache-quotidienne.xml) — le process serait
+# alors tué avant même la construction du digest/email. Cette marge laisse de
+# quoi terminer le scan et envoyer le digest même un jour anormalement lent ; les
+# offres non affinées restent candidates au prochain scan (ai_score reste None).
+AI_BUDGET_SECONDES = 20 * 60
 
 
 def scan_status() -> dict:
@@ -295,7 +304,15 @@ def _executer_scan(db: Session, trigger: str) -> ScanRun:
                 .all()
             )
             profile_row = db.get(Profile, 1)
+            ai_debut = time.monotonic()
             for offer in candidates:
+                if time.monotonic() - ai_debut > AI_BUDGET_SECONDES:
+                    logger.warning(
+                        "Affinage IA interrompu (budget de temps dépassé) : %d offre(s) "
+                        "affinée(s) sur %d — les autres seront reprises au prochain scan.",
+                        ai_refined, len(candidates),
+                    )
+                    break
                 verdict = ai_score_offer(offer_to_scoring_dict(offer), profile_row.cv_text)
                 if verdict is None:
                     break  # CLI indisponible ou en échec : on n'insiste pas.

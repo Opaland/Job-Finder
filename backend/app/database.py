@@ -1,4 +1,5 @@
 import logging
+import time
 
 from sqlalchemy import JSON, create_engine, event, inspect, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
@@ -115,6 +116,36 @@ def ensure_schema(target_engine) -> None:
                 reparees += resultat.rowcount or 0
         if reparees:
             logger.info("Migration : %d valeur(s) JSON vide(s) restaurée(s)", reparees)
+
+
+def ensure_schema_avec_verrou(target_engine) -> None:
+    """`ensure_schema()` protégée du scan concurrent de l'autre processus.
+
+    L'interface (uvicorn) et la tâche planifiée (`app.cli`) l'appellent chacune
+    à leur démarrage, hors de toute synchronisation : si les deux migrent la
+    même colonne neuve au même instant (ex. juste après un `git pull`), l'un
+    des deux plante avec « table/colonne already exists ». On réessaie
+    brièvement d'obtenir le verrou de scan ; au-delà, un scan est sans doute
+    déjà en cours (donc l'autre processus a déjà migré le schéma avant de
+    l'entamer) — on procède sans bloquer le démarrage plus longtemps, migration
+    par nature idempotente (une colonne déjà présente est ignorée).
+    """
+    from .services.verrou import verrou_scan
+
+    for tentative in range(10):
+        try:
+            with verrou_scan():
+                ensure_schema(target_engine)
+            return
+        except RuntimeError:
+            if tentative == 9:
+                logger.warning(
+                    "Migration du schéma lancée sans le verrou de scan (occupé "
+                    "depuis plus de 5s) — sans risque si le schéma est déjà à jour."
+                )
+                ensure_schema(target_engine)
+                return
+            time.sleep(0.5)
 
 
 engine = create_engine(
