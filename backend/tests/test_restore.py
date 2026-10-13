@@ -106,3 +106,23 @@ def test_les_copies_de_securite_ne_s_accumulent_pas(env, tmp_path):
 
     copies = list(env["path"].parent.glob("avant_restauration_*.db"))
     assert len(copies) <= COPIES_DE_SECURITE_GARDEES, [c.name for c in copies]
+
+
+def test_restauration_refusee_pendant_un_scan_en_cours(env, tmp_path, monkeypatch):
+    """Seul garde-fou contre l'écrasement de la base pendant qu'un scan y écrit.
+
+    Vérifié par mutation lors de l'audit : neutraliser cette condition laissait
+    passer la restauration (200) sans qu'aucun des autres tests de ce fichier
+    ne le remarque.
+    """
+    monkeypatch.setattr("app.routers.stats.scan_status", lambda: {"running": True})
+    sauvegarde = tmp_path / "sauvegarde.db"
+    _make_backup(sauvegarde, offers=1)
+
+    avant = env["path"].read_bytes()
+    reponse = env["client"].post("/api/restore",
+                                 files={"file": ("sauvegarde.db", sauvegarde.read_bytes())})
+
+    assert reponse.status_code == 409
+    assert "scan" in reponse.json()["detail"].lower()
+    assert env["path"].read_bytes() == avant, "la base courante ne doit pas être touchée"

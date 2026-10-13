@@ -2,6 +2,7 @@
 import io
 
 from app.models import Offer
+from app.services.textutils import cellule_sure
 
 
 def _offre(db, source_id="c1", titre="Test Manager", entreprise="ACME", statut="postulee"):
@@ -20,6 +21,27 @@ def test_export_csv(client, db):
     lignes = texte.strip().splitlines()
     assert lignes[0].startswith("titre;entreprise")
     assert "Test Manager;ACME;Lyon;CDI;50 000 €;oui;Postulée;88" in lignes[1]
+
+
+def test_cellule_sure_neutralise_les_debuts_de_formule():
+    """Seule protection anti-injection du CSV exporté — un titre scrapé n'est
+    pas une entrée maîtrisée (HelloWork/APEC). Vérifié par mutation lors de
+    l'audit : désactiver cette fonction laissait les 291 tests du dépôt verts."""
+    assert cellule_sure("=1+1") == "'=1+1"
+    assert cellule_sure("+SOMME(A1)") == "'+SOMME(A1)"
+    assert cellule_sure("-1") == "'-1"
+    assert cellule_sure("@SUM(1)") == "'@SUM(1)"
+    assert cellule_sure("Test Manager") == "Test Manager"   # titre normal inchangé
+    assert cellule_sure(88.0) == 88.0                         # non-chaîne inchangée
+
+
+def test_export_csv_neutralise_un_titre_qui_ressemble_a_une_formule(client, db):
+    """Bout-en-bout : un titre « =1+1 » traverse l'export sans exécuter de formule."""
+    _offre(db, source_id="inj1", titre="=1+1", entreprise="ACME")
+    resp = client.get("/api/exports/offres.csv")
+    texte = resp.content.decode("utf-8-sig")
+    assert "'=1+1" in texte
+    assert "\n=1+1;" not in texte and not texte.strip().splitlines()[1].startswith("=1+1")
 
 
 def test_import_ajoute_les_offres(client, db):

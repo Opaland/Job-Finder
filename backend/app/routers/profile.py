@@ -14,6 +14,20 @@ from ..services.scan import rescore_all
 
 router = APIRouter(prefix="/api/profile", tags=["profil"])
 
+# Colonnes NOT NULL en base (models.Profile) dont le schéma Pydantic accepte
+# pourtant None, pour distinguer "non fourni" (absent de la requête) de "vidé"
+# (envoyé à null) via exclude_unset=True. Un null explicite sur l'un de ces
+# champs plantait auparavant toute la requête en 500 (IntegrityError SQLite)
+# et perdait AVEC elle les autres champs valides de la même requête — la
+# transaction entière échouait. `saved_searches`, également NOT NULL, n'a pas
+# besoin d'y être : _nettoyer_recherches(None) renvoie déjà [], jamais None.
+CHAMPS_OBLIGATOIRES = {
+    "full_name", "email", "letter_template", "target_titles", "skills",
+    "location_label", "location_keywords", "radius_km", "remote_ok",
+    "contracts", "sector_bonus", "excluded_keywords", "scan_hour",
+    "sources_enabled", "weekly_goal",
+}
+
 
 @router.get("", response_model=ProfileOut)
 def get_profile(db: Session = Depends(get_db)):
@@ -52,12 +66,20 @@ def _nettoyer_recherches(recherches: list | None) -> list:
 @router.put("", response_model=ProfileOut)
 def update_profile(update: ProfileUpdate, db: Session = Depends(get_db)):
     profile = db.get(Profile, 1)
+    champs = update.model_dump(exclude_unset=True)
+    vides = sorted(f for f in CHAMPS_OBLIGATOIRES if f in champs and champs[f] is None)
+    if vides:
+        raise HTTPException(
+            400,
+            f"Champ(s) obligatoire(s) envoyé(s) vide(s) : {', '.join(vides)}. "
+            "Aucune modification n'a été enregistrée.",
+        )
     changed_scoring = False
     scoring_fields = {
         "target_titles", "skills", "location_keywords", "radius_km", "remote_ok",
         "contracts", "sector_bonus", "excluded_keywords", "scoring_weights",
     }
-    for field, value in update.model_dump(exclude_unset=True).items():
+    for field, value in champs.items():
         if field == "saved_searches":
             value = _nettoyer_recherches(value)
         setattr(profile, field, value)

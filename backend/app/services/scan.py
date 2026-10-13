@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..connectors import ALL_CONNECTORS
+from ..connectors.base import resume_erreur
 from ..models import STATUTS_CLOS, Offer, Profile, ScanRun, local_now
 from .claude_ai import ai_score_offer, cli_available
 from .scoring import combined_score, score_offer
@@ -199,7 +200,7 @@ def _executer_scan(db: Session, trigger: str) -> ScanRun:
                 result = connector.fetch(profile_dict)
             except Exception as exc:  # noqa: BLE001 — un connecteur ne doit jamais tuer le scan
                 logger.exception("Connecteur %s en erreur", connector.name)
-                source_stat["errors"].append(str(exc))
+                source_stat["errors"].append(f"Erreur inattendue : {resume_erreur(exc)}")
                 stats[connector.name] = source_stat
                 continue
 

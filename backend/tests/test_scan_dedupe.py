@@ -186,6 +186,23 @@ def test_connecteur_en_erreur_ne_bloque_pas(db, monkeypatch):
     assert run.status == "termine"
 
 
+def test_connecteur_en_erreur_donne_un_message_francais_pas_la_trace_python(db, monkeypatch):
+    """Le filet de sécurité du scan (si un connecteur viole son contrat et laisse
+    fuiter une exception) doit passer par resume_erreur(), pas str(exc) brut —
+    sinon Sources & réglages affiche une trace Python au lieu d'une phrase
+    française actionnable."""
+    class CasseAvecTraceLaide(FakeConnector):
+        name = "casse"
+        label = "Source cassée"
+
+        def fetch(self, profile):
+            raise KeyError("champ_improbable_x7")
+
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [CasseAvecTraceLaide([])])
+    run = run_scan(db, trigger="manuel")
+    assert run.source_stats["casse"]["errors"] == ["Erreur inattendue : 'champ_improbable_x7'"]
+
+
 def test_description_enrichie_declenche_un_nouveau_score(db, monkeypatch):
     """Régression : une offre reçue d'abord en extrait gardait son score bas.
 
