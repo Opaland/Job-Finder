@@ -59,9 +59,35 @@ l'image (défaut), les routes IA renvoient leur 503 français et le scan saute l
   `ergonome-de-l-interface` (parcours, états vides, accessibilité, mobile),
   `exploitant-de-la-machine` (démarrage, tâche planifiée, sauvegardes, pannes silencieuses),
   `recruteur-lyonnais` (le seul qui juge la raison d'être : est-ce que ça aide vraiment à
-  décrocher le poste ?).
+  décrocher le poste ?). **Coûteux** (8 agents en parallèle, ~100k tokens chacun) : réservé à
+  un audit explicitement demandé comme global/complet, pas le réflexe par défaut pour vérifier
+  un point précis — voir « Discipline de consommation » ci-dessous.
 - Les règles détaillées vivent dans `.claude/rules/` (backend, frontend, qualité) : helpers
   partagés à réutiliser, règle absolue du scan, heures locales, simulation démo obligatoire.
+
+## Discipline de consommation (tokens)
+
+Cédric est sur l'abonnement Claude Pro, **sans clé API Anthropic séparée** : les sessions
+Claude Code (développement) ET les appels IA de l'application elle-même
+(`services/claude_ai.py`, via la CLI locale `claude`) tirent sur le **même quota hebdomadaire**.
+Un usage mal réparti épuise ce quota avant la fin de la semaine.
+
+- **Panel de 8 relecteurs** : le lancer en entier coûte ~800k tokens par passe (vérifié :
+  deux passes complètes lors de l'audit du 30/09–02/10). Ne le relancer en entier que sur
+  demande explicite d'« audit complet » ou équivalent — espacé d'au moins plusieurs semaines.
+  Pour vérifier un point précis, un seul agent ciblé (ou une investigation directe au
+  Grep/Read/Bash, sans agent) suffit presque toujours.
+- **Sessions longues** : proposer `/compact` entre deux sujets sans rapport (ex. fin d'un
+  audit avant d'attaquer un sprint) plutôt que de laisser le contexte s'accumuler — chaque
+  tour d'une conversation très longue renvoie tout l'historique au modèle.
+- **IA de l'application** (`ai_max_offers_per_scan`, `ai_min_rule_score` dans `config.py`) :
+  chaque offre affinée au scan quotidien renvoie le CV complet (~1 600 tokens) à Claude.
+  Ne pas remonter ces réglages sans mesurer l'effet sur le quota partagé — ils ont été
+  resserrés une fois (15→8 offres, seuil 45→55) précisément pour cette raison.
+- **Automatisation (hooks/Routines)** : préférer un hook (déterministe, coût nul) à un agent
+  pour toute vérification mécanique répétée. Préférer la demande explicite à une Routine
+  planifiée récurrente pour les audits larges : une Routine qui se déclenche sans besoin
+  réel est justement le genre de dépense qu'on cherche à éviter.
 
 ## Architecture
 

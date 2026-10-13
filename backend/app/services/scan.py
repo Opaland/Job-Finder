@@ -28,12 +28,13 @@ logger = logging.getLogger("jobfinder.scan")
 _scan_lock = threading.Lock()
 _current_scan: dict = {"running": False, "scan_id": None}
 
-# Budget de temps de l'affinage IA : avec ai_max_offers_per_scan=15 et un timeout
-# CLI jusqu'à 300s par offre, le pire cas (75 min) dépasse l'ExecutionTimeLimit
-# d'1h de la tâche planifiée Windows (tache-quotidienne.xml) — le process serait
-# alors tué avant même la construction du digest/email. Cette marge laisse de
-# quoi terminer le scan et envoyer le digest même un jour anormalement lent ; les
-# offres non affinées restent candidates au prochain scan (ai_score reste None).
+# Budget de temps de l'affinage IA : avec un timeout CLI jusqu'à 300s par offre,
+# ai_max_offers_per_scan réglé trop haut dépasse l'ExecutionTimeLimit d'1h de la
+# tâche planifiée Windows (tache-quotidienne.xml) — le process serait alors tué
+# avant même la construction du digest/email. Cette marge laisse de quoi
+# terminer le scan et envoyer le digest même un jour anormalement lent, quel que
+# soit ce réglage ; les offres non affinées restent candidates au prochain scan
+# (ai_score reste None).
 AI_BUDGET_SECONDES = 20 * 60
 
 

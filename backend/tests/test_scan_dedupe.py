@@ -238,8 +238,8 @@ def test_description_enrichie_declenche_un_nouveau_score(db, monkeypatch):
 def test_affinage_ia_respecte_un_budget_de_temps(db, monkeypatch):
     """Un affinage IA anormalement lent s'arrête avant d'avoir tout traité.
 
-    Avec ai_max_offers_per_scan=15 et jusqu'à 300s de timeout CLI par offre, le
-    pire cas (75 min) dépasse l'ExecutionTimeLimit d'1h de la tâche planifiée
+    Avec un ai_max_offers_per_scan réglé haut et jusqu'à 300s de timeout CLI par
+    offre, le pire cas dépasse l'ExecutionTimeLimit d'1h de la tâche planifiée
     Windows — le scan doit s'arrêter de lui-même plutôt que de risquer de ne
     jamais construire le digest/email. Les offres non affinées restent
     candidates (ai_score=None) pour le prochain scan.

@@ -47,9 +47,15 @@ class Settings(BaseSettings):
     ai_mode: str = "auto"
     claude_cli: str = "claude"
     # Nombre max d'offres affinées par l'IA à chaque scan (les mieux classées d'abord).
-    ai_max_offers_per_scan: int = 15
+    # Resserré de 15 à 8 : chaque offre renvoie le CV complet (~1600 tokens) à la
+    # CLI claude locale, qui tire sur le MÊME quota hebdomadaire que les sessions
+    # de développement (pas de clé API séparée) — voir CLAUDE.md, « Discipline
+    # de consommation ».
+    ai_max_offers_per_scan: int = 8
     # Score minimal (règles) pour qu'une offre soit soumise à l'affinage IA.
-    ai_min_rule_score: int = 45
+    # Remonté de 45 à 55 pour la même raison : ne garder que les offres déjà
+    # de bon niveau, où l'avis IA a le plus de valeur ajoutée.
+    ai_min_rule_score: int = 55
 
     # --- Scan quotidien ---
     scan_hour: str = "07:30"  # heure locale Europe/Paris
