@@ -95,19 +95,38 @@ function computeStats() {
     perDay.push({ date: key, count: Math.max(0, count) })
   }
 
-  const companies = []
-  offers.forEach((o) => {
-    const applied = (o.status_history || []).find((h) => h.status === 'postulee')
-    if (!applied) return
-    const pendingDays = Math.max(0, Math.floor((Date.now() - new Date(applied.date)) / 86400000))
-    companies.push({
-      company: o.company || 'Entreprise non précisée',
+
+const byCompany = new Map()
+
+offers.forEach((o) => {
+  const applied = (o.status_history || []).find((h) => h.status === 'postulee')
+  if (!applied) return
+
+  const pendingDays = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(applied.date)) / 86400000),
+  )
+  const company = o.company || 'Entreprise non précisée'
+  const existing = byCompany.get(company)
+
+  if (existing) {
+    existing.applications += 1
+    if (['entretien', 'refusee'].includes(o.status)) {
+      existing.responses += 1
+    }
+  } else {
+    byCompany.set(company, {
+      company,
       applications: 1,
       responses: ['entretien', 'refusee'].includes(o.status) ? 1 : 0,
       avg_response_days: null,
       pending_days: STATUTS_EN_ATTENTE.includes(o.status) ? pendingDays : null,
     })
-  })
+  }
+})
+
+const companies = [...byCompany.values()]
+
 
   return {
     totals: {
