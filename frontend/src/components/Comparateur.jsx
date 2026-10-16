@@ -28,13 +28,29 @@ export default function Comparateur({ idA, idB, onClose }) {
       .catch((err) => showToast(err.message, true))
   }, [idA, idB, showToast])
 
-  if (!offres) return null
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  if (!offres) {
+    return (
+      <>
+        <div className="drawer-backdrop" onClick={onClose} />
+        <div className="drawer" style={{ width: 'min(900px, 96vw)' }} role="dialog" aria-modal="true">
+          <button className="close" aria-label="Fermer" onClick={onClose}>✕</button>
+          <p className="hint">Chargement…</p>
+        </div>
+      </>
+    )
+  }
   const [a, b] = offres
 
   return (
     <>
       <div className="drawer-backdrop" onClick={onClose} />
-      <div className="drawer" style={{ width: 'min(900px, 96vw)' }}>
+      <div className="drawer" style={{ width: 'min(900px, 96vw)' }} role="dialog" aria-modal="true">
         <button className="close" aria-label="Fermer" onClick={onClose}>✕</button>
         <h2>Comparer deux offres</h2>
         <p className="hint">Les valeurs en gras sont à l'avantage de l'offre concernée.</p>

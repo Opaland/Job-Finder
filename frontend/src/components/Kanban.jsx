@@ -55,8 +55,8 @@ export default function Kanban({ scanning }) {
     <div>
       <h1>Kanban des candidatures</h1>
       <p className="page-sub">
-        Glisse une carte d'une colonne à l'autre pour changer son statut — toi seul décides,
-        jamais un scan.
+        Glisse une carte d'une colonne à l'autre pour changer son statut (ou ouvre-la et
+        choisis le statut au clavier/au doigt) — toi seul décides, jamais un scan.
         {truncated > 0 && (
           <span className="warn"> Affichage des 2000 meilleures offres ({truncated} non affichées — utilise les filtres de la page Offres).</span>
         )}
@@ -82,12 +82,17 @@ export default function Kanban({ scanning }) {
                   <div
                     key={offer.id}
                     className="kcard"
+                    role="button"
+                    tabIndex={0}
                     draggable
                     onDragStart={(e) => {
                       e.dataTransfer.setData('text/offer-id', String(offer.id))
                       e.dataTransfer.effectAllowed = 'move'
                     }}
                     onClick={() => setSelectedId(offer.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedId(offer.id) }
+                    }}
                   >
                     <div className="kcard-top">
                       <span
@@ -108,6 +113,20 @@ export default function Kanban({ scanning }) {
                       {offer.remote && <span className="chip remote">TT</span>}
                       {actionDue(offer) && <span className="chip offline">⏰</span>}
                     </div>
+                    {/* Glisser-déposer inutilisable au doigt (pas d'équivalent tactile à
+                        l'API HTML5 Drag and Drop) : repli affiché seulement sous 820px
+                        (styles.css), caché par défaut pour ne pas doubler le menu existant
+                        au clic sur la carte en version bureau. */}
+                    <select
+                      className="kcard-select"
+                      aria-label={`Changer le statut de « ${offer.title} »`}
+                      value={offer.status}
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                      onChange={(e) => moveOffer(offer.id, e.target.value)}
+                    >
+                      {COLUMNS.map((c) => <option key={c} value={c}>{STATUS_LABELS[c]}</option>)}
+                    </select>
                   </div>
                 ))}
                 {cards.length === 0 && <div className="kempty">Déposer ici</div>}

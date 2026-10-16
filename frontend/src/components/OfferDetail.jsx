@@ -60,7 +60,25 @@ export default function OfferDetail({ offerId, onClose }) {
     }).catch((err) => showToast(err.message, true))
   }, [offerId, showToast])
 
-  if (!offer) return null
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  if (!offer) {
+    // Avant : `return null` — rien ne s'affichait pendant l'attente réseau,
+    // au point de passer pour une appli cassée sur mobile/4G.
+    return (
+      <>
+        <div className="drawer-backdrop" onClick={onClose} />
+        <div className="drawer" role="dialog" aria-modal="true">
+          <button className="close" aria-label="Fermer" onClick={onClose}>✕</button>
+          <p className="hint">Chargement…</p>
+        </div>
+      </>
+    )
+  }
 
   const patch = async (body, message) => {
     try {
@@ -81,7 +99,7 @@ export default function OfferDetail({ offerId, onClose }) {
   return (
     <>
       <div className="drawer-backdrop" onClick={onClose} />
-      <div className="drawer">
+      <div className="drawer" role="dialog" aria-modal="true">
         <button className="close" aria-label="Fermer" onClick={onClose}>✕</button>
 
         <span className="score-badge" style={{ background: scoreColor(offer.final_score) }}>
@@ -100,7 +118,8 @@ export default function OfferDetail({ offerId, onClose }) {
           <select
             value={offer.status}
             onChange={(e) => patch({ status: e.target.value })}
-            style={{ borderColor: STATUS_COLORS[offer.status], color: STATUS_COLORS[offer.status], fontWeight: 700 }}
+            // Couleur de bordure seulement — voir Offers.jsx, même correction de contraste.
+            style={{ borderColor: STATUS_COLORS[offer.status], fontWeight: 700 }}
           >
             {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>

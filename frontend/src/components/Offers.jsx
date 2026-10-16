@@ -269,7 +269,16 @@ export default function Offers({ scanning }) {
           </p>
         )}
         {data.items.map((offer) => (
-          <div className="offer-row" key={offer.id} onClick={() => setSelectedId(offer.id)}>
+          <div
+            className="offer-row"
+            key={offer.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => setSelectedId(offer.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedId(offer.id) }
+            }}
+          >
             <span className="score-badge" style={{ background: scoreColor(offer.final_score) }}>
               {Math.round(offer.final_score)}
             </span>
@@ -297,7 +306,7 @@ export default function Offers({ scanning }) {
                 {offer.salary_text && <span className="chip">{offer.salary_text}</span>}
               </div>
             </div>
-            <div className="right" onClick={(e) => e.stopPropagation()}>
+            <div className="right" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
               <label className="hint" title="Comparer cette offre" style={{ cursor: 'pointer', display: 'block', marginBottom: 4 }}>
                 <input
                   type="checkbox"
@@ -318,7 +327,10 @@ export default function Offers({ scanning }) {
                 <select
                   value={offer.status}
                   onChange={(e) => updateStatus(offer, e.target.value)}
-                  style={{ borderColor: STATUS_COLORS[offer.status], color: STATUS_COLORS[offer.status], fontWeight: 600 }}
+                  // Couleur de BORDURE seulement : le texte reste `color` par défaut
+                  // (var(--text)) — le colorer avec STATUS_COLORS tombait sous le seuil
+                  // de contraste AA en mode sombre (2,96 à 4,16:1 selon le statut, mesuré).
+                  style={{ borderColor: STATUS_COLORS[offer.status], fontWeight: 600 }}
                 >
                   {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>

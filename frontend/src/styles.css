@@ -162,6 +162,7 @@ textarea { width: 100%; resize: vertical; }
   cursor: pointer;
 }
 .offer-row:hover { background: #f3f6f9; }
+.offer-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .offer-row .title { font-weight: 600; font-size: 14.5px; color: var(--accent-dark); }
 .offer-row .meta { color: var(--muted); font-size: 12.5px; margin-top: 3px; }
 .offer-row .right { margin-left: auto; text-align: right; flex-shrink: 0; }
@@ -362,6 +363,10 @@ table.simple td { padding: 7px 8px; border-bottom: 1px solid #eaeef2; vertical-a
 }
 .kcard:active { cursor: grabbing; }
 .kcard:hover { border-color: var(--accent); }
+.kcard:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* Repli tactile (pas d'équivalent au glisser-déposer sur mobile) : masqué par
+   défaut, affiché uniquement sous 820px (règle dans le bloc media dédié). */
+.kcard-select { display: none; width: 100%; margin-top: 6px; font-size: 12px; }
 .kcard-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
 .kcard-title { font-weight: 600; font-size: 13px; line-height: 1.35; }
 .kcard-meta { color: var(--muted); font-size: 11.5px; margin-top: 3px; }
@@ -540,6 +545,10 @@ table.simple td { padding: 7px 8px; border-bottom: 1px solid #eaeef2; vertical-a
 
   /* Cibles tactiles confortables. */
   button, select, input[type='date'], input[type='time'] { min-height: 40px; }
+
+  /* Glisser-déposer du Kanban inutilisable au doigt : le repli de statut
+     redevient visible sur mobile/tablette. */
+  .kcard-select { display: block; }
 }
 
 @media (max-width: 520px) {
