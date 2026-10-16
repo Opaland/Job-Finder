@@ -24,8 +24,10 @@
 - **Revue** : pour un changement de plus de ~50 lignes, lancer `/revue`
   (ou `python scripts/revue_ia.py`) avant de pousser.
 - **Comportement intouchable sans demande explicite de l'utilisateur** :
-  fermeture/statut des offres, seuils métier (GEM_SCORE 85, relance 7 j,
-  hors-ligne 15 j), textes des prompts IA.
+  fermeture/statut des offres, seuils métier (GEM_SCORE, relance 7 j,
+  hors-ligne 15 j), textes des prompts IA — sauf décision explicite de
+  l'utilisateur d'en déléguer l'arbitrage (GEM_SCORE abaissé à 80 le 16/10/2026
+  sur cette base, preuve chiffrée à l'appui dans l'issue #41).
 - **Données personnelles** (CV, lettre) : ne rien ajouter de nouveau sans
   l'accord de l'utilisateur (dépôt public assumé).
 - **Commits** : messages en français, descriptifs ; jamais de push direct si la

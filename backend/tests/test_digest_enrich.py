@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
 from app.models import Offer, Profile, local_now
-from app.services.digest import build_digest, digest_html, offers_to_relaunch
+from app.services.digest import GEM_SCORE, build_digest, digest_html, offers_to_relaunch
 from app.services.enrich import extract_main_text
 
 
@@ -115,7 +115,7 @@ def test_focus_du_jour(db):
 
 
 def test_pepites_et_objectif_hebdo(db):
-    """Les offres ouvertes >= 85 sont des pépites ; les candidatures de la semaine comptent."""
+    """Les offres ouvertes >= GEM_SCORE (80) sont des pépites ; les candidatures de la semaine comptent."""
     from app.models import Offer
 
     gem = Offer(fingerprint="fp-gem", source="test", source_id="gem",
@@ -136,6 +136,22 @@ def test_pepites_et_objectif_hebdo(db):
     # Postulée aujourd'hui (donc cette semaine) → compte dans l'objectif.
     assert payload["weekly"]["sent"] >= 1
     assert payload["weekly"]["goal"] == 5  # défaut du profil
+
+
+def test_pepite_pile_au_seuil(db):
+    """Frontière exacte de GEM_SCORE jamais testée auparavant (issue #20, même
+    famille) : une offre tout juste au seuil doit être une pépite, une offre
+    juste sous le seuil ne doit pas en être une."""
+    db.add_all([
+        Offer(fingerprint="fp-pile", source="test", source_id="pile", title="Pile au seuil",
+              company="A", status="nouvelle", final_score=GEM_SCORE),
+        Offer(fingerprint="fp-sous", source="test", source_id="sous", title="Juste sous le seuil",
+              company="A", status="nouvelle", final_score=GEM_SCORE - 0.1),
+    ])
+    db.commit()
+    gem_titles = [g["title"] for g in build_digest(db).payload["gems"]]
+    assert "Pile au seuil" in gem_titles
+    assert "Juste sous le seuil" not in gem_titles
 
 
 def test_extraction_texte_principal():

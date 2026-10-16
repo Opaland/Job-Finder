@@ -7,6 +7,7 @@ dans le fichier .env.
 from __future__ import annotations
 
 from ..config import settings
+from ..services.textutils import teletravail_complet
 from .base import (
     Connector, ConnectorResult, RawOffer,
     dedupe_raw, parse_published, profile_queries, resume_erreur,
@@ -57,7 +58,7 @@ class FranceTravailConnector(Connector):
             url=url,
             contract_type=item.get("typeContratLibelle", "") or item.get("typeContrat", ""),
             salary_text=salaire,
-            remote="teletravail" in (desc + lieu).lower().replace("é", "e"),
+            remote=teletravail_complet(desc, lieu),
             published_at=published,
         )
 

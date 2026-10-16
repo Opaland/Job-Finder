@@ -11,7 +11,7 @@ import app.services.scan as scan_module
 from app.connectors.base import ConnectorResult, RawOffer
 from app.database import Base
 from app.models import Offer, Profile, local_now
-from app.services.scan import run_scan
+from app.services.scan import offer_to_scoring_dict, profile_to_dict, run_scan
 
 
 class FakeConnector:
@@ -184,6 +184,27 @@ def test_connecteur_en_erreur_ne_bloque_pas(db, monkeypatch):
     run = run_scan(db, trigger="manuel")
     assert run.new_count == 1
     assert run.status == "termine"
+
+
+def test_profile_to_dict_reprend_bien_toutes_les_listes_et_le_salaire_minimum(db):
+    """Helper canonique (point de passage unique profil → scoring, issue #19) :
+    aucun test ne l'exerçait directement. Vérifié par mutation lors de l'audit
+    que `profile.skills or []` → `profile.skills and []` fait disparaître les
+    compétences du CV en silence sans qu'aucun test existant ne le remarque."""
+    profil = db.get(Profile, 1)
+    profil.skills = ["Selenium", "Cypress", "Jira"]
+    profil.target_titles = ["Test Manager"]
+    profil.min_salary = 55000
+    d = profile_to_dict(profil)
+    assert d["skills"] == ["Selenium", "Cypress", "Jira"]
+    assert d["target_titles"] == ["Test Manager"]
+    assert d["min_salary"] == 55000
+
+
+def test_offer_to_scoring_dict_reprend_le_texte_du_salaire(db):
+    offre = Offer(fingerprint="fp-sal", source="fake", source_id="sal", title="Test Manager",
+                  company="ACME", salary_text="45 000 - 50 000 € / an")
+    assert offer_to_scoring_dict(offre)["salary_text"] == "45 000 - 50 000 € / an"
 
 
 def test_connecteur_en_erreur_donne_un_message_francais_pas_la_trace_python(db, monkeypatch):

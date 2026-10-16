@@ -58,7 +58,15 @@ def _offer_brief(offer: Offer) -> dict:
 RELAUNCH_AFTER_DAYS = 7
 
 # Une « pépite » : offre ouverte non traitée dont le score atteint ce seuil.
-GEM_SCORE = 85
+# Mesuré sur le marché réel (225 offres APEC/HelloWork, 30/09/2026) : le score
+# plafonne de fait à ~69 pour la quasi-totalité des offres QA/Lyon/CDI tant que
+# la description est trop courte pour noter les compétences (cf.
+# _DESCRIPTION_TROP_COURTE, scoring.py) — même un avis IA parfait (100) ne
+# produit alors que 0,5×69+0,5×100=84,5, sous l'ancien seuil de 85. Deux
+# offres réelles jugées par l'IA comme un fit quasi parfait n'étaient donc
+# jamais remontées comme pépites. Resserré à 80 pour rester un signal rare
+# (aucune offre n'atteint 85+ dans ce relevé) sans être hors de portée.
+GEM_SCORE = 80
 
 
 def gems(db: Session) -> list[Offer]:

@@ -45,7 +45,10 @@ def contains_word(haystack_norm: str, needle: str) -> bool:
     needle_norm = normalize(needle)
     if not needle_norm:
         return False
-    pattern = r"(?<![a-z0-9])" + re.escape(needle_norm) + r"(?![a-z0-9])"
+    # "s?" : un titre français au pluriel ("Responsable Tests", "Ingénieur de
+    # Tests") ne matchait jamais une liste au singulier (CORE_TITLES, QA_HINTS)
+    # — faux négatif silencieux qui plafonnait à tort des offres QA réelles.
+    pattern = r"(?<![a-z0-9])" + re.escape(needle_norm) + r"s?(?![a-z0-9])"
     return re.search(pattern, haystack_norm) is not None
 
 
@@ -94,6 +97,29 @@ def titles_similar(a: str, b: str, threshold: float = 0.88) -> bool:
     if set(ca.split()) == set(cb.split()):
         return True  # mêmes mots, ordre différent
     return difflib.SequenceMatcher(None, ca, cb).ratio() >= threshold
+
+
+# Télétravail partiel n'est PAS du télétravail complet : le scoring accorde
+# 13 points sur 15 au full remote (_location_score, scoring.py) — les compter
+# pour un jour par semaine gonflerait le score. Partagé entre tous les points
+# d'entrée d'une offre (scan HelloWork/France Travail, ajout manuel) : avant
+# extraction ici, seul HelloWork appliquait cette règle, pas les deux autres.
+PARTIEL_TELETRAVAIL = ("partiel", "ponctuel", "occasionnel", "hybride", "1 jour", "2 jours", "3 jours")
+
+
+def teletravail_complet(*textes: str) -> bool:
+    """Vrai seulement pour du télétravail TOTAL, jamais pour du partiel.
+
+    Chaque argument est un segment de texte indépendant (ex. plusieurs champs
+    d'une carte d'offre) : dès que l'un mentionne « télétravail »/« remote »,
+    c'est CE segment qui tranche — « hybride » et « partiel » comptent, pas
+    l'absence de ces mots dans un autre segment.
+    """
+    for texte in textes:
+        bas = normalize(texte)
+        if "teletravail" in bas or "remote" in bas:
+            return not any(mot in bas for mot in PARTIEL_TELETRAVAIL)
+    return False
 
 
 # Caractères par lesquels un tableur interprète une cellule comme une formule.

@@ -186,6 +186,15 @@ class TestBaremeTitre:
     def test_hors_qa_vaut_zero(self):
         assert _title_score("developpeur php", "symfony, mysql", [])[0] == 0
 
+    def test_titre_au_pluriel_est_reconnu(self):
+        """Issue #1 : contains_word ne matchait que le singulier — un titre
+        français au pluriel (très courant) passait à tort pour hors QA/test.
+        Cas réel mesuré sur le marché (09/09/2026) : plafonné à 0/40 avant
+        correction, alors que « Qualité & Tests » est un indice QA générique."""
+        assert _title_score("pilote de la demarche qualite tests - assurance h/f", "", [])[0] == 16
+        assert _title_score("responsable tests", "", [])[0] == 40        # CORE_TITLES : "responsable test"
+        assert _title_score("ingenieur de tests h/f", "", [])[0] == 26   # NEAR_TITLES : "ingenieur test"
+
     def test_les_paliers_sont_strictement_decroissants(self):
         paliers = [
             _title_score("test manager", "", [])[0],
@@ -277,6 +286,14 @@ class TestBaremeContratSecteurCompetences:
     def test_cdd_vaut_2(self):
         assert _contract_score("cdd", "", ["CDI"])[0] == 2
 
+    def test_interim_vaut_2_comme_le_cdd(self):
+        """Branche jamais isolée (mutation testée : `or` → `and` traversait la
+        suite entière, "interim" seul tombant par coïncidence sur le même
+        score que le cas générique)."""
+        points, detail = _contract_score("interim", "", ["CDI"])
+        assert points == 2
+        assert "CDD/intérim" in detail
+
     def test_contrat_non_precise_vaut_3_donc_mieux_qu_un_cdd(self):
         assert _contract_score("", "", ["CDI"])[0] == 3 > _contract_score("cdd", "", ["CDI"])[0]
 
@@ -331,6 +348,48 @@ class TestPlafonds:
         assert score_offer(self._offre(title="Test Manager junior"), profil).score == 10
 
 
+class TestSignalSalaire:
+    """min_salary (issue #4) : signalé dans le détail, jamais pénalisant —
+    une fourchette affichée est souvent négociable."""
+
+    def _offre(self, salary_text="", **champs):
+        base = {"title": "Test Manager", "company": "ACME", "location": "Lyon",
+                "contract_type": "CDI", "remote": False, "salary_text": salary_text,
+                "description": "Management de l'equipe QA, strategie de test, Selenium, Jira, CI/CD."}
+        base.update(champs)
+        return base
+
+    def test_salaire_sous_le_minimum_est_signale(self, profile):
+        resultat = score_offer(self._offre(salary_text="35 000 - 40 000 € / an"),
+                                dict(profile, min_salary=50000))
+        detail = next((b for b in resultat.breakdown if b["label"] == "Salaire"), None)
+        assert detail is not None
+        assert "35 000" not in detail["detail"]   # c'est la borne HAUTE (40 000) qui compte
+        assert "40 000" in detail["detail"] and "50 000" in detail["detail"]
+        assert detail["points"] == 0 and detail["max"] == 0   # informatif, pas un plafond
+
+    def test_salaire_au_dessus_du_minimum_n_est_pas_signale(self, profile):
+        resultat = score_offer(self._offre(salary_text="55 000 - 60 000 € / an"),
+                                dict(profile, min_salary=50000))
+        assert not any(b["label"] == "Salaire" for b in resultat.breakdown)
+
+    def test_salaire_non_precise_n_est_pas_signale(self, profile):
+        """L'absence de salaire (la majorité des offres) n'est pas un signal négatif."""
+        resultat = score_offer(self._offre(salary_text=""), dict(profile, min_salary=50000))
+        assert not any(b["label"] == "Salaire" for b in resultat.breakdown)
+
+    def test_sans_min_salary_rien_n_est_signale(self, profile):
+        resultat = score_offer(self._offre(salary_text="20 000 € / an"), dict(profile, min_salary=None))
+        assert not any(b["label"] == "Salaire" for b in resultat.breakdown)
+
+    def test_le_signal_salaire_ne_change_jamais_le_score(self, profile):
+        """Vérifié directement : avec/sans le signal, le score numérique est identique."""
+        offre = self._offre(salary_text="10 000 € / an")
+        avec = score_offer(offre, dict(profile, min_salary=90000)).score
+        sans = score_offer(offre, dict(profile, min_salary=None)).score
+        assert avec == sans
+
+
 class TestPonderations:
 
     def test_le_detail_somme_toujours_au_score(self, profile):
@@ -356,13 +415,20 @@ class TestPonderations:
                 == score_offer(dict(offre, location="Bordeaux"), profil).score)
 
     def test_le_teletravail_est_accepte_par_defaut(self, profile):
-        """Un profil qui ne dit rien sur le télétravail ne doit pas le refuser."""
+        """Un profil qui ne dit rien sur le télétravail ne doit pas le refuser.
+
+        Assertion resserrée (mutation testée) : `"télétravail complet" in
+        detail` passait aussi bien sur le texte d'ÉCHEC du même critère
+        ("...sans télétravail complet.") — la mutation `remote_ok=True` par
+        défaut → `False` traversait les 52 tests du fichier sans échouer.
+        """
         sans_mention = {k: v for k, v in profile.items() if k != "remote_ok"}
         offre = {"title": "Test Manager", "company": "X", "location": "Paris",
                  "contract_type": "CDI", "description": "Management.", "remote": True}
         detail = [b for b in score_offer(offre, sans_mention).breakdown
                   if b["label"] == "Localisation"][0]
-        assert "télétravail complet" in detail["detail"]
+        assert detail["detail"].startswith("Poste en télétravail complet")
+        assert detail["points"] == 13          # pondérations par défaut (pas de scoring_weights)
 
     def test_un_mot_exclu_vide_ne_plafonne_rien(self, profile):
         """Une ligne blanche dans la liste des mots exclus ne doit pas tout plafonner."""

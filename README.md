@@ -56,7 +56,7 @@ Tout est modifiable dans l'onglet **Profil & CV**.
 | **Préparation d'entretien** | Fiche générée par Claude : pitch, points forts face à l'annonce, questions probables, vigilances, questions à poser |
 | **Pipeline Kanban** | Colonnes par statut, cartes en glisser-déposer |
 | **Statistiques** | KPI, activité 30 jours, pipeline, sources, distribution des scores, réactivité des entreprises (délais de réponse) |
-| **Pépites & objectif** | Offres score ≥ 85 mises en avant partout ; objectif de candidatures hebdomadaire avec jauge. *Le meilleur score observé sur de vraies offres est 82 : la section reste vide tant que le seuil n'est pas abaissé (§10).* |
+| **Pépites & objectif** | Offres score ≥ 80 mises en avant partout ; objectif de candidatures hebdomadaire avec jauge. *Seuil abaissé de 85 à 80 (§10) : le marché QA lyonnais réel plafonne de fait autour de 78-82.* |
 | **Personnalisation** | Pondérations du score réglables, requêtes de scan configurables, mode sombre |
 | **Données** | Enrichissement de description depuis le site d'origine, export Excel du suivi, sauvegarde et restauration de la base en un clic, migration automatique du schéma |
 | **Notes & favoris** | Notes libres, favoris ★, historique des statuts par offre |
@@ -388,9 +388,11 @@ Relevées en interrogeant les vraies sources, pas déduites du code.
 - **Les descriptions APEC sont tronquées à 283 caractères.** C'est ce que renvoie son service ; la page
   de détail refuse la lecture automatique (401). Le score et l'avis IA lisent donc un résumé. Vérifié sur
   30 offres : la troncature est systématique, ce n'est pas un défaut du connecteur.
-- **La section « Pépites » reste vide en pratique.** Le seuil est à 85 et le meilleur score observé sur
-  de vraies offres lyonnaises est **82**. Rien n'est cassé — le seuil est simplement plus haut que ce que
-  le marché QA lyonnais produit. À arbitrer : abaisser le seuil, ou l'assumer comme une exigence.
+- **Le seuil « Pépites » a été abaissé de 85 à 80.** Mesuré sur 225 offres réelles (30/09/2026) : le
+  score plafonne de fait autour de 69 tant que la description est trop courte pour noter les
+  compétences (fréquent chez HelloWork) — même un avis IA parfait (100) ne produit alors que 84,5,
+  sous l'ancien seuil. Deux offres jugées par l'IA comme un fit quasi parfait n'étaient donc jamais
+  remontées. 80 reste un seuil rare (aucune offre à 85+ dans ce relevé) sans être hors de portée.
 - **Un contrat « non précisé » rapporte plus qu'un contrat identifié comme différent** (3/5 contre 2/5).
   Une source qui cache le type de contrat est donc mieux notée qu'une source honnête. Deux codes APEC
   restent d'ailleurs sans libellé faute d'échantillon parlant (10 offres sur ~600).

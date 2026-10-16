@@ -18,6 +18,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
+from .marche import montants_annuels
 from .textutils import contains_word, normalize
 
 # Titres qui correspondent au métier actuel de Cédric : score maximal.
@@ -94,6 +95,9 @@ def _title_score(title_norm: str, desc_norm: str, target_titles: list[str]) -> t
     return 0, "Poste hors du domaine QA/test."
 
 
+_DESCRIPTION_TROP_COURTE = 50  # caractères — sous ce seuil, trop peu de matière pour juger.
+
+
 def _skills_score(desc_norm: str, title_norm: str, skills: list[str]) -> tuple[float, str]:
     text = title_norm + " " + desc_norm
     hits = [s for s in skills if contains_word(text, s)]
@@ -102,6 +106,12 @@ def _skills_score(desc_norm: str, title_norm: str, skills: list[str]) -> tuple[f
     if hits:
         shown = ", ".join(hits[:8]) + ("…" if len(hits) > 8 else "")
         return points, f"{len(hits)} compétence(s) de ton CV citée(s) : {shown}"
+    if len(desc_norm) < _DESCRIPTION_TROP_COURTE:
+        # Pas un vrai désaccord : certaines sources (HelloWork) ne donnent
+        # parfois qu'une ligne ("CDI · Lyon - 69") sur la page de résultats —
+        # il n'y a simplement rien à matcher, à distinguer d'une offre qui
+        # décrit vraiment un poste sans rapport avec le CV.
+        return 0, f"Description trop courte ({len(desc_norm)} caractère(s)) pour juger des compétences."
     return 0, "Aucune compétence de ton CV citée dans l'offre."
 
 
@@ -237,6 +247,22 @@ def score_offer(offer: dict, profile: dict) -> ScoreResult:
             {"label": "Mot-clé exclu", "points": 0, "max": 0,
              "detail": f"Score plafonné à 10 : contient « {excluded_hit} » (mot-clé exclu dans ton profil)."}
         )
+
+    # Signalé, jamais pénalisé : une fourchette affichée est souvent
+    # négociable, et l'absence de salaire (la majorité des offres) n'est pas
+    # en soi un signal négatif — seul un chiffre affiché clairement sous le
+    # minimum souhaité est digne d'être signalé.
+    min_salary = profile.get("min_salary")
+    if min_salary:
+        montants = montants_annuels(offer.get("salary_text", ""))
+        if montants and max(montants) < min_salary:
+            res.breakdown.append({
+                "label": "Salaire", "points": 0, "max": 0,
+                "detail": (
+                    f"Salaire affiché ({max(montants):,} €) sous ton minimum "
+                    f"souhaité ({min_salary:,} €)."
+                ).replace(",", " "),
+            })
 
     res.score = round(min(100.0, max(0.0, res.score)), 1)
     return res

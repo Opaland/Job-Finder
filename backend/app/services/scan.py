@@ -54,6 +54,7 @@ def profile_to_dict(profile: Profile) -> dict:
         "excluded_keywords": profile.excluded_keywords or [],
         "scoring_weights": profile.scoring_weights or {},
         "search_queries": profile.search_queries or [],
+        "min_salary": profile.min_salary,
     }
 
 
@@ -65,6 +66,7 @@ def offer_to_scoring_dict(offer: Offer) -> dict:
         "description": offer.description,
         "contract_type": offer.contract_type,
         "remote": offer.remote,
+        "salary_text": offer.salary_text,
     }
 
 

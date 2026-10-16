@@ -14,7 +14,9 @@ from ..services import claude_ai
 from ..services.enrich import fetch_full_description
 from ..services.journal import log_event
 from ..services.scan import find_twin, offer_to_scoring_dict, profile_to_dict, rescore_offer
-from ..services.textutils import contains_word, escape_like, fingerprint, naif, normalize
+from ..services.textutils import (
+    contains_word, escape_like, fingerprint, naif, normalize, teletravail_complet,
+)
 
 router = APIRouter(prefix="/api/offers", tags=["offres"])
 
@@ -120,7 +122,7 @@ def add_manual_offer(payload: ManualOffer, db: Session = Depends(get_db)):
         description=text,
         url=(payload.url or "").strip(),
         contract_type=contract,
-        remote="teletravail" in lowered or "remote" in lowered,
+        remote=teletravail_complet(text, title),
     )
     profile = db.get(Profile, 1)
     rescore_offer(offer, profile_to_dict(profile))

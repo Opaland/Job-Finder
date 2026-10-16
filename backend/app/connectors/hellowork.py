@@ -13,7 +13,7 @@ from urllib.parse import quote_plus
 
 from bs4 import BeautifulSoup
 
-from ..services.textutils import normalize
+from ..services.textutils import normalize, teletravail_complet
 from .base import (
     Connector, ConnectorResult, RawOffer,
     aucune_offre, dedupe_raw, profile_queries, resume_erreur,
@@ -84,20 +84,6 @@ BRUIT = {
 # offres). Mesuré à 8 niveaux sur la vraie page du 27/08/2026 — la marge est
 # volontaire, le site ajoute et retire des conteneurs sans prévenir.
 NIVEAUX_MAX = 14
-# « Télétravail partiel » n'est PAS du télétravail complet : le scoring accorde
-# 13 points sur 15 au full remote, les compter pour un jour par semaine
-# gonflerait le score de toutes les offres lyonnaises.
-PARTIEL = ("partiel", "ponctuel", "occasionnel", "hybride", "1 jour", "2 jours", "3 jours")
-
-
-def _teletravail_complet(textes: list[str]) -> bool:
-    """Vrai seulement pour du télétravail TOTAL. `normalize` : « Teletravail »
-    sans accent et « TÉLÉTRAVAIL » disent la même chose."""
-    for texte in textes:
-        bas = normalize(texte)
-        if "teletravail" in bas or "remote" in bas:
-            return not any(mot in bas for mot in PARTIEL)
-    return False
 
 
 def champs_aria(etiquette: str | None) -> dict | None:
@@ -194,14 +180,14 @@ class HelloWorkConnector(Connector):
                 company = aria["entreprise"]
                 location = aria["lieu"]
                 contract = aria["contrat"]
-                remote = _teletravail_complet(aria["segments"])
+                remote = teletravail_complet(*aria["segments"])
             else:
                 if not textes:
                     continue
                 title = textes[0]
                 location = next((t for t in textes if LIEU_RE.search(t)), "")
                 contract = next((t for t in textes if normalize(t) in CONTRATS), "")
-                remote = _teletravail_complet(textes)
+                remote = teletravail_complet(*textes)
                 # L'entreprise est le premier texte restant une fois retirés le
                 # titre et les champs déjà identifiés.
                 deja_vus = {title, location, contract}

@@ -52,10 +52,19 @@ def test_annonce_collee_parsee_et_scoree(client):
     assert offer["title"] == "Test Manager H/F"      # 1re ligne
     assert offer["company"] == "ACME Santé"           # 2e ligne
     assert offer["contract_type"] == "CDI"
-    assert offer["remote"] is True
+    # « Télétravail partiel » n'est pas du full remote (teletravail_complet) :
+    # avant correction, l'ajout manuel le comptait à tort comme tel.
+    assert offer["remote"] is False
     assert offer["source"] == "manuelle"
-    assert offer["final_score"] >= 80                 # poste cible + compétences + Lyon
+    assert offer["final_score"] >= 75                 # poste cible + compétences, malgré le lieu non précisé
     assert offer["status"] == "nouvelle"
+
+
+def test_teletravail_total_colle_est_bien_marque_remote(client):
+    """Contre-épreuve : le full remote, lui, doit toujours passer."""
+    annonce = ANNONCE.replace("télétravail partiel", "télétravail total")
+    resp = client.post("/api/offers/manual", json={"raw_text": annonce})
+    assert resp.json()["remote"] is True
 
 
 def test_titre_explicite_prioritaire(client):
