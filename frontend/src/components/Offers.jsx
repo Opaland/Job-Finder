@@ -66,6 +66,7 @@ export default function Offers({ scanning }) {
   const [page, setPage] = useState(0)
   const [filters, setFilters] = useState({
     status: '', source: '', min_score: '', search: '', company: '', sort: 'score', favorite: '',
+    still_online: '',
   })
   const [selectedId, setSelectedId] = useState(null)
   const [showAdd, setShowAdd] = useState(false)
@@ -74,6 +75,8 @@ export default function Offers({ scanning }) {
   const [nomRecherche, setNomRecherche] = useState(null)
   const [aComparer, setAComparer] = useState([])
   const [comparaison, setComparaison] = useState(null)
+  const [rejectSeuil, setRejectSeuil] = useState('')
+  const [rejecting, setRejecting] = useState(false)
   const showToast = useToast()
 
   const load = useCallback(async () => {
@@ -88,6 +91,28 @@ export default function Offers({ scanning }) {
       setLoading(false)
     }
   }, [filters, page, showToast])
+
+  const rejectEnMasse = async () => {
+    const seuil = Number(rejectSeuil)
+    if (!seuil) return
+    if (!window.confirm(
+      `Rejeter (statut « Fermée ») toutes les offres sous score ${seuil} correspondant aux filtres `
+      + `actuels (statut, source, entreprise, recherche) ? Action irréversible depuis cet écran.`
+    )) return
+    setRejecting(true)
+    try {
+      const { status, source, search, company, still_online } = filters
+      const r = await api.bulkReject({ max_score: seuil, status, source, search, company, still_online })
+      showToast(`${r.rejected} offre(s) rejetée(s).`)
+      setRejectSeuil('')
+      setPage(0)
+      load()
+    } catch (err) {
+      showToast(err.message, true)
+    } finally {
+      setRejecting(false)
+    }
+  }
 
   useEffect(() => {
     api.profile().then((p) => setRecherches(p.saved_searches || [])).catch(() => {})
@@ -179,6 +204,11 @@ export default function Offers({ scanning }) {
           <option value="">Favoris ou non</option>
           <option value="true">★ Favoris</option>
         </select>
+        <select value={filters.still_online} onChange={(e) => setFilter('still_online', e.target.value)}>
+          <option value="">En ligne ou pas</option>
+          <option value="true">Toujours en ligne</option>
+          <option value="false">Plus en ligne ?</option>
+        </select>
         <input
           type="text"
           style={{ maxWidth: 160 }}
@@ -201,7 +231,7 @@ export default function Offers({ scanning }) {
               setPage(0)
               setFilters({
                 status: '', source: '', min_score: '', search: '', company: '', sort: 'score',
-                favorite: '', ...trouvee.filtres,
+                favorite: '', still_online: '', ...trouvee.filtres,
               })
               showToast(`Recherche « ${trouvee.nom} » appliquée.`)
             }}
@@ -249,6 +279,21 @@ export default function Offers({ scanning }) {
           }}
         >
           📊 Exporter en Excel
+        </button>
+      </div>
+
+      <div className="actions-row" style={{ marginBottom: 8, alignItems: 'center' }}>
+        <span className="hint">
+          Rejeter en masse les offres sous un score (selon les filtres ci-dessus) :
+        </span>
+        <input
+          type="number" min="1" max="99" style={{ maxWidth: 80 }}
+          placeholder="Score"
+          value={rejectSeuil}
+          onChange={(e) => setRejectSeuil(e.target.value)}
+        />
+        <button className="secondary" disabled={!rejectSeuil || rejecting} onClick={rejectEnMasse}>
+          {rejecting ? 'Rejet en cours…' : '🗑️ Rejeter'}
         </button>
       </div>
 

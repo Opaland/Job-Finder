@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
-from app.models import Offer, Profile, local_now
+from app.models import Offer, Profile, STATUTS_ACTIFS, local_now
 from app.services.digest import GEM_SCORE, build_digest, digest_html, offers_to_relaunch
 from app.services.enrich import extract_main_text
 
@@ -152,6 +152,22 @@ def test_pepite_pile_au_seuil(db):
     gem_titles = [g["title"] for g in build_digest(db).payload["gems"]]
     assert "Pile au seuil" in gem_titles
     assert "Juste sous le seuil" not in gem_titles
+
+
+def test_candidatures_a_suivre_signale_le_total_au_dela_de_15(db):
+    """Issue #32 : to_follow était tronqué à 15 sans jamais exposer le total
+    réel — contrairement à new_count, qui lui l'est. Au-delà de 15 candidatures
+    actives, une candidature plus ancienne à score plus faible sortait du
+    digest sans aucun « + N autres »."""
+    for i in range(18):
+        db.add(Offer(fingerprint=f"fp-suivi-{i}", source="test", source_id=str(i),
+                     title="Test Manager", company="ACME", status=STATUTS_ACTIFS[i % len(STATUTS_ACTIFS)],
+                     final_score=100 - i))
+    db.commit()
+
+    payload = build_digest(db).payload
+    assert len(payload["to_follow"]) == 15
+    assert payload["to_follow_total"] == 18
 
 
 def test_extraction_texte_principal():

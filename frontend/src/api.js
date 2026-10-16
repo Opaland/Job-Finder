@@ -48,6 +48,11 @@ export const api = {
   generateLetter: (id) => request(`/api/offers/${id}/letter`, { method: 'POST' }),
   restoreLetter: (id, index) => request(`/api/offers/${id}/letter/restore/${index}`, { method: 'POST' }),
   addManualOffer: (body) => request('/api/offers/manual', { method: 'POST', body: JSON.stringify(body) }),
+  bulkReject: (params) => {
+    const q = new URLSearchParams()
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v) })
+    return request(`/api/offers/bulk-reject?${q}`, { method: 'POST' })
+  },
   enrichOffer: (id) => request(`/api/offers/${id}/enrich`, { method: 'POST' }),
   interviewPrep: (id) => request(`/api/offers/${id}/interview-prep`, { method: 'POST' }),
   generateEmail: (id, kind) => request(`/api/offers/${id}/email?kind=${kind}`, { method: 'POST' }),
@@ -98,6 +103,7 @@ export const api = {
   sendReminder: () => request('/api/digests/reminder', { method: 'POST' }),
   weeklySummary: () => request('/api/digests/weekly-summary'),
   weeklyReview: () => request('/api/digests/weekly-review', { method: 'POST' }),
+  lastWeeklyReview: () => request('/api/digests/weekly-review/last'),
 
   csvUrl: () => '/api/exports/offres.csv',
   importCsv: (file) => {
@@ -120,7 +126,12 @@ export const api = {
 
   sources: () => request('/api/sources'),
   stats: () => request('/api/stats'),
-  journal: (kind) => request(`/api/journal${kind ? `?kind=${kind}` : ''}`),
+  journal: (kind, limit) => {
+    const q = new URLSearchParams()
+    if (kind) q.set('kind', kind)
+    if (limit) q.set('limit', limit)
+    return request(`/api/journal?${q}`)
+  },
   restore: (file) => {
     if (DEMO) {
       return Promise.reject(new Error("Restauration disponible uniquement dans l'application locale (démo en ligne)."))
@@ -155,6 +166,7 @@ export const STATUTS_EN_ATTENTE = ['postulee', 'relancee']
 export const STATUTS_CLOS = ['refusee', 'fermee']
 export const STATUTS_CANDIDATURE = ['postulee', 'relancee', 'entretien', 'refusee']
 export const STATUTS_REPONSE = ['entretien', 'refusee']
+export const STATUTS_ACTIFS = ['a_postuler', 'postulee', 'relancee', 'entretien']
 
 export const STATUS_COLORS = {
   nouvelle: '#0969da',

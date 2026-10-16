@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import Digest
+from ..models import Digest, WeeklyReview
 from ..schemas import DigestOut
 from ..services.digest import build_digest, digest_html, send_digest_email
 from ..services.emailer import send_email, smtp_configured
@@ -75,7 +75,21 @@ def weekly_review(db: Session = Depends(get_db)):
     texte = ai_bilan_hebdo(resume, profile.cv_text if profile else "")
     if not texte:
         raise HTTPException(502, "La génération a échoué (voir les logs). Réessaie dans un instant.")
+    # Persisté : jusqu'ici perdu au changement d'onglet ou au rechargement,
+    # ré-appeler l'IA était le seul moyen de le revoir (issue #31).
+    db.add(WeeklyReview(resume=resume, bilan=texte))
+    db.commit()
     return {"resume": resume, "bilan": texte}
+
+
+@router.get("/weekly-review/last")
+def last_weekly_review(db: Session = Depends(get_db)):
+    """Dernier bilan hebdomadaire généré, sans ré-appeler l'IA — pour l'afficher
+    tel quel à l'ouverture du tableau de bord."""
+    dernier = db.query(WeeklyReview).order_by(WeeklyReview.id.desc()).first()
+    if not dernier:
+        return None
+    return {"resume": dernier.resume, "bilan": dernier.bilan, "created_at": dernier.created_at.isoformat()}
 
 
 @router.get("/weekly-summary")

@@ -6,7 +6,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session, load_only
 
 from ..database import get_db
-from ..models import CHECKLIST_ETAPES, OFFER_STATUSES, STATUS_LABELS, Offer, Profile, local_now
+from ..models import CHECKLIST_ETAPES, OFFER_STATUSES, STATUS_LABELS, STATUTS_CLOS, Offer, Profile, local_now
 from ..schemas import InterviewIn, InterviewReport, ManualOffer, SimulationTour, OfferDetail, OfferSummary, OfferUpdate
 # Import du module (et non des fonctions) : la disponibilité de la CLI est lue
 # à l'appel, ce qui permet aussi de simuler son absence dans les tests.
@@ -40,12 +40,15 @@ def list_offers(
     company: str | None = None,
     favorite: bool | None = None,
     remote: bool | None = None,
+    still_online: bool | None = None,
     sort: str = "score",
     limit: int = 100,
     offset: int = 0,
     db: Session = Depends(get_db),
 ):
     query = db.query(Offer)
+    if still_online is not None:
+        query = query.filter(Offer.still_online.is_(still_online))
     if company:
         query = query.filter(Offer.company.ilike(f"%{escape_like(company)}%", escape="\\"))
     if status:
@@ -82,6 +85,59 @@ def list_offers(
         "total": total,
         "items": [OfferSummary.model_validate(o).model_dump() for o in offers],
     }
+
+
+@router.post("/bulk-reject")
+def bulk_reject(
+    max_score: float,
+    status: str | None = None,
+    source: str | None = None,
+    search: str | None = None,
+    company: str | None = None,
+    still_online: bool | None = None,
+    db: Session = Depends(get_db),
+):
+    """Rejette en masse les offres sous un score donné (mêmes filtres que la liste).
+
+    `max_score` est obligatoire : pas de rejet en masse sans borne de score,
+    pour qu'un appel mal filtré ne ferme pas tout le pipeline par erreur. La
+    pile d'offres jamais triées grossit sans fin avec seulement APEC/HelloWork
+    actifs (72% de bruit mesuré sur un scan réel, issue #30) — ceci est le
+    seul outil de masse, les statuts déjà clos ne sont jamais retouchés.
+    """
+    query = db.query(Offer).filter(
+        Offer.final_score < max_score, Offer.status.notin_(STATUTS_CLOS),
+    )
+    if still_online is not None:
+        query = query.filter(Offer.still_online.is_(still_online))
+    if status:
+        statuses = [s for s in status.split(",") if s in OFFER_STATUSES]
+        if statuses:
+            query = query.filter(Offer.status.in_(statuses))
+    if source:
+        query = query.filter(Offer.source == source)
+    if company:
+        query = query.filter(Offer.company.ilike(f"%{escape_like(company)}%", escape="\\"))
+    if search:
+        like = f"%{escape_like(search)}%"
+        query = query.filter(
+            or_(
+                Offer.title.ilike(like, escape="\\"),
+                Offer.company.ilike(like, escape="\\"),
+                Offer.description.ilike(like, escape="\\"),
+            )
+        )
+
+    offres = query.all()
+    for offre in offres:
+        offre.status = "fermee"
+        offre.status_history = (offre.status_history or []) + [
+            {"status": "fermee", "date": local_now().isoformat(), "par": "rejet en masse"}
+        ]
+    db.commit()
+    if offres:
+        log_event(db, "statut", f"{len(offres)} offre(s) rejetée(s) en masse (score < {max_score:.0f}).")
+    return {"rejected": len(offres)}
 
 
 @router.post("/manual", response_model=OfferDetail, status_code=201)

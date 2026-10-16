@@ -211,3 +211,15 @@ class Digest(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=local_now)
     payload: Mapped[dict] = mapped_column(JSON, default=dict)
     email_sent: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class WeeklyReview(Base):
+    """Bilan hebdomadaire commenté par l'IA locale — jusqu'ici jamais persisté :
+    perdu au changement d'onglet, retrouvable seulement en relançant l'IA."""
+
+    __tablename__ = "weekly_reviews"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=local_now, index=True)
+    resume: Mapped[dict] = mapped_column(JSON, default=dict)
+    bilan: Mapped[str] = mapped_column(Text, default="")

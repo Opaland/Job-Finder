@@ -46,12 +46,18 @@ export default function Dashboard({ scanning, goToOffers }) {
   const [error, setError] = useState(null)
   const [semaine, setSemaine] = useState(null)
   const [bilan, setBilan] = useState(null)
+  const [bilanDate, setBilanDate] = useState(null)
   const [bilanEnCours, setBilanEnCours] = useState(false)
   const showToast = useToast()
 
   const load = async () => {
     try {
       api.weeklySummary().then(setSemaine).catch((e) => showToast(e.message, true))
+      // Dernier bilan déjà généré, affiché tel quel : avant, il ne survivait
+      // ni à un changement d'onglet ni à un rechargement de la page (issue #31).
+      api.lastWeeklyReview().then((dernier) => {
+        if (dernier) { setBilan(dernier.bilan); setBilanDate(dernier.created_at) }
+      }).catch(() => {})
       setDigest(await api.digestToday())
       setError(null)
     } catch (err) {
@@ -82,6 +88,10 @@ export default function Dashboard({ scanning, goToOffers }) {
       <div className="cards-row">
         <div className="stat"><div className="value">{p.total_offers}</div><div className="label">Offres suivies</div></div>
         <div className="stat"><div className="value" style={{ color: '#0969da' }}>{p.new_count}</div><div className="label">Nouvelles (24 h)</div></div>
+        <div className="stat" title="Statut « Nouvelle » — indépendant du temps, ne disparaît jamais tout seul">
+          <div className="value" style={{ color: '#0969da' }}>{counts.nouvelle || 0}</div>
+          <div className="label">Jamais ouvertes</div>
+        </div>
         <div className="stat"><div className="value" style={{ color: '#8250df' }}>{counts.a_postuler || 0}</div><div className="label">À postuler</div></div>
         <div className="stat"><div className="value" style={{ color: '#9a6700' }}>{counts.postulee || 0}</div><div className="label">Postulées</div></div>
         <div className="stat"><div className="value" style={{ color: '#1a7f37' }}>{counts.entretien || 0}</div><div className="label">Entretiens</div></div>
@@ -212,6 +222,7 @@ export default function Dashboard({ scanning, goToOffers }) {
               try {
                 const r = await api.weeklyReview()
                 setBilan(r.bilan)
+                setBilanDate(new Date().toISOString())
               } catch (err) {
                 showToast(err.message, true)
               } finally {
@@ -223,7 +234,16 @@ export default function Dashboard({ scanning, goToOffers }) {
               ? (<><span className="spin" style={{ borderTopColor: '#57606a' }} />Analyse de la semaine…</>)
               : (bilan ? '🔄 Régénérer le bilan commenté' : '🧭 Demander le bilan commenté à Claude')}
           </button>
-          {bilan && <div className="desc" style={{ marginTop: 10, maxHeight: 'none' }}>{bilan}</div>}
+          {bilan && (
+            <div className="desc" style={{ marginTop: 10, maxHeight: 'none' }}>
+              {bilanDate && (
+                <p className="hint" style={{ marginTop: 0 }}>
+                  Généré le {new Date(bilanDate).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                </p>
+              )}
+              {bilan}
+            </div>
+          )}
         </div>
       )}
 
@@ -287,7 +307,16 @@ export default function Dashboard({ scanning, goToOffers }) {
 
       {p.to_follow?.length > 0 && (
         <div className="card">
-          <h2>Candidatures à suivre</h2>
+          <h2>
+            Candidatures à suivre
+            {p.to_follow_total > p.to_follow.length && ` (${p.to_follow.length} sur ${p.to_follow_total})`}
+          </h2>
+          {p.to_follow_total > p.to_follow.length && (
+            <p className="hint">
+              + {p.to_follow_total - p.to_follow.length} autre(s) à moins bon score, non affichée(s) ici —
+              voir la page Offres.
+            </p>
+          )}
           <table className="simple">
             <tbody>{p.to_follow.map((o) => <StatusRow key={o.id} offer={o} />)}</tbody>
           </table>

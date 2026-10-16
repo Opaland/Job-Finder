@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { actionDue, api, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
+import { actionDue, api, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS, STATUTS_ACTIFS } from '../api.js'
 import { useToast } from '../App.jsx'
 import OfferDetail from './OfferDetail.jsx'
 
@@ -15,9 +15,18 @@ export default function Kanban({ scanning }) {
 
   const load = useCallback(async () => {
     try {
-      const data = await api.offers({ limit: 2000, sort: 'score' })
-      setOffers(data.items)
-      setTruncated(Math.max(0, data.total - data.items.length))
+      // Le top 2000 par score peut couper une candidature déjà engagée (score
+      // bas après un recalcul de pondérations, par exemple) : un second appel,
+      // non limité par le score, garantit que les statuts actifs (à_postuler,
+      // postulée, relancée, entretien) sont toujours là, quel que soit leur rang.
+      const [principal, actifs] = await Promise.all([
+        api.offers({ limit: 2000, sort: 'score' }),
+        api.offers({ status: STATUTS_ACTIFS.join(','), limit: 2000, sort: 'score' }),
+      ])
+      const fusion = new Map(principal.items.map((o) => [o.id, o]))
+      actifs.items.forEach((o) => fusion.set(o.id, o))
+      setOffers([...fusion.values()])
+      setTruncated(Math.max(0, principal.total - principal.items.length))
     } catch (err) {
       showToast(`Chargement impossible : ${err.message}`, true)
     }
@@ -58,7 +67,7 @@ export default function Kanban({ scanning }) {
         Glisse une carte d'une colonne à l'autre pour changer son statut (ou ouvre-la et
         choisis le statut au clavier/au doigt) — toi seul décides, jamais un scan.
         {truncated > 0 && (
-          <span className="warn"> Affichage des 2000 meilleures offres ({truncated} non affichées — utilise les filtres de la page Offres).</span>
+          <span className="warn"> Affichage des 2000 meilleures offres ({truncated} non affichées, hors candidatures déjà engagées — toujours affichées — utilise les filtres de la page Offres).</span>
         )}
       </p>
 

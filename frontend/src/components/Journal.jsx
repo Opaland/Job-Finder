@@ -15,22 +15,31 @@ const KIND_META = {
   restauration: ['💾', 'Restauration'],
 }
 
+const PAGE = 100
+
 export default function Journal() {
   const [entries, setEntries] = useState(null)
   const [failed, setFailed] = useState(false)
   const [retry, setRetry] = useState(0)
   const [kind, setKind] = useState('')
+  const [limit, setLimit] = useState(PAGE)
+  const [chargement, setChargement] = useState(false)
   const showToast = useToast()
 
   useEffect(() => {
     setEntries(null)
     setFailed(false)
-    api.journal(kind).then(setEntries).catch((err) => {
+    setLimit(PAGE)
+  }, [kind])
+
+  useEffect(() => {
+    setChargement(true)
+    api.journal(kind, limit).then(setEntries).catch((err) => {
       setFailed(true)
       setEntries([])
       showToast(`Journal indisponible : ${err.message}`, true)
-    })
-  }, [kind, retry, showToast])
+    }).finally(() => setChargement(false))
+  }, [kind, limit, retry, showToast])
 
   if (entries === null) return <p>Chargement…</p>
 
@@ -86,6 +95,12 @@ export default function Journal() {
           </table>
         </div>
       ))}
+
+      {!failed && entries.length > 0 && entries.length >= limit && (
+        <button className="secondary" disabled={chargement} onClick={() => setLimit((l) => l + PAGE)}>
+          {chargement ? 'Chargement…' : `Charger les ${PAGE} événements précédents`}
+        </button>
+      )}
     </div>
   )
 }

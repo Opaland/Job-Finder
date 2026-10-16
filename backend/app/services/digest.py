@@ -288,6 +288,7 @@ def build_digest(db: Session, for_date: str | None = None) -> Digest:
         "to_follow": [
             {**_offer_brief(o), "status": o.status} for o in to_follow[:15]
         ],
+        "to_follow_total": len(to_follow),
         "to_relaunch": [
             {**_offer_brief(o), "status": o.status} for o in relaunch
         ],

@@ -35,7 +35,10 @@ def get_profile(db: Session = Depends(get_db)):
 
 
 # Filtres autorisés dans une recherche sauvegardée : ceux de la liste d'offres.
-FILTRES_RECHERCHE = {"status", "source", "min_score", "search", "company", "favorite", "remote", "sort"}
+FILTRES_RECHERCHE = {
+    "status", "source", "min_score", "search", "company", "favorite", "remote", "sort",
+    "still_online",
+}
 MAX_RECHERCHES = 20
 
 

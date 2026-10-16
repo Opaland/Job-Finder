@@ -42,6 +42,8 @@ function listOffers(query) {
   if (minScore) items = items.filter((o) => o.final_score >= Number(minScore))
   const favorite = params.get('favorite')
   if (favorite) items = items.filter((o) => String(o.favorite) === favorite)
+  const stillOnline = params.get('still_online')
+  if (stillOnline) items = items.filter((o) => String(o.still_online !== false) === stillOnline)
   const search = (params.get('search') || '').toLowerCase()
   if (search) {
     items = items.filter((o) =>
@@ -62,6 +64,32 @@ function listOffers(query) {
   const offset = Number(params.get('offset') || 0)
   const limit = Number(params.get('limit') || 100)
   return { total, items: items.slice(offset, offset + limit) }
+}
+
+function bulkReject(query) {
+  const params = new URLSearchParams(query)
+  const maxScore = Number(params.get('max_score'))
+  const status = params.get('status')
+  const wanted = status ? status.split(',') : null
+  const source = params.get('source')
+  const company = (params.get('company') || '').toLowerCase()
+  const search = (params.get('search') || '').toLowerCase()
+  const stillOnline = params.get('still_online')
+
+  let rejected = 0
+  state.offers.forEach((o) => {
+    if (STATUTS_CLOS.includes(o.status)) return
+    if (o.final_score >= maxScore) return
+    if (wanted && !wanted.includes(o.status)) return
+    if (source && o.source !== source) return
+    if (stillOnline && String(o.still_online !== false) !== stillOnline) return
+    if (company && !(o.company || '').toLowerCase().includes(company)) return
+    if (search && !([o.title, o.company, o.description].join(' ').toLowerCase().includes(search))) return
+    o.status = 'fermee'
+    o.status_history = [...(o.status_history || []), { status: 'fermee', date: new Date().toISOString(), par: 'rejet en masse (démo)' }]
+    rejected += 1
+  })
+  return { rejected }
 }
 
 const STATUS_ORDER = Object.keys(STATUS_LABELS)
@@ -145,6 +173,7 @@ export async function demoRequest(path, options = {}) {
   const body = options.body ? JSON.parse(options.body) : {}
 
   if (route === '/api/health') return { ok: true }
+  if (route === '/api/offers/bulk-reject' && method === 'POST') return bulkReject(query)
   if (route === '/api/offers/manual' && method === 'POST') {
     const lines = (body.raw_text || '').split('\n').map((l) => l.trim()).filter(Boolean)
     const title = (body.title || '').trim() || (lines[0] || '').slice(0, 120)
