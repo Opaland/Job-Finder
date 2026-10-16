@@ -14,7 +14,7 @@ function TagEditor({ values, onChange, placeholder }) {
       {values.map((v) => (
         <span className="tag" key={v}>
           {v}
-          <button onClick={() => onChange(values.filter((x) => x !== v))}>✕</button>
+          <button aria-label={`Retirer « ${v} »`} onClick={() => onChange(values.filter((x) => x !== v))}>✕</button>
         </span>
       ))}
       <input
