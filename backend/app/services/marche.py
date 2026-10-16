@@ -259,9 +259,13 @@ def fraicheur(db: Session, limite: int = 20) -> dict:
             tranches["0-7"] += 1
         elif jours <= 30:
             tranches["8-30"] += 1
-        elif jours <= 60:
+        elif jours <= FANTOME_APRES_JOURS:
             tranches["31-60"] += 1
         else:
+            # Le seuil "fantôme" (FANTOME_APRES_JOURS) pilote directement cette
+            # branche : avant, il était codé en dur (60) séparément du champ
+            # `seuil_fantome_jours` affiché — changer la constante seule aurait
+            # rendu ce champ trompeur sans que rien ne le signale.
             tranches["60+"] += 1
             if en_ligne:
                 fantomes.append({

@@ -169,3 +169,32 @@ def test_tranches_de_fraicheur_et_fantomes(client, db):
     fantomes = [f["source_id"] if "source_id" in f else f["jours"] for f in resultat["fantomes"]]
     assert len(resultat["fantomes"]) == 1
     assert resultat["fantomes"][0]["jours"] >= 120
+
+
+def test_tranches_de_fraicheur_a_leurs_frontieres_exactes(client, db):
+    """Les trois frontières (7/8, 30/31, 60/61 jours) n'étaient testées qu'au
+    large (2, 20, 45, 120, 200 j) — jamais pile dessus. Le seuil "fantôme" était
+    en plus codé en dur (60) indépendamment de FANTOME_APRES_JOURS, le champ
+    `seuil_fantome_jours` affiché pouvait donc mentir sans qu'aucun test ne le
+    voie si la constante seule changeait."""
+    from datetime import timedelta
+
+    from app.models import Offer, local_now
+    from app.services.marche import FANTOME_APRES_JOURS, fraicheur
+    maintenant = local_now()
+    cas = [
+        ("p7", 7), ("p8", 8), ("p30", 30), ("p31", 31),
+        (f"p{FANTOME_APRES_JOURS}", FANTOME_APRES_JOURS),
+        (f"p{FANTOME_APRES_JOURS + 1}", FANTOME_APRES_JOURS + 1),
+    ]
+    for source_id, age in cas:
+        db.add(Offer(fingerprint=f"fp-{source_id}", source="manuelle", source_id=source_id,
+                     title="QA", company="ACME", final_score=60.0,
+                     published_at=maintenant - timedelta(days=age), status="nouvelle"))
+    db.commit()
+
+    tranches = {t["tranche"]: t["offres"] for t in fraicheur(db)["tranches"]}
+    assert tranches["0-7"] == 1       # p7
+    assert tranches["8-30"] == 2      # p8, p30
+    assert tranches["31-60"] == 2     # p31, p{FANTOME_APRES_JOURS}
+    assert tranches["60+"] == 1       # p{FANTOME_APRES_JOURS + 1}

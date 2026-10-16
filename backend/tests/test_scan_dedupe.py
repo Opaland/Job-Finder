@@ -207,6 +207,44 @@ def test_offer_to_scoring_dict_reprend_le_texte_du_salaire(db):
     assert offer_to_scoring_dict(offre)["salary_text"] == "45 000 - 50 000 € / an"
 
 
+def test_offre_revue_redevient_en_ligne(db, monkeypatch):
+    """Moitié jamais testée de la règle absolue du scan (issue #18) : une
+    disparition met still_online à False, mais rien ne prouvait que l'offre
+    redevient True si la source la revoit. Vérifié par mutation lors de
+    l'audit : remplacer `existing.still_online = True` par `pass` laissait
+    les 9 tests d'alors tous verts."""
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([_offer()])])
+    run_scan(db, trigger="manuel")
+    offer = db.query(Offer).one()
+    offer.still_online = False   # simulation d'une disparition passée
+    offer.status = "postulee"
+    db.commit()
+
+    # Même source, même source_id : l'offre est bien de nouveau là.
+    run_scan(db, trigger="manuel")
+    db.expire_all()
+    offer = db.query(Offer).one()
+    assert offer.still_online is True
+    assert offer.status == "postulee"   # la règle absolue tient : statut jamais touché
+
+
+def test_offre_revue_via_une_autre_source_redevient_en_ligne(db, monkeypatch):
+    """Même règle, chemin « jumeau » (scan.py:~220) : l'offre reparaît via une
+    AUTRE source, même entreprise et titre proche — pas le même source_id."""
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([_offer()])])
+    run_scan(db, trigger="manuel")
+    offer = db.query(Offer).one()
+    offer.still_online = False
+    db.commit()
+
+    jumeau = _offer(source_id="autre-source-id", title="Test Manager H/F")
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([jumeau])])
+    run_scan(db, trigger="manuel")
+    db.expire_all()
+    assert db.query(Offer).count() == 1   # fusionnée, pas dupliquée
+    assert db.query(Offer).one().still_online is True
+
+
 def test_le_scan_detecte_une_source_qui_reussit_a_vide(db, monkeypatch):
     """Issue #14 : ni le scan planifié ni /api/sources n'appelaient
     diagnostic.py — une source qui répond, ramène des offres, mais avec un
