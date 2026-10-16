@@ -1,5 +1,5 @@
 """Helpers partagés de services/textutils.py testés directement."""
-from app.services.textutils import teletravail_complet
+from app.services.textutils import teletravail_complet, titles_similar
 
 
 def test_teletravail_total_est_complet():
@@ -25,3 +25,13 @@ def test_plusieurs_segments_le_bon_segment_tranche():
     qualifie SA mention, pas celle d'un autre segment resté muet."""
     assert teletravail_complet("Lyon", "CDI", "Télétravail partiel") is False
     assert teletravail_complet("Lyon", "CDI", "Télétravail total") is True
+
+
+def test_titles_similar_a_sa_frontiere_exacte():
+    """Seuil 0.88 (dédoublonnage inter-sources, scan.py) jamais testé pile à
+    sa frontière : le seul cas existant avant cette issue avait un ratio de
+    0.94, loin du seuil. Paire construite pour straddler 0.88 avec des mots
+    distincts (pas de court-circuit "mêmes mots, ordre différent")."""
+    base = "Test Manager Qualite Logicielle"
+    assert titles_similar(base, base + " alphabb") is True     # ratio ≈ 0.886, au-dessus
+    assert titles_similar(base, base + " alphabbb") is False   # ratio ≈ 0.873, en-dessous

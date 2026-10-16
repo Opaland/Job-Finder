@@ -45,6 +45,20 @@ def _vide(valeur) -> bool:
     return isinstance(valeur, str) and not valeur.strip()
 
 
+def champs_vides_sur_toutes_les_offres(offres: list[dict], champs: list[str]) -> list[str]:
+    """Champs d'une liste de `RawOffer` (en dict) vides sur TOUTES les offres.
+
+    Fonction pure, séparée de `diagnostiquer_source` : le scan quotidien a
+    déjà les offres en main (son propre `connector.fetch()`) et ne doit pas
+    refaire une requête réseau par source juste pour ce contrôle — ça
+    doublerait la charge sur des sites déjà sujets au blocage anti-robot
+    (APEC, WTTJ).
+    """
+    if not offres:
+        return []
+    return [champ for champ in champs if all(_vide(o.get(champ)) for o in offres)]
+
+
 def diagnostiquer_source(connector, profile: dict) -> dict:
     """Interroge une source et décrit ce qu'elle a renvoyé.
 
@@ -74,12 +88,8 @@ def diagnostiquer_source(connector, profile: dict) -> dict:
 
     offres = [asdict(o) for o in reponse.offers]
     resultat["exemple"] = offres[0]
-    resultat["champs_vides"] = [
-        champ for champ in CHAMPS_ATTENDUS if all(_vide(o.get(champ)) for o in offres)
-    ]
-    resultat["champs_facultatifs_vides"] = [
-        champ for champ in CHAMPS_FACULTATIFS if all(_vide(o.get(champ)) for o in offres)
-    ]
+    resultat["champs_vides"] = champs_vides_sur_toutes_les_offres(offres, CHAMPS_ATTENDUS)
+    resultat["champs_facultatifs_vides"] = champs_vides_sur_toutes_les_offres(offres, CHAMPS_FACULTATIFS)
     return resultat
 
 

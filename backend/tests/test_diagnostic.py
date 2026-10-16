@@ -13,7 +13,9 @@ from app.connectors.base import (
     capture_reponses,
     resume_erreur,
 )
-from app.services.diagnostic import diagnostiquer_source, rapport_texte, verdict
+from app.services.diagnostic import (
+    champs_vides_sur_toutes_les_offres, diagnostiquer_source, rapport_texte, verdict,
+)
 
 
 class FausseSource:
@@ -64,6 +66,16 @@ def test_un_champ_vide_sur_une_seule_offre_ne_declenche_rien():
     resultat = diagnostiquer_source(FausseSource(ConnectorResult(offers=offres)), {})
     assert resultat["champs_vides"] == []
     assert verdict(resultat)[0] == "ok"
+
+
+def test_champs_vides_sur_toutes_les_offres_fonction_pure_sans_reseau():
+    """Issue #14 : le scan quotidien doit pouvoir réutiliser cette détection sur
+    les offres qu'il a DÉJÀ récupérées, sans refaire une requête réseau par
+    source (ça doublerait la charge sur des sites déjà sujets au blocage
+    anti-robot)."""
+    offres = [{"title": "QA", "company": ""}, {"title": "QA Lead", "company": "  "}]
+    assert champs_vides_sur_toutes_les_offres(offres, ["title", "company"]) == ["company"]
+    assert champs_vides_sur_toutes_les_offres([], ["title"]) == []
 
 
 def test_remote_false_partout_n_est_pas_une_alerte():

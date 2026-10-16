@@ -35,10 +35,15 @@ class AdzunaConnector(Connector):
         return RawOffer(
             source=self.name,
             source_id=str(item.get("id", "")),
-            title=item.get("title", "").replace("<strong>", "").replace("</strong>", ""),
-            company=(item.get("company") or {}).get("display_name", ""),
-            location=(item.get("location") or {}).get("display_name", ""),
-            description=item.get("description", ""),
+            # `.get(..., défaut)` ne protège que la clé ABSENTE : une clé présente
+            # mais explicitement à `null` (vu en pratique côté Adzuna) renvoie
+            # quand même None, et `.replace()` plantait — perdant alors TOUTE la
+            # page de résultats (la boucle de fetch() est dans un seul try/except
+            # par requête), pas seulement l'offre fautive.
+            title=(item.get("title") or "").replace("<strong>", "").replace("</strong>", ""),
+            company=((item.get("company") or {}).get("display_name") or ""),
+            location=((item.get("location") or {}).get("display_name") or ""),
+            description=item.get("description") or "",
             url=item.get("redirect_url", ""),
             contract_type=mapping.get(contract, contract),
             salary_text=salary,

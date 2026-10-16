@@ -106,8 +106,26 @@ export default function Sources() {
                         {stats.errors?.length > 0 && (
                           <div className="error-text">{stats.errors[0]}</div>
                         )}
+                        {stats.champs_vides?.length > 0 && (
+                          <div className="error-text">
+                            ⚠️ Champ(s) vide(s) sur toutes les offres : {stats.champs_vides.join(', ')}
+                            {' '}— le mapping de cette source a probablement changé.
+                          </div>
+                        )}
                       </>
                     ) : <span className="hint">—</span>}
+                    {s.dernier_resultat
+                      ? s.dernier_resultat.il_y_a_jours > 10 && (
+                          <div className="error-text">
+                            ⚠️ Plus aucune offre récupérée depuis le {s.dernier_resultat.date}
+                            {' '}({s.dernier_resultat.il_y_a_jours} jours).
+                          </div>
+                        )
+                      : s.configured && (
+                          <div className="error-text">
+                            ⚠️ Aucune offre récupérée sur les scans observés, source pourtant configurée.
+                          </div>
+                        )}
                   </td>
                   <td>
                     {s.history?.length ? (

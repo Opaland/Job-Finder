@@ -207,6 +207,18 @@ def test_offer_to_scoring_dict_reprend_le_texte_du_salaire(db):
     assert offer_to_scoring_dict(offre)["salary_text"] == "45 000 - 50 000 € / an"
 
 
+def test_le_scan_detecte_une_source_qui_reussit_a_vide(db, monkeypatch):
+    """Issue #14 : ni le scan planifié ni /api/sources n'appelaient
+    diagnostic.py — une source qui répond, ramène des offres, mais avec un
+    champ vide sur toutes (mapping cassé) passait pour un scan normal.
+    Vérifié ici SANS deuxième appel réseau : la détection réutilise les
+    offres déjà récupérées par ce même scan."""
+    offres = [_offer(source_id="1", company=""), _offer(source_id="2", company="")]
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector(offres)])
+    run = run_scan(db, trigger="manuel")
+    assert run.source_stats["fake"]["champs_vides"] == ["company"]
+
+
 def test_connecteur_en_erreur_donne_un_message_francais_pas_la_trace_python(db, monkeypatch):
     """Le filet de sécurité du scan (si un connecteur viole son contrat et laisse
     fuiter une exception) doit passer par resume_erreur(), pas str(exc) brut —

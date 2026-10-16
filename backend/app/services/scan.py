@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from dataclasses import asdict
 from datetime import timedelta
 
 from sqlalchemy.orm import Session
@@ -18,6 +19,7 @@ from ..connectors import ALL_CONNECTORS
 from ..connectors.base import resume_erreur
 from ..models import STATUTS_CLOS, Offer, Profile, ScanRun, local_now
 from .claude_ai import ai_score_offer, cli_available
+from .diagnostic import CHAMPS_ATTENDUS, champs_vides_sur_toutes_les_offres
 from .scoring import combined_score, score_offer
 from .textutils import fingerprint, normalize, titles_similar
 from .verrou import verrou_scan
@@ -209,6 +211,15 @@ def _executer_scan(db: Session, trigger: str) -> ScanRun:
 
             source_stat["errors"].extend(result.errors)
             source_stat["fetched"] = len(result.offers)
+            # Même détection qu'un diagnostic manuel (python -m app.cli sources),
+            # mais sur les offres déjà récupérées — jamais une deuxième requête
+            # réseau : une source qui réussit à vide (champ manquant sur toutes
+            # les offres) est sinon invisible pendant le scan quotidien.
+            champs_vides = champs_vides_sur_toutes_les_offres(
+                [asdict(o) for o in result.offers], CHAMPS_ATTENDUS
+            )
+            if champs_vides:
+                source_stat["champs_vides"] = champs_vides
 
             for raw in result.offers:
                 if not raw.title or not raw.source_id:
