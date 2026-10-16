@@ -32,6 +32,28 @@ def test_texte_identique_non_archive(client, db):
     assert client.get(f"/api/offers/{offer.id}").json()["letter_versions"] == []
 
 
+def test_generation_transmet_l_avis_ia_existant(client, db, monkeypatch):
+    """La route doit transmettre ai_reason (déjà en base) à ai_cover_letter —
+    c'est ce qui permet au prompt de désamorcer une réserve connue (issue #42)."""
+    from app.services import claude_ai
+
+    offer = _offre(db)
+    offer.ai_reason = "contexte ESN/conseil qu'il n'a connu qu'à l'époque Solutec"
+    db.commit()
+
+    monkeypatch.setattr(claude_ai, "cli_available", lambda: True)
+    recu = {}
+
+    def faux_cover_letter(offer_dict, cv_text, template, ai_reason=None):
+        recu["ai_reason"] = ai_reason
+        return "Lettre générée."
+
+    monkeypatch.setattr(claude_ai, "ai_cover_letter", faux_cover_letter)
+    resp = client.post(f"/api/offers/{offer.id}/letter")
+    assert resp.status_code == 200
+    assert recu["ai_reason"] == "contexte ESN/conseil qu'il n'a connu qu'à l'époque Solutec"
+
+
 def test_restauration_d_une_version(client, db):
     offer = _offre(db, "Version A.")
     client.patch(f"/api/offers/{offer.id}", json={"cover_letter": "Version B."})

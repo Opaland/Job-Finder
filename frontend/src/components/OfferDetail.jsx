@@ -60,11 +60,22 @@ export default function OfferDetail({ offerId, onClose }) {
     }).catch((err) => showToast(err.message, true))
   }, [offerId, showToast])
 
+  // Simulation d'entretien jamais enregistrée (issue #15) : avertir avant de
+  // la perdre plutôt que de la laisser disparaître sans prévenir, comme déjà
+  // fait ailleurs dans ce fichier pour la suppression d'un entretien.
+  const confirmerPerteSimulation = () =>
+    !simulation?.echange?.length
+    || window.confirm(
+      "Tu as une simulation d'entretien en cours, non enregistrée — continuer l'effacera "
+      + 'définitivement. Continuer ?'
+    )
+  const tryClose = () => { if (confirmerPerteSimulation()) onClose() }
+
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e) => { if (e.key === 'Escape') tryClose() }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [tryClose])
 
   if (!offer) {
     // Avant : `return null` — rien ne s'affichait pendant l'attente réseau,
@@ -98,9 +109,9 @@ export default function OfferDetail({ offerId, onClose }) {
 
   return (
     <>
-      <div className="drawer-backdrop" onClick={onClose} />
+      <div className="drawer-backdrop" onClick={tryClose} />
       <div className="drawer" role="dialog" aria-modal="true">
-        <button className="close" aria-label="Fermer" onClick={onClose}>✕</button>
+        <button className="close" aria-label="Fermer" onClick={tryClose}>✕</button>
 
         <span className="score-badge" style={{ background: scoreColor(offer.final_score) }}>
           {Math.round(offer.final_score)}
@@ -344,15 +355,18 @@ export default function OfferDetail({ offerId, onClose }) {
         <div className="actions-row" style={{ margin: '4px 0 8px' }}>
           <button
             className="primary" disabled={busy !== null}
-            onClick={() => runAction('simu', async () => {
-              const tour = await api.simulateInterview(offer.id, [])
-              setSimulation({ echange: [], tour, reponse: '' })
-            })}
+            onClick={() => {
+              if (!confirmerPerteSimulation()) return
+              runAction('simu', async () => {
+                const tour = await api.simulateInterview(offer.id, [])
+                setSimulation({ echange: [], tour, reponse: '' })
+              })
+            }}
           >
             {busy === 'simu' ? (<><span className="spin" />Le recruteur réfléchit…</>) : (simulation ? '🔄 Recommencer la simulation' : '🎤 Démarrer la simulation')}
           </button>
           {simulation && (
-            <button className="secondary" onClick={() => setSimulation(null)}>Terminer</button>
+            <button className="secondary" onClick={() => confirmerPerteSimulation() && setSimulation(null)}>Terminer</button>
           )}
         </div>
         {simulation?.tour && (

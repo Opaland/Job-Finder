@@ -200,10 +200,21 @@ Réponds UNIQUEMENT avec l'analyse, sans commentaire avant ou après."""
     return _run_claude(prompt, timeout=300)
 
 
-def ai_cover_letter(offer: dict, cv_text: str, letter_template: str) -> str | None:
+def ai_cover_letter(offer: dict, cv_text: str, letter_template: str, ai_reason: str | None = None) -> str | None:
     """Génère une lettre de motivation adaptée à l'offre. Renvoie None si l'IA est indisponible."""
     if not cli_available():
         return None
+    # Testé en réel (issue #42) : sans la contrainte explicite "2 expériences
+    # maximum", le modèle avait tendance à dérouler le CV façon chronologie
+    # (jusqu'à 6 employeurs cités) plutôt qu'à cibler — et sans qu'on lui
+    # transmette la réserve déjà identifiée par l'affinage IA du score,
+    # il l'ignorait complètement alors qu'il sait très bien la désamorcer
+    # quand on la lui donne (vérifié sur la fiche de préparation d'entretien,
+    # qui elle la reçoit déjà).
+    reserve = f"""
+
+Réserve déjà identifiée sur ce poste (à désamorcer brièvement dans la lettre, sans
+en faire un aveu de faiblesse) : {ai_reason}""" if ai_reason else ""
     prompt = f"""Tu aides Cédric Moretti (Test Manager / QA Lead, 15 ans d'expérience, Lyon) à candidater.
 
 Voici sa lettre de motivation type :
@@ -221,12 +232,14 @@ Titre : {offer.get('title', '')}
 Entreprise : {offer.get('company', '')}
 Lieu : {offer.get('location', '')}
 Description : {offer.get('description', '')[:6000]}
+{reserve}
 
-Rédige la lettre de motivation ADAPTÉE à cette offre, en français, en gardant le ton et les
-éléments forts de la lettre type, mais en la personnalisant pour l'entreprise et le poste
-(reprends les mots-clés importants de l'offre, mets en avant les expériences du CV les plus
-pertinentes pour CE poste). Longueur : 350 à 450 mots. Réponds UNIQUEMENT avec le texte de la
-lettre, sans commentaire avant ou après."""
+Rédige la lettre de motivation ADAPTÉE à cette offre, en français, en gardant le ton de la
+lettre type mais en la personnalisant pour l'entreprise et le poste (reprends les mots-clés
+importants de l'offre). Choisis au maximum DEUX expériences du CV — les plus pertinentes pour
+CE poste précis — plutôt que de dérouler tout le parcours : une lettre qui cite plus de deux
+employeurs ressemble à un CV en prose, pas à une candidature ciblée. Longueur : 350 à 450 mots.
+Réponds UNIQUEMENT avec le texte de la lettre, sans commentaire avant ou après."""
     return _run_claude(prompt, timeout=300)
 
 

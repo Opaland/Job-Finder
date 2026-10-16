@@ -69,6 +69,7 @@ def offer_to_scoring_dict(offer: Offer) -> dict:
         "contract_type": offer.contract_type,
         "remote": offer.remote,
         "salary_text": offer.salary_text,
+        "ai_reason": offer.ai_reason,
     }
 
 

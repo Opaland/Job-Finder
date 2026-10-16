@@ -48,7 +48,7 @@ export default function Marche() {
         </div>
       )}
 
-      {skills.manquantes.length > 0 && (
+      {skills.assez_de_donnees && skills.manquantes.length > 0 && (
         <div className="card" style={{ borderColor: '#f0b37e' }}>
           <h2 style={{ color: '#bc4c00' }}>À travailler en priorité</h2>
           <p className="hint" style={{ marginTop: 0 }}>
@@ -81,6 +81,9 @@ export default function Marche() {
               {qui.salaires.map((s) => (
                 <tr key={s.intitule}>
                   <td style={{ textTransform: 'capitalize', fontWeight: 600 }}>{s.intitule}</td>
+                  <td style={{ whiteSpace: 'nowrap' }} className="hint">
+                    {s.offres} offre(s){!s.fiable && ' — peu de données'}
+                  </td>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     {(s.minimum / 1000).toFixed(0)}K → {(s.maximum / 1000).toFixed(0)}K €
                   </td>

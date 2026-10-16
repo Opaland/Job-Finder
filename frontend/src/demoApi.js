@@ -346,7 +346,8 @@ export async function demoRequest(path, options = {}) {
   }
   if (route === '/api/market/companies') {
     const par = {}
-    state.offers.forEach((o) => {
+    // Une offre refusée/fermée n'est plus un recruteur actif (issue #13).
+    state.offers.filter((o) => !STATUTS_CLOS.includes(o.status)).forEach((o) => {
       const nom = o.company || 'Entreprise non précisée'
       par[nom] = par[nom] || { entreprise: nom, offres: 0, scores: [] }
       par[nom].offres += 1
@@ -359,10 +360,11 @@ export async function demoRequest(path, options = {}) {
     return {
       entreprises,
       salaires: [
-        { intitule: 'test manager', offres: 2, minimum: 50000, median: 55000, maximum: 62000 },
-        { intitule: 'qa lead', offres: 1, minimum: 45000, median: 48000, maximum: 52000 },
+        { intitule: 'test manager', offres: 2, minimum: 50000, median: 55000, maximum: 62000, fiable: false },
+        { intitule: 'qa lead', offres: 1, minimum: 45000, median: 48000, maximum: 52000, fiable: false },
       ],
       offres_avec_salaire: 3,
+      salaires_fiables_a_partir_de: 3,
     }
   }
   if (route === '/api/market/gaps') {

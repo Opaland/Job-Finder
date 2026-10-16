@@ -102,6 +102,31 @@ def test_qui_recrute_et_mediane(client, db):
     assert salaires["median"] == 50000
 
 
+def test_offre_close_ne_compte_plus_comme_recruteur_actif(client, db):
+    """Issue #13 : une entreprise restait comptée comme recruteur actif même
+    si son unique offre avait été refusée ou fermée depuis longtemps."""
+    from app.models import Offer
+    from app.services.marche import qui_recrute
+    db.add(Offer(fingerprint="fp-close", source="manuelle", source_id="close",
+                 title="Test Manager", company="Entreprise Close", final_score=50.0,
+                 status="refusee"))
+    db.commit()
+    assert qui_recrute(db)["entreprises"] == []
+
+
+def test_salaire_sur_peu_d_offres_est_signale_non_fiable(client, db):
+    """Issue #13 : une médiane sur 1-2 offres n'est pas une tendance de marché."""
+    from app.models import Offer
+    from app.services.marche import MIN_OFFRES, qui_recrute
+    db.add(Offer(fingerprint="fp-peu", source="manuelle", source_id="peu",
+                 title="Expert QA", company="ACME", salary_text="50 000 € / an", final_score=70.0))
+    db.commit()
+    resultat = qui_recrute(db)
+    assert resultat["salaires_fiables_a_partir_de"] == MIN_OFFRES
+    assert resultat["salaires"][0]["offres"] == 1
+    assert resultat["salaires"][0]["fiable"] is False
+
+
 def test_entreprise_vide_regroupee(client, db):
     from app.models import Offer
     from app.services.marche import qui_recrute

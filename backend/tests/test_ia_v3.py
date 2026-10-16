@@ -57,6 +57,38 @@ def test_reformulation_ats_stockee(client, db, monkeypatch):
     assert "TITRE DU CV" in client.get(f"/api/offers/{offer.id}").json()["ats_reformulation"]
 
 
+def test_lettre_transmet_la_reserve_et_limite_a_deux_experiences(monkeypatch):
+    """Issue #42 : testé en réel, la lettre générée dépassait la consigne de
+    mots, listait jusqu'à 6 employeurs façon CV en prose, et ignorait une
+    réserve que l'affinage IA du score avait pourtant déjà détectée (alors
+    que la fiche de préparation d'entretien, elle, la reçoit et l'aborde
+    bien). Vérifié ici que le prompt transmet bien cette réserve et borne
+    explicitement le nombre d'expériences."""
+    monkeypatch.setattr(claude_ai, "cli_available", lambda: True)
+    prompts = []
+    monkeypatch.setattr(claude_ai, "_run_claude", lambda prompt, **k: prompts.append(prompt) or "Lettre.")
+
+    claude_ai.ai_cover_letter(
+        {"title": "Test Manager", "company": "ACME", "location": "Lyon", "description": "..."},
+        "CV complet.", "Lettre type.",
+        ai_reason="contexte ESN/conseil qu'il n'a connu qu'à l'époque Solutec",
+    )
+    assert "Solutec" in prompts[0]
+    assert "DEUX" in prompts[0]
+
+
+def test_lettre_sans_reserve_connue_ne_mentionne_aucune_reserve(monkeypatch):
+    monkeypatch.setattr(claude_ai, "cli_available", lambda: True)
+    prompts = []
+    monkeypatch.setattr(claude_ai, "_run_claude", lambda prompt, **k: prompts.append(prompt) or "Lettre.")
+
+    claude_ai.ai_cover_letter(
+        {"title": "Test Manager", "company": "ACME", "location": "Lyon", "description": "..."},
+        "CV complet.", "Lettre type.",
+    )
+    assert "Réserve déjà identifiée" not in prompts[0]
+
+
 def test_resume_semaine_compte_les_actes(client, db):
     """Le bilan s'appuie sur des chiffres réels, IA ou pas."""
     from app.services.digest import resume_semaine

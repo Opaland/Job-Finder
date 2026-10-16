@@ -47,6 +47,29 @@ def test_export_xlsx_neutralise_un_titre_qui_ressemble_a_une_formule(client, db)
     assert cellule.data_type == "s"      # ...mais explicitement du texte, jamais une formule
 
 
+def test_export_xlsx_emporte_lettre_prochaine_action_et_entretiens(client, db):
+    """Issue #16 : l'export perdait le fil des relances et rendez-vous prévus —
+    seuls score/titre/etc. étaient exportés, pas le suivi de candidature."""
+    from datetime import datetime
+
+    _offre(
+        db, source_id="suivi", cover_letter="Madame, Monsieur, ma candidature...",
+        next_action_date=datetime(2026, 11, 3), next_action_note="Relancer par mail",
+        interviews=[{"date": "2026-10-20T10:00:00", "format": "visio",
+                     "interlocuteur": "Jean Dupont", "ressenti": "bon"}],
+    )
+    resp = client.get("/api/offers/export.xlsx")
+    wb = load_workbook(io.BytesIO(resp.content))
+    ws = wb.active
+
+    entetes = [c.value for c in ws[1]]
+    assert "Prochaine action" in entetes and "Entretiens" in entetes and "Lettre" in entetes
+    ligne = {entetes[i]: ws.cell(row=2, column=i + 1).value for i in range(len(entetes))}
+    assert ligne["Lettre"] == "Madame, Monsieur, ma candidature..."
+    assert ligne["Prochaine action"] == "03/11/2026 — Relancer par mail"
+    assert "2026-10-20" in ligne["Entretiens"] and "Jean Dupont" in ligne["Entretiens"] and "bon" in ligne["Entretiens"]
+
+
 def test_lettre_docx_404_si_offre_introuvable(client, db):
     assert client.get("/api/offers/999/letter.docx").status_code == 404
 

@@ -201,7 +201,7 @@ def export_xlsx(db: Session = Depends(get_db)):
         ("Score", 8), ("Titre", 42), ("Entreprise", 24), ("Lieu", 20), ("Contrat", 14),
         ("Salaire", 16), ("Télétravail", 11), ("Statut", 12), ("Favori", 8),
         ("Source", 16), ("Publiée le", 12), ("Collectée le", 12), ("Avis IA", 40),
-        ("Notes", 40), ("Lien", 45),
+        ("Notes", 40), ("Prochaine action", 30), ("Entretiens", 40), ("Lettre", 50), ("Lien", 45),
     ]
 
     wb = Workbook()
@@ -215,19 +215,34 @@ def export_xlsx(db: Session = Depends(get_db)):
         ws.column_dimensions[get_column_letter(col)].width = width
     ws.freeze_panes = "A2"
 
-    # Seules les colonnes exportées sont lues (pas les descriptions ni les lettres).
+    # Pas la description (trop lourde) ; lettre/entretiens/prochaine action
+    # manquaient à l'export (issue #16) — exporter pour l'emporter faisait
+    # perdre le fil des relances et rendez-vous prévus.
     offers = db.query(
         Offer.final_score, Offer.title, Offer.company, Offer.location, Offer.contract_type,
         Offer.salary_text, Offer.remote, Offer.status, Offer.favorite, Offer.source,
         Offer.published_at, Offer.collected_at, Offer.ai_reason, Offer.notes, Offer.url,
+        Offer.next_action_date, Offer.next_action_note, Offer.interviews, Offer.cover_letter,
     ).order_by(Offer.final_score.desc()).all()
     for row, o in enumerate(offers, start=2):
+        prochaine_action = ""
+        if o.next_action_date:
+            prochaine_action = o.next_action_date.strftime("%d/%m/%Y")
+            if o.next_action_note:
+                prochaine_action += f" — {o.next_action_note}"
+        entretiens = "\n".join(
+            f"{(i.get('date') or '')[:10]} ({i.get('format') or '?'}"
+            f"{', ' + i['interlocuteur'] if i.get('interlocuteur') else ''})"
+            + (f" — {i['ressenti']}" if i.get('ressenti') else "")
+            for i in (o.interviews or [])
+        )
         values = [
             round(o.final_score), o.title, o.company, o.location, o.contract_type,
             o.salary_text, "Oui" if o.remote else "", STATUS_LABELS.get(o.status, o.status),
             "★" if o.favorite else "",
             o.source, o.published_at.strftime("%d/%m/%Y") if o.published_at else "",
-            o.collected_at.strftime("%d/%m/%Y"), o.ai_reason, o.notes, o.url,
+            o.collected_at.strftime("%d/%m/%Y"), o.ai_reason, o.notes,
+            prochaine_action, entretiens, o.cover_letter, o.url,
         ]
         for col, value in enumerate(values, start=1):
             cell = ws.cell(row=row, column=col, value=value)
@@ -236,7 +251,7 @@ def export_xlsx(db: Session = Depends(get_db)):
                 # .xlsx, l'apostrophe de `cellule_sure` (réservée au CSV, où
                 # Excel la masque) s'afficherait telle quelle.
                 cell.data_type = "s"  # texte collecté, jamais une formule Excel
-            cell.alignment = Alignment(vertical="top", wrap_text=col in (2, 13, 14))
+            cell.alignment = Alignment(vertical="top", wrap_text=col in (2, 13, 14, 16, 17))
     ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{max(len(offers) + 1, 2)}"
 
     buffer = io.BytesIO()
@@ -337,7 +352,7 @@ def generate_letter(offer_id: int, db: Session = Depends(get_db)):
     """Génère la lettre de motivation adaptée à l'offre via la session locale Claude Code."""
     offer, letter = _generation_ia(
         db, offer_id,
-        lambda o, p: claude_ai.ai_cover_letter(o, p.cv_text, p.letter_template),
+        lambda o, p: claude_ai.ai_cover_letter(o, p.cv_text, p.letter_template, o.get("ai_reason")),
         aide_503=", ou édite la lettre manuellement",
         aide_502="Réessaie ou édite la lettre manuellement.",
     )

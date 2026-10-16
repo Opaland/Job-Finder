@@ -152,9 +152,12 @@ def qui_recrute(db: Session, limite: int = 20) -> dict:
     par_titre: dict[str, dict] = {}
     avec_salaire = 0
 
+    # Une offre refusée/fermée ne fait plus de cette entreprise un recruteur
+    # actif — sans ce filtre, une seule offre close il y a des mois comptait
+    # encore comme preuve de recrutement en cours (issue #13).
     for titre, entreprise, salaire, score in db.query(
         Offer.title, Offer.company, Offer.salary_text, Offer.final_score
-    ).all():
+    ).filter(Offer.status.notin_(STATUTS_CLOS)).all():
         nom = (entreprise or "").strip() or "Entreprise non précisée"
         entree = par_entreprise.setdefault(nom, {"entreprise": nom, "offres": 0, "scores": []})
         entree["offres"] += 1
@@ -188,6 +191,9 @@ def qui_recrute(db: Session, limite: int = 20) -> dict:
                 "minimum": min(donnees["montants"]),
                 "median": _mediane(donnees["montants"]),
                 "maximum": max(donnees["montants"]),
+                # Une médiane sur 1-2 offres n'est pas une tendance de marché —
+                # affichée quand même (mieux qu'aucune donnée), mais signalée.
+                "fiable": donnees["offres"] >= MIN_OFFRES,
             }
             for intitule, donnees in par_titre.items()
         ),
@@ -198,6 +204,7 @@ def qui_recrute(db: Session, limite: int = 20) -> dict:
         "entreprises": entreprises[:limite],
         "salaires": salaires[:limite],
         "offres_avec_salaire": avec_salaire,
+        "salaires_fiables_a_partir_de": MIN_OFFRES,
     }
 
 
