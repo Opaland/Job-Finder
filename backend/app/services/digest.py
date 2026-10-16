@@ -19,6 +19,7 @@ from ..models import (
     ScanRun,
     local_now,
 )
+from .echeances import offres_avec_interview_dans
 from .emailer import send_email, smtp_configured, texte_html as _txt
 from .textutils import parse_iso_dt
 
@@ -143,24 +144,17 @@ def next_interviews(db: Session, jours: int = 21) -> list[dict]:
     """Entretiens à venir (aujourd'hui inclus), le plus proche d'abord."""
     debut = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
     fin = debut + timedelta(days=jours)
-    a_venir = []
-    # Une offre refusée ou fermée ne doit plus annoncer d'entretien : le rappel
-    # de la veille filtre déjà (rappels.py), le digest ne le faisait pas.
-    for offer in db.query(Offer).options(
-        _brief_only(Offer.status, Offer.interviews)
-    ).filter(Offer.status.notin_(STATUTS_CLOS)).all():
-        for entretien in offer.interviews or []:
-            quand = parse_iso_dt(entretien.get("date"))
-            if quand is None or not (debut <= quand <= fin):
-                continue
-            a_venir.append({
-                **_offer_brief(offer),
-                "status": offer.status,
-                "date": quand.isoformat(),
-                "format": entretien.get("format", ""),
-                "interlocuteur": entretien.get("interlocuteur", ""),
-                "aujourdhui": quand.date() == debut.date(),
-            })
+    a_venir = [
+        {
+            **_offer_brief(offer),
+            "status": offer.status,
+            "date": quand.isoformat(),
+            "format": entretien.get("format", ""),
+            "interlocuteur": entretien.get("interlocuteur", ""),
+            "aujourdhui": quand.date() == debut.date(),
+        }
+        for offer, entretien, quand in offres_avec_interview_dans(db, debut, fin, *COLONNES_BRIEF)
+    ]
     a_venir.sort(key=lambda e: e["date"])
     return a_venir
 
@@ -328,6 +322,8 @@ def digest_html(payload: dict) -> str:
             return "<tr><td colspan='4' style='padding:8px;color:#888'>Rien à signaler</td></tr>"
         out = []
         for o in offers:
+            # Seuils alignés à la main avec scoreColor() (frontend/src/api.js) —
+            # un email HTML ne peut pas importer le code du frontend.
             badge_color = "#1a7f37" if o["final_score"] >= 70 else ("#9a6700" if o["final_score"] >= 45 else "#57606a")
             remote = " · télétravail" if o.get("remote") else ""
             out.append(

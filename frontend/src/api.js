@@ -192,6 +192,8 @@ export const SOURCE_LABELS = {
 // Seuil « pépite » — garder aligné avec GEM_SCORE (backend/app/services/digest.py).
 export const GEM_SCORE = 80
 
+// Seuils alignés à la main avec badge_color (backend/app/services/digest.py,
+// email HTML du point quotidien) — pas d'import possible entre les deux.
 export function scoreColor(score) {
   if (score >= 70) return '#1a7f37'
   if (score >= 45) return '#9a6700'

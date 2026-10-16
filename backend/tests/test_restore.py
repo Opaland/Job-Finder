@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 
-import app.routers.stats as stats_module
+import app.services.sauvegarde as sauvegarde_module
 from app.config import settings
 from app.database import Base
 from app.main import app as fastapi_app
@@ -18,7 +18,7 @@ def env(tmp_path, monkeypatch):
     test_engine = create_engine(f"sqlite:///{current}")
     Base.metadata.create_all(test_engine)
     monkeypatch.setattr(settings, "db_path", str(current))
-    monkeypatch.setattr(stats_module, "engine", test_engine)
+    monkeypatch.setattr(sauvegarde_module, "engine", test_engine)
     return {"path": current, "engine": test_engine, "client": TestClient(fastapi_app)}
 
 
@@ -95,7 +95,7 @@ def test_base_aux_bons_noms_de_tables_mais_au_mauvais_format_refusee(env, tmp_pa
 
 def test_les_copies_de_securite_ne_s_accumulent_pas(env, tmp_path):
     """Chaque copie contient CV, lettres et notes : on n'en garde que quelques-unes."""
-    from app.routers.stats import COPIES_DE_SECURITE_GARDEES
+    from app.services.sauvegarde import COPIES_DE_SECURITE_GARDEES
 
     sauvegarde = tmp_path / "sauvegarde.db"
     _make_backup(sauvegarde, offers=1)

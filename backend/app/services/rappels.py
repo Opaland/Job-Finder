@@ -6,11 +6,12 @@ veille, pour laisser le temps de préparer un entretien.
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from sqlalchemy.orm import Session, load_only
 
 from ..models import STATUTS_CLOS, Offer, local_now
+from .echeances import offres_avec_interview_dans
 from .emailer import send_email, smtp_configured, texte_html as _txt
 from .textutils import parse_iso_dt
 
@@ -20,34 +21,37 @@ logger = logging.getLogger("jobfinder.rappels")
 def echeances_de_demain(db: Session) -> dict:
     """Entretiens et actions datées prévus demain."""
     demain = (local_now() + timedelta(days=1)).date()
-    entretiens, actions = [], []
+    debut, fin = datetime.combine(demain, time.min), datetime.combine(demain, time.max)
+
+    entretiens = sorted((
+        {
+            "titre": offer.title,
+            "entreprise": offer.company or "Entreprise non précisée",
+            "url": offer.url,
+            "heure": quand.strftime("%H:%M"),
+            "format": entretien.get("format", ""),
+            "interlocuteur": entretien.get("interlocuteur", ""),
+            "fiche_prete": bool((offer.interview_prep or "").strip()),
+        }
+        for offer, entretien, quand in offres_avec_interview_dans(
+            db, debut, fin, Offer.title, Offer.company, Offer.url, Offer.interview_prep,
+        )
+    ), key=lambda e: e["heure"])
 
     # Une offre refusée ou fermée ne mérite plus de rappel.
-    for offer in db.query(Offer).options(load_only(
-        Offer.id, Offer.title, Offer.company, Offer.url, Offer.interview_prep,
-        Offer.interviews, Offer.next_action_date, Offer.next_action_note,
-    )).filter(Offer.status.notin_(STATUTS_CLOS)).all():
-        for entretien in offer.interviews or []:
-            quand = parse_iso_dt(entretien.get("date"))
-            if quand and quand.date() == demain:
-                entretiens.append({
-                    "titre": offer.title,
-                    "entreprise": offer.company or "Entreprise non précisée",
-                    "url": offer.url,
-                    "heure": quand.strftime("%H:%M"),
-                    "format": entretien.get("format", ""),
-                    "interlocuteur": entretien.get("interlocuteur", ""),
-                    "fiche_prete": bool((offer.interview_prep or "").strip()),
-                })
-        if offer.next_action_date and offer.next_action_date.date() == demain:
-            actions.append({
-                "titre": offer.title,
-                "entreprise": offer.company or "Entreprise non précisée",
-                "url": offer.url,
-                "note": offer.next_action_note or "Action prévue",
-            })
+    actions = [
+        {
+            "titre": offer.title,
+            "entreprise": offer.company or "Entreprise non précisée",
+            "url": offer.url,
+            "note": offer.next_action_note or "Action prévue",
+        }
+        for offer in db.query(Offer).options(load_only(
+            Offer.id, Offer.title, Offer.company, Offer.url, Offer.next_action_date, Offer.next_action_note,
+        )).filter(Offer.status.notin_(STATUTS_CLOS), Offer.next_action_date.isnot(None)).all()
+        if offer.next_action_date.date() == demain
+    ]
 
-    entretiens.sort(key=lambda e: e["heure"])
     return {"date": demain.isoformat(), "entretiens": entretiens, "actions": actions}
 
 
