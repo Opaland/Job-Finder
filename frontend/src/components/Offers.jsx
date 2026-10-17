@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { actionDue, api, checklistAvancement, DEMO, downloadFile, formatDate, GEM_SCORE, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS, STATUTS_NON_TRAITES } from '../api.js'
 import { useToast } from '../App.jsx'
+import Chargement from './Chargement.jsx'
 import Comparateur from './Comparateur.jsx'
 import OfferDetail from './OfferDetail.jsx'
 
@@ -307,7 +308,7 @@ export default function Offers({ scanning }) {
       )}
 
       <div className="card" style={{ padding: '4px 14px' }}>
-        {loading && <p className="hint">Chargement…</p>}
+        {loading && <Chargement />}
         {!loading && data.items.length === 0 && (
           <p className="hint" style={{ padding: '14px 0' }}>
             Aucune offre pour ces filtres. Lance un scan depuis la barre latérale pour collecter des offres.

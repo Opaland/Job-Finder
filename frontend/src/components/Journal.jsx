@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { useToast } from '../App.jsx'
+import Chargement from './Chargement.jsx'
 
 // Miroir de KINDS (backend/app/services/journal.py) : tout type journalisé
 // doit y figurer, sinon son filtre manque et son icône tombe en « • ».
@@ -41,7 +42,7 @@ export default function Journal() {
     }).finally(() => setChargement(false))
   }, [kind, limit, retry, showToast])
 
-  if (entries === null) return <p>Chargement…</p>
+  if (entries === null) return <Chargement />
 
   // Regroupe par jour.
   const byDay = entries.reduce((acc, e) => {

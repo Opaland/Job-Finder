@@ -1,6 +1,7 @@
 import { api, formatDate, scoreColor, SOURCE_LABELS, STATUS_LABELS } from '../api.js'
 import { useToast } from '../App.jsx'
 import { useEffect, useState } from 'react'
+import Chargement from './Chargement.jsx'
 
 // Lignes comparées, dans l'ordre. `valeur` renvoie ce qui s'affiche ; `brut`
 // sert à repérer la meilleure des deux (mise en valeur discrète).
@@ -40,7 +41,7 @@ export default function Comparateur({ idA, idB, onClose }) {
         <div className="drawer-backdrop" onClick={onClose} />
         <div className="drawer" style={{ width: 'min(900px, 96vw)' }} role="dialog" aria-modal="true">
           <button className="close" aria-label="Fermer" onClick={onClose}>✕</button>
-          <p className="hint">Chargement…</p>
+          <Chargement />
         </div>
       </>
     )

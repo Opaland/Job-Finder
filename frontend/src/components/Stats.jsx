@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, DEMO, STATUS_LABELS } from '../api.js'
 import { useToast } from '../App.jsx'
+import Chargement from './Chargement.jsx'
 
 // Palette dataviz validée (une seule teinte : magnitude → bleu séquentiel).
 // Les pas sombres viennent de la même palette, choisis pour la surface sombre.
@@ -190,7 +191,7 @@ export default function Stats() {
     api.stats().then(setData).catch((err) => showToast(err.message, true))
   }, [showToast])
 
-  if (!data) return <p>Chargement…</p>
+  if (!data) return <Chargement />
   const t = data.totals
 
   return (

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, DEMO, downloadFile } from '../api.js'
 import { useToast } from '../App.jsx'
+import Chargement from './Chargement.jsx'
 
 const KEY_HELP = {
   france_travail: 'Clés gratuites sur francetravail.io → FT_CLIENT_ID / FT_CLIENT_SECRET dans .env (voir README §3.1)',
@@ -43,7 +44,7 @@ export default function Sources() {
 
   useEffect(() => { load() }, [])
 
-  if (!data || !profile) return <p>Chargement…</p>
+  if (!data || !profile) return <Chargement />
 
   const toggleSource = async (name, enabled) => {
     const sources_enabled = { ...(profile.sources_enabled || {}), [name]: enabled }

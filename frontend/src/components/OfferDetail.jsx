@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, CHECKLIST_ETAPES, DEMO, downloadFile, formatDate, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '../api.js'
 import { useToast } from '../App.jsx'
+import Chargement from './Chargement.jsx'
 import ContactsOffre from './ContactsOffre.jsx'
 import EntretiensOffre from './EntretiensOffre.jsx'
 
@@ -76,7 +77,7 @@ export default function OfferDetail({ offerId, onClose }) {
         <div className="drawer-backdrop" onClick={onClose} />
         <div className="drawer" role="dialog" aria-modal="true">
           <button className="close" aria-label="Fermer" onClick={onClose}>✕</button>
-          <p className="hint">Chargement…</p>
+          <Chargement />
         </div>
       </>
     )

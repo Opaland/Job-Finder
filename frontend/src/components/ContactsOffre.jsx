@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { useToast } from '../App.jsx'
+import Chargement from './Chargement.jsx'
 
 export default function ContactsOffre({ company, onContacts }) {
-  const [contacts, setContacts] = useState([])
+  const [contacts, setContacts] = useState(null)
   const [newContact, setNewContact] = useState(null)
   const showToast = useToast()
 
@@ -19,8 +20,9 @@ export default function ContactsOffre({ company, onContacts }) {
   return (
     <>
       <div className="section-title">Contacts chez {company}</div>
-      {contacts.length === 0 && <p className="hint" style={{ margin: '2px 0 6px' }}>Aucun contact enregistré pour cette entreprise.</p>}
-      {contacts.map((c) => (
+      {contacts === null && <Chargement />}
+      {contacts?.length === 0 && <p className="hint" style={{ margin: '2px 0 6px' }}>Aucun contact enregistré pour cette entreprise.</p>}
+      {contacts?.map((c) => (
         <div key={c.id} className="actions-row" style={{ margin: '2px 0' }}>
           <span><b>{c.name}</b>{c.role ? ` · ${c.role}` : ''}</span>
           {c.email && <a href={`mailto:${c.email}`}>{c.email}</a>}

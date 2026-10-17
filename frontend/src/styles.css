@@ -461,6 +461,13 @@ table.simple td { padding: 7px 8px; border-bottom: 1px solid #eaeef2; vertical-a
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.chargement { display: flex; align-items: center; gap: 8px; }
+.chargement-spin {
+  margin-right: 0;
+  border-color: rgba(79, 70, 229, 0.25);
+  border-top-color: var(--accent);
+}
+
 /* ---------- Mode sombre (bascule dans la barre latérale) ---------- */
 [data-theme='dark'] {
   --bg: #0d1117;

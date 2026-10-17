@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, formatDate, GEM_SCORE, scoreColor, SOURCE_LABELS, STATUS_LABELS } from '../api.js'
 import { useToast } from '../App.jsx'
+import Chargement from './Chargement.jsx'
 
 function OfferLine({ offer }) {
   return (
@@ -74,7 +75,7 @@ export default function Dashboard({ scanning, goToOffers }) {
   }, [scanning])
 
   if (error) return <p className="error-text">Erreur : {error}</p>
-  if (!digest) return <p>Chargement…</p>
+  if (!digest) return <Chargement />
 
   const p = digest.payload
   const counts = p.status_counts || {}

@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { api, formatDate } from '../api.js'
 import { useToast } from '../App.jsx'
+import Chargement from './Chargement.jsx'
 
 function TagEditor({ values, onChange, placeholder }) {
   const [input, setInput] = useState('')
@@ -64,7 +65,7 @@ export default function ProfilePage() {
     return () => window.removeEventListener('beforeunload', prevenir)
   }, [modifie])
 
-  if (!profile) return <p>Chargement…</p>
+  if (!profile) return <Chargement />
 
   const set = (key, value) => {
     setModifie(true)
@@ -227,7 +228,7 @@ export default function ProfilePage() {
           Le poids de chaque critère dans le classement. Le total est libre : le score est
           toujours ramené sur 100. Enregistrer recalcule toutes les offres.
         </p>
-        {!weightDefaults && <p className="hint">Chargement des pondérations…</p>}
+        {!weightDefaults && <Chargement texte="Chargement des pondérations…" />}
         {weightDefaults && (
           <>
             <div className="form-grid" style={{ maxWidth: 480 }}>

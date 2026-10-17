@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { actionDue, api, scoreColor, SOURCE_LABELS, STATUS_COLORS, STATUS_LABELS, STATUTS_ACTIFS } from '../api.js'
 import { useToast } from '../App.jsx'
+import Chargement from './Chargement.jsx'
 import OfferDetail from './OfferDetail.jsx'
 
 const COLUMNS = Object.keys(STATUS_LABELS)
 
 export default function Kanban({ scanning }) {
-  const [offers, setOffers] = useState([])
+  const [offers, setOffers] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
   const [dragOverCol, setDragOverCol] = useState(null)
   const showToast = useToast()
@@ -59,6 +60,10 @@ export default function Kanban({ scanning }) {
     const id = Number(e.dataTransfer.getData('text/offer-id'))
     if (id) moveOffer(id, status)
   }
+
+  // Avant : offers démarrait à [] — chaque colonne affichait "Déposer ici"
+  // pendant le chargement, comme si aucune candidature n'existait encore.
+  if (offers === null) return <Chargement />
 
   return (
     <div>

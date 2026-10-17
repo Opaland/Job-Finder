@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { useToast } from '../App.jsx'
+import Chargement from './Chargement.jsx'
 
 // Barre horizontale simple : lisible en clair comme en sombre, sans dépendance.
 function Barre({ part, couleur }) {
@@ -29,7 +30,7 @@ export default function Marche() {
   }, [showToast])
 
   if (erreur) return <p className="error-text">Erreur : {erreur}</p>
-  if (!skills) return <p>Chargement…</p>
+  if (!skills) return <Chargement />
 
   return (
     <div>
