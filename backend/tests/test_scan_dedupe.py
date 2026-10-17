@@ -11,7 +11,16 @@ import app.services.scan as scan_module
 from app.connectors.base import ConnectorResult, RawOffer
 from app.database import Base
 from app.models import Offer, Profile, local_now
-from app.services.scan import offer_to_scoring_dict, profile_to_dict, run_scan
+from app.services.scan import (
+    enrichir_description,
+    find_twin,
+    index_offres_connues,
+    offer_to_scoring_dict,
+    profile_to_dict,
+    rescore_all,
+    run_full_scan,
+    run_scan,
+)
 
 
 class FakeConnector:
@@ -272,6 +281,11 @@ def test_connecteur_en_erreur_donne_un_message_francais_pas_la_trace_python(db, 
     monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [CasseAvecTraceLaide([])])
     run = run_scan(db, trigger="manuel")
     assert run.source_stats["casse"]["errors"] == ["Erreur inattendue : 'champ_improbable_x7'"]
+    # Le connecteur a levé avant que `fetched`/`new`/`seen` ne soient jamais mis
+    # à jour : ils gardent leurs valeurs initiales, jamais incrémentées par erreur.
+    assert run.source_stats["casse"]["fetched"] == 0
+    assert run.source_stats["casse"]["new"] == 0
+    assert run.source_stats["casse"]["seen"] == 0
 
 
 def test_description_enrichie_declenche_un_nouveau_score(db, monkeypatch):
@@ -334,3 +348,366 @@ def test_affinage_ia_respecte_un_budget_de_temps(db, monkeypatch):
     scores_ia = [o.ai_score for o in offres_en_base]
     assert scores_ia.count(88.0) == 1, "une seule offre aurait dû être affinée avant la coupure"
     assert scores_ia.count(None) == 1, "l'offre restante doit rester candidate pour le prochain scan"
+
+
+# --- Sprint 61 : trous relevés par mutation testing (scan.py) -----------------
+
+def test_profile_to_dict_toutes_les_listes_a_none_ne_plantent_pas(db):
+    """Les six champs liste/dict du profil (hors skills/target_titles, déjà
+    couverts) doivent retomber sur [] / {} quand ils valent None en base —
+    sinon un `or` devenu `and` fait planter le scan au premier appel."""
+    profil = db.get(Profile, 1)
+    profil.location_keywords = None
+    profil.contracts = None
+    profil.sector_bonus = None
+    profil.excluded_keywords = None
+    profil.scoring_weights = None
+    profil.search_queries = None
+    d = profile_to_dict(profil)
+    assert d["location_keywords"] == []
+    assert d["contracts"] == []
+    assert d["sector_bonus"] == []
+    assert d["excluded_keywords"] == []
+    assert d["scoring_weights"] == {}
+    assert d["search_queries"] == []
+
+
+def test_enrichir_description_meme_longueur_ne_remplace_pas(db):
+    """`<=` strict : une description de MÊME longueur n'est pas considérée
+    plus riche — sinon chaque revue du scan recalculerait le score pour rien."""
+    offre = Offer(fingerprint="fp-e1", source="fake", source_id="e1", title="t",
+                  company="c", description="1234567890", ai_score=70.0, ai_reason="avis existant")
+    raw = _offer(source_id="e1")
+    raw.description = "abcdefghij"  # même longueur (10), pas plus riche
+    assert enrichir_description(offre, raw, profile_to_dict(db.get(Profile, 1))) is False
+    assert offre.description == "1234567890"
+    assert offre.ai_score == 70.0  # avis IA non réinitialisé puisque rien n'a changé
+
+
+def test_enrichir_description_source_sans_description_ne_plante_pas(db):
+    """`raw.description or ""` : une source qui ne fournit aucune description
+    (None) ne doit jamais planter la comparaison de longueurs."""
+    offre = Offer(fingerprint="fp-e2", source="fake", source_id="e2", title="t",
+                  company="c", description="une description déjà présente")
+    raw = _offer(source_id="e2")
+    raw.description = None
+    assert enrichir_description(offre, raw, profile_to_dict(db.get(Profile, 1))) is False
+    assert offre.description == "une description déjà présente"
+
+
+def test_enrichir_description_plus_riche_remplace_et_reinitialise_lavis_ia(db):
+    offre = Offer(fingerprint="fp-e3", source="fake", source_id="e3", title="Test Manager",
+                  company="c", description="court", ai_score=70.0, ai_reason="ancien avis")
+    raw = _offer(source_id="e3")
+    raw.description = "Une description nettement plus longue et détaillée que l'originale."
+    profile_dict = profile_to_dict(db.get(Profile, 1))
+    assert enrichir_description(offre, raw, profile_dict) is True
+    assert offre.description == raw.description
+    assert offre.ai_score is None
+    assert offre.ai_reason == ""
+
+
+def test_find_twin_sans_index_fournis_interroge_directement_la_base(db):
+    """Chemin DB (fingerprints=None, company_index=None) : utilisé par l'import
+    CSV, jamais exercé par les tests qui passent toujours les dicts du scan."""
+    existante = Offer(fingerprint="fp-twin1", source="fake", source_id="x1",
+                      title="Test Manager Senior", company="Capgemini")
+    db.add(existante)
+    db.commit()
+    jumeau = find_twin(db, "Test Manager Senior H/F", "Capgemini")
+    assert jumeau is not None
+    assert jumeau.id == existante.id
+    assert find_twin(db, "Développeur Python", "Entreprise Inconnue XYZ") is None
+
+
+def test_find_twin_entreprise_de_deux_lettres_jamais_fusionnee_par_titre(db):
+    """< 3 caractères normalisés : seule l'empreinte exacte peut fusionner —
+    jamais le rapprochement par titre proche, trop risqué sur un nom aussi court."""
+    existante = Offer(fingerprint="fp-twin2", source="fake", source_id="x2",
+                      title="Test Manager H/F", company="IT")
+    db.add(existante)
+    db.commit()
+    # Même titre, même entreprise courte, mais empreinte différente (title2 != title).
+    assert find_twin(db, "Test Manager", "IT") is None
+
+
+def test_find_twin_entreprise_de_trois_lettres_peut_fusionner_par_titre(db):
+    """Pile 3 caractères normalisés : le rapprochement par titre proche doit
+    fonctionner — la frontière exacte de la règle « >= 3 »."""
+    existante = Offer(fingerprint="fp-twin3", source="fake", source_id="x3",
+                      title="Test Manager Senior", company="EDF")
+    db.add(existante)
+    db.commit()
+    jumeau = find_twin(db, "Test Manager Senior H/F", "EDF")
+    assert jumeau is not None
+    assert jumeau.id == existante.id
+
+
+def test_index_offres_connues_limite_lindex_entreprise_a_3_caracteres(db):
+    courte = Offer(fingerprint="fp-idx1", source="fake", source_id="i1",
+                   title="A", company="IT")
+    longue = Offer(fingerprint="fp-idx2", source="fake", source_id="i2",
+                   title="B", company="EDF")
+    db.add_all([courte, longue])
+    db.commit()
+    _, _, company_index = index_offres_connues(db)
+    assert "it" not in company_index
+    assert "edf" in company_index
+
+
+def test_run_scan_refuse_un_second_scan_concurrent(db, monkeypatch):
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([_offer()])])
+    scan_module._scan_lock.acquire(blocking=False)
+    try:
+        with pytest.raises(RuntimeError, match="déjà en cours"):
+            run_scan(db, trigger="manuel")
+    finally:
+        scan_module._scan_lock.release()
+
+
+def test_scan_status_vrai_pendant_le_scan_et_faux_apres(db, monkeypatch):
+    vu_pendant = []
+
+    class ConnecteurObservateur(FakeConnector):
+        def fetch(self, profile):
+            vu_pendant.append(scan_module.scan_status()["running"])
+            return ConnectorResult(offers=list(self._offers))
+
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [ConnecteurObservateur([_offer()])])
+    assert scan_module.scan_status()["running"] is False
+    run_scan(db, trigger="manuel")
+    assert vu_pendant == [True]
+    assert scan_module.scan_status()["running"] is False
+
+
+def test_sources_enabled_a_none_traite_toutes_les_sources_comme_actives(db, monkeypatch):
+    profil = db.get(Profile, 1)
+    profil.sources_enabled = None
+    db.commit()
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([_offer()])])
+    run = run_scan(db, trigger="manuel")  # ne doit pas planter (AttributeError sur None.get)
+    assert run.new_count == 1
+
+
+def test_source_desactivee_est_marquee_skipped_et_ne_compte_pour_rien(db, monkeypatch):
+    profil = db.get(Profile, 1)
+    profil.sources_enabled = {"fake": False}
+    db.commit()
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([_offer()])])
+    run = run_scan(db, trigger="manuel")
+    assert run.source_stats["fake"]["skipped"] is True
+    assert run.new_count == 0
+    assert run.seen_count == 0
+    assert db.query(Offer).count() == 0
+
+
+def test_offre_sans_titre_ou_sans_identifiant_est_ignoree(db, monkeypatch):
+    sans_titre = RawOffer(source="fake", source_id="st1", title="", company="ACME")
+    sans_id = RawOffer(source="fake", source_id="", title="QA Engineer", company="ACME")
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([sans_titre, sans_id])])
+    run = run_scan(db, trigger="manuel")
+    assert run.new_count == 0
+    assert db.query(Offer).count() == 0
+
+
+def test_jumeau_garde_les_anciennes_autres_sources_en_ajoutant_une_nouvelle(db, monkeypatch):
+    """`others = list(twin.other_sources or [])` : un `or` devenu `and` repart
+    toujours de [] et PERD les sources déjà notées lors d'une fusion précédente."""
+    base = _offer(source_id="base")
+    fake2 = FakeConnector([RawOffer(source="fake2", source_id="s2", title="Test Manager",
+                                     company="ACME", url="https://deux.com/2")])
+    fake2.name = "fake2"
+    fake3 = FakeConnector([RawOffer(source="fake3", source_id="s3", title="Test Manager",
+                                     company="ACME", url="https://trois.com/3")])
+    fake3.name = "fake3"
+
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([base])])
+    run_scan(db, trigger="manuel")
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [fake2])
+    run_scan(db, trigger="manuel")
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [fake3])
+    run_scan(db, trigger="manuel")
+
+    db.expire_all()
+    offre = db.query(Offer).one()
+    sources_notees = {s["source"] for s in offre.other_sources}
+    assert sources_notees == {"fake2", "fake3"}
+
+
+def test_jumeau_najoute_pas_dentree_sans_url_en_double_ou_identique_au_principal(db, monkeypatch):
+    """`raw.url and entry not in others and raw.url != twin.url` : chacune des
+    trois conditions doit vraiment empêcher l'ajout, pas seulement « aider »."""
+    base = _offer(source_id="base")
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([base])])
+    run_scan(db, trigger="manuel")
+    url_principale = db.query(Offer).one().url
+
+    # 1) URL vide côté jumeau : rien à ajouter.
+    sans_url = FakeConnector([RawOffer(source="fake2", source_id="s2", title="Test Manager",
+                                        company="ACME", url="")])
+    sans_url.name = "fake2"
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [sans_url])
+    run_scan(db, trigger="manuel")
+
+    # 2) URL identique à celle de l'offre principale : rien à ajouter.
+    meme_url = FakeConnector([RawOffer(source="fake3", source_id="s3", title="Test Manager",
+                                        company="ACME", url=url_principale)])
+    meme_url.name = "fake3"
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [meme_url])
+    run_scan(db, trigger="manuel")
+
+    db.expire_all()
+    assert db.query(Offer).one().other_sources == []
+
+    # 3) Doublon exact d'une entrée déjà notée : pas de deuxième copie.
+    nouvelle = FakeConnector([RawOffer(source="fake4", source_id="s4", title="Test Manager",
+                                        company="ACME", url="https://quatre.com/4")])
+    nouvelle.name = "fake4"
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [nouvelle])
+    run_scan(db, trigger="manuel")
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [nouvelle])
+    run_scan(db, trigger="manuel")
+    db.expire_all()
+    assert db.query(Offer).one().other_sources == [{"source": "fake4", "url": "https://quatre.com/4"}]
+
+
+def test_champs_de_la_nouvelle_offre_tronques_et_valeurs_absentes_videes(db, monkeypatch):
+    longue = RawOffer(
+        source="fake", source_id="long1", title="T" * 350, company="C" * 250,
+        location="L" * 250, contract_type="X" * 80, salary_text="S" * 250,
+        url="https://x.com/1",
+    )
+    sans_rien = RawOffer(source="fake", source_id="vide1", title="Titre minimal",
+                         company=None, location=None, contract_type=None, salary_text=None)
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([longue, sans_rien])])
+    run_scan(db, trigger="manuel")
+
+    offre_longue = db.query(Offer).filter(Offer.source_id == "long1").one()
+    assert len(offre_longue.title) == 300
+    assert len(offre_longue.company) == 200
+    assert len(offre_longue.location) == 200
+    assert len(offre_longue.contract_type) == 60
+    assert len(offre_longue.salary_text) == 200
+
+    offre_vide = db.query(Offer).filter(Offer.source_id == "vide1").one()
+    assert offre_vide.company == ""
+    assert offre_vide.location == ""
+    assert offre_vide.contract_type == ""
+    assert offre_vide.salary_text == ""
+
+
+def test_hors_ligne_a_la_limite_exacte_de_15_jours(db, monkeypatch):
+    """`last_seen_at < cutoff` avec `cutoff = now - 15 jours` : pile 15 jours
+    reste en ligne, un instant de plus bascule — la frontière exacte compte.
+    Horloge figée (sinon le temps réel écoulé entre les deux calculs rend
+    l'égalité pile 15 jours impossible à obtenir de façon fiable)."""
+    instant_fixe = local_now()
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([_offer(source_id="lim")])])
+    run_scan(db, trigger="manuel")
+    offre = db.query(Offer).one()
+    offre.last_seen_at = instant_fixe - timedelta(days=15)
+    db.commit()
+
+    monkeypatch.setattr(scan_module, "local_now", lambda: instant_fixe)
+    autre = _offer(source_id="autre-source", title="QA Engineer")
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([autre])])
+    run_scan(db, trigger="manuel")
+    db.expire_all()
+    offre = db.query(Offer).filter(Offer.source_id == "lim").one()
+    assert offre.still_online is True, "pile 15 jours : pas encore hors-ligne"
+
+    offre.last_seen_at = instant_fixe - timedelta(days=15, seconds=1)
+    db.commit()
+    run_scan(db, trigger="manuel")
+    db.expire_all()
+    offre = db.query(Offer).filter(Offer.source_id == "lim").one()
+    assert offre.still_online is False, "un instant après 15 jours : hors-ligne"
+
+
+def test_candidat_ia_dont_le_score_egale_le_seuil_est_bien_inclus(db, monkeypatch):
+    """`Offer.score >= ai_min_rule_score` : le seuil lui-même doit être retenu,
+    pas seulement ce qui est strictement au-dessus."""
+    from app.config import settings
+
+    offre = Offer(fingerprint="fp-seuil", source="fake", source_id="seuil",
+                  title="Test Manager", company="ACME",
+                  score=float(settings.ai_min_rule_score), ai_score=None)
+    db.add(offre)
+    db.commit()
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([])])
+    monkeypatch.setattr(scan_module, "cli_available", lambda: True)
+    monkeypatch.setattr(scan_module, "ai_score_offer", lambda offer_dict, cv_text: (90.0, "ok"))
+    run_scan(db, trigger="manuel")
+    db.expire_all()
+    assert db.query(Offer).filter(Offer.source_id == "seuil").one().ai_score == 90.0
+
+
+def test_budget_ia_a_la_limite_exacte_ne_coupe_pas_encore(db, monkeypatch):
+    """`elapsed > AI_BUDGET_SECONDES` strict : à la limite pile, l'affinage
+    continue encore — ce n'est que l'instant suivant qui coupe."""
+    offres = [_offer(source_id="b1", title="Test Manager", company="Alpha")]
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector(offres)])
+    monkeypatch.setattr(scan_module, "cli_available", lambda: True)
+    monkeypatch.setattr(scan_module, "ai_score_offer", lambda offer_dict, cv_text: (88.0, "raison"))
+    horloge = iter([0.0, float(scan_module.AI_BUDGET_SECONDES)])
+    monkeypatch.setattr(scan_module.time, "monotonic", lambda: next(horloge))
+    run_scan(db, trigger="manuel")
+    assert db.query(Offer).one().ai_score == 88.0, "à la limite exacte, l'offre doit être affinée"
+
+
+def test_affinage_ia_compte_un_par_offre_pas_deux(db, monkeypatch):
+    offres = [_offer(source_id="c1", title="Test Manager", company="Alpha")]
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector(offres)])
+    monkeypatch.setattr(scan_module, "cli_available", lambda: True)
+    monkeypatch.setattr(scan_module, "ai_score_offer", lambda offer_dict, cv_text: (88.0, "raison"))
+    run = run_scan(db, trigger="manuel")
+    assert run.source_stats["_ia"]["refined"] == 1
+
+
+def test_aucune_entree_ia_dans_les_stats_si_rien_naffine(db, monkeypatch):
+    """`if ai_refined:` : pas d'offre affinée (CLI absente) => pas d'entrée
+    `_ia` fantôme dans les stats, même avec `ai_refined` initialisé à 0."""
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([_offer()])])
+    run = run_scan(db, trigger="manuel")
+    assert "_ia" not in run.source_stats
+
+
+def test_source_desactivee_ne_fausse_pas_les_totaux_du_scan(db, monkeypatch):
+    """Une source désactivée n'a ni `new` ni `seen` dans ses stats : le total
+    doit retomber sur le défaut 0 de `.get()`, pas planter ni fausser le compte."""
+    profil = db.get(Profile, 1)
+    profil.sources_enabled = {"inactive": False}
+    db.commit()
+    inactive = FakeConnector([])
+    inactive.name = "inactive"
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([_offer()]), inactive])
+    run = run_scan(db, trigger="manuel")
+    assert run.new_count == 1
+    assert run.seen_count == 0
+
+
+def test_run_full_scan_sans_envoi_demail_ne_renvoie_jamais_true(db, monkeypatch):
+    import app.services.digest as digest_module
+
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([_offer()])])
+    monkeypatch.setattr(
+        digest_module, "send_digest_email",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("ne doit pas être appelé")),
+    )
+    _, _, envoye = run_full_scan(db, trigger="manuel", send_email=False)
+    assert envoye is False
+
+
+def test_rescore_all_recalcule_chaque_offre_et_compte_juste(db):
+    profil = db.get(Profile, 1)
+    db.add_all([
+        Offer(fingerprint="fp-r1", source="fake", source_id="r1", title="Test Manager",
+             company="ACME", description="Selenium, Jira, pilotage QA.", score=0),
+        Offer(fingerprint="fp-r2", source="fake", source_id="r2", title="QA Engineer",
+             company="Beta", description="Cypress, automatisation.", score=0),
+    ])
+    db.commit()
+    compte = rescore_all(db)
+    assert compte == 2
+    scores = [o.score for o in db.query(Offer).all()]
+    assert all(s > 0 for s in scores)
