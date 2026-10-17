@@ -2,8 +2,8 @@
 
 Sprint 59 (issue #8) : logique extraite de `routers/offers.py`, qui ne garde
 plus que la requête DB et la construction de la `Response` HTTP — même patron
-que `services/justificatif.py` (PDF) et `services/exports_offres.py` permet
-désormais de tester le CONTENU généré sans passer par toute la pile HTTP.
+que `services/justificatif.py` (PDF). Ce module permet désormais de tester
+le CONTENU généré sans passer par toute la pile HTTP.
 """
 from __future__ import annotations
 
