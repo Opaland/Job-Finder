@@ -2,7 +2,7 @@
 // `<p>Chargement…</p>` et `return null` ad hoc dispersés dans les vues.
 export default function Chargement({ texte = 'Chargement…' }) {
   return (
-    <p className="hint chargement">
+    <p className="hint chargement" role="status" aria-live="polite">
       <span className="spin chargement-spin" />
       {texte}
     </p>
