@@ -1,5 +1,59 @@
 # Changelog
 
+## v3.2 — Identité visuelle et clôture du backlog d'audit
+
+Deux chantiers distincts : une passe design (l'app ressemblait encore trait pour
+trait à GitHub Primer, sans identité propre) et la fermeture systématique du
+backlog d'audit resté ouvert depuis plusieurs mois (42 issues GitHub vérifiées
+une à une contre le code réel, pas sur la foi d'un souvenir).
+
+**Identité visuelle**
+- Nouvel accent de marque (indigo/violet, police Inter) propagé via les
+  variables CSS déjà en place — aucune bibliothèque de composants ajoutée,
+  palette « statuts » (contraste AA déjà vérifié) intentionnellement intacte.
+- Favicon et icônes PWA recolorées, captures du site et du README refaites sur
+  la nouvelle interface, GIF de démonstration (parcours réel : score expliqué,
+  lettre générée), page d'accueil repensée avec les vrais différenciants
+  (368 tests, IA locale sans clé API, dédoublonnage multi-sources) en tête de
+  page plutôt qu'une liste de fonctionnalités génériques.
+- Bug mobile réel trouvé par capture d'écran : le bandeau de navigation
+  horizontal promis sous 820px ne s'appliquait jamais (sélecteurs CSS visant
+  des classes absentes du DOM réel) — chaque onglet s'affichait sur sa propre
+  ligne pleine largeur, poussant tout le contenu hors écran au premier
+  chargement.
+
+**Fiabilité (backlog d'audit fermé)**
+- Score ignorant les titres au pluriel, télétravail partiel compté comme full
+  remote (scan automatique France Travail *et* ajout manuel), salaire minimum
+  saisi mais jamais utilisé, `PUT /api/profile` qui plantait en 500 sur un
+  champ obligatoire à `null`, titre Adzuna `null` qui faisait perdre toute une
+  page de résultats.
+- Scan quotidien : panne totalement silencieuse (email non envoyé ou verrou
+  occupé rapportés comme un succès), pas de verrou inter-processus sur la
+  migration de schéma, budget d'affinage IA incompatible avec la tâche
+  planifiée, détecteur de « source qui réussit à vide » jamais appelé pendant
+  le scan réel.
+- Candidature en entretien pouvant disparaître du Kanban (tri par score coupé
+  à 2000), offre jamais ouverte disparaissant des compteurs après 26h, bilan
+  hebdomadaire IA jamais persisté, aucun moyen de rejeter en masse la pile
+  d'offres jamais triées, export Excel sans la lettre ni le suivi de
+  candidature.
+- Nouveau signal « probablement la même mission » (offre republiée par
+  plusieurs intermédiaires, parfois sous le nom de l'agrégateur) — signal
+  seulement, jamais une fusion automatique.
+- Adresse postale et téléphone réels masqués sur la démo publique (décision
+  explicite de l'utilisateur).
+
+**Dette et tests**
+- `stats.py` découpé (sauvegarde/restauration extraite), `OfferDetail.jsx`
+  découpé (contacts et entretiens en composants autonomes), duplication
+  `next_interviews`/`echeances_de_demain` et génération xlsx/docx extraites
+  en fonctions pures testables sans la pile HTTP.
+- Mapping module→tests de `scripts/mutation.py` périmé depuis plusieurs
+  sprints (des fichiers de test entiers n'étaient pas rejoués) — corrigé puis
+  48 trous de preuve réels comblés. Repères : scoring 97 %, textutils 94 %,
+  diagnostic 100 %.
+
 ## v3.1 — Validation sur les vraies sources
 
 Jusqu'ici l'application n'avait jamais parlé aux vrais sites : tout était vérifié
