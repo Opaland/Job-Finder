@@ -122,15 +122,17 @@ export default function App() {
         <aside className="sidebar">
           <div className="brand"><span className="brand-mark">JF</span>Job<span>Finder</span></div>
           <div className="subtitle">Recherche QA · Cédric Moretti</div>
-          {PAGES.map((p) => (
-            <button
-              key={p.id}
-              className={`nav ${page === p.id ? 'active' : ''}`}
-              onClick={() => setPage(p.id)}
-            >
-              <span>{p.icon}</span> {p.label}
-            </button>
-          ))}
+          <nav className="sidebar-nav">
+            {PAGES.map((p) => (
+              <button
+                key={p.id}
+                className={`nav ${page === p.id ? 'active' : ''}`}
+                onClick={() => setPage(p.id)}
+              >
+                <span>{p.icon}</span> {p.label}
+              </button>
+            ))}
+          </nav>
           <div style={{ padding: '14px 10px' }}>
             <button className="primary" style={{ width: '100%' }} onClick={startScan} disabled={scanning}>
               {scanning ? (<><span className="spin" />Scan en cours…</>) : 'Lancer un scan'}
