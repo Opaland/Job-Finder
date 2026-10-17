@@ -4,30 +4,53 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Job Finder — Recherche d'emploi QA assistée par IA</title>
-<meta name="description" content="Application locale qui agrège les offres d'emploi QA de 6 sources, les classe selon le CV et génère des lettres de motivation avec Claude.">
+<meta name="description" content="Application locale qui agrège les offres d'emploi QA de 6 sources, les classe selon le CV et génère des lettres de motivation avec Claude. 368 tests automatisés, aucune clé API Anthropic.">
 <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;rect width='100' height='100' rx='22' fill='%234f46e5'/&gt;&lt;circle cx='50' cy='50' r='40' fill='white'/&gt;&lt;circle cx='50' cy='50' r='31' fill='%234f46e5'/&gt;&lt;circle cx='50' cy='50' r='21' fill='white'/&gt;&lt;circle cx='50' cy='50' r='11' fill='%234f46e5'/&gt;&lt;/svg&gt;">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0d1526; --panel: #131e33; --border: #24314d;
-    --text: #e6edf3; --muted: #94a3b8; --accent: #58a6ff; --green: #3fb950; --amber: #d29922;
+    --bg: #0d1117; --panel: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e;
+    --accent: #818cf8; --accent-2: #a78bfa; --accent-solid: #6366f1;
+    --green: #3fb950; --amber: #d29922;
   }
   * { box-sizing: border-box; margin: 0; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
   a { color: var(--accent); }
   .wrap { max-width: 1020px; margin: 0 auto; padding: 0 22px; }
-  header { padding: 64px 0 40px; text-align: center; }
-  h1 { font-size: 42px; letter-spacing: -1px; }
-  h1 span { color: var(--accent); }
+  header { padding: 56px 0 0; text-align: center; }
+  .brand-mark {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; border-radius: 13px; margin-bottom: 18px;
+    background: linear-gradient(135deg, var(--accent-2), var(--accent-solid));
+    color: #fff; font-size: 17px; font-weight: 800; letter-spacing: -0.5px;
+    box-shadow: 0 4px 16px rgba(99, 102, 241, .5);
+  }
+  h1 { font-size: 42px; letter-spacing: -1px; font-weight: 800; }
+  h1 span { background: linear-gradient(135deg, var(--accent-2), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .tagline { font-size: 19px; color: var(--muted); max-width: 700px; margin: 14px auto 0; }
-  .cta { margin-top: 30px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .proof-bar {
+    display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+    margin: 26px auto 0; max-width: 760px;
+  }
+  .proof-bar span {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 999px;
+    padding: 7px 16px; font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .proof-bar span b { color: var(--accent); font-weight: 800; }
+  .cta { margin-top: 28px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
   .btn { display: inline-block; padding: 13px 26px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 15.5px; }
-  .btn.primary { background: #1f6feb; color: #fff; }
-  .btn.primary:hover { background: #2f7bf0; }
+  .btn.primary { background: linear-gradient(135deg, var(--accent-solid), #4f46e5); color: #fff; box-shadow: 0 4px 16px rgba(99, 102, 241, .4); }
+  .btn.primary:hover { filter: brightness(1.08); }
   .btn.ghost { border: 1px solid var(--border); color: var(--text); background: var(--panel); }
   .btn.ghost:hover { border-color: var(--accent); }
   .note { margin-top: 14px; color: var(--muted); font-size: 13.5px; }
+  .hero-shot { margin: 40px 0 0; }
+  .hero-shot img { width: 100%; border-radius: 14px; border: 1px solid var(--border); box-shadow: 0 24px 64px rgba(0,0,0,.5); }
   section { padding: 44px 0; }
-  h2 { font-size: 26px; margin-bottom: 22px; text-align: center; }
+  h2 { font-size: 26px; margin-bottom: 22px; text-align: center; font-weight: 800; letter-spacing: -0.3px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
   .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; }
   .card .icon { font-size: 26px; }
@@ -36,11 +59,11 @@
   .shots img { width: 100%; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 18px; box-shadow: 0 12px 40px rgba(0,0,0,.45); }
   .steps { counter-reset: step; max-width: 760px; margin: 0 auto; }
   .step { display: flex; gap: 18px; margin-bottom: 22px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px 22px; }
-  .step::before { counter-increment: step; content: counter(step); flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: #1f6feb; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; }
-  .step code { background: #0d1526; border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px; font-size: 13px; }
+  .step::before { counter-increment: step; content: counter(step); flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-solid), #4f46e5); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .step code { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px; font-size: 13px; }
   .step p { color: var(--muted); font-size: 14px; }
   .step b { color: var(--text); }
-  .pledge { text-align: center; background: linear-gradient(180deg, #131e33, #0d1526); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .pledge { text-align: center; background: linear-gradient(180deg, #161b22, #0d1117); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
   .pledge p { max-width: 720px; margin: 0 auto; font-size: 16px; }
   footer { padding: 34px 0 44px; text-align: center; color: var(--muted); font-size: 13px; }
 </style>
@@ -48,11 +71,18 @@
 <body>
 
 <header class="wrap">
-  <h1>Job<span>Finder</span> 🎯</h1>
+  <div class="brand-mark">JF</div>
+  <h1>Job<span>Finder</span></h1>
   <p class="tagline">
     L'application qui cherche à ta place : les sites d'emploi scannés chaque matin,
     un classement 0-100 calibré sur ton CV, et des lettres de motivation générées par Claude.
   </p>
+  <div class="proof-bar">
+    <span><b>368</b> tests automatisés</span>
+    <span>IA locale, <b>zéro</b> clé API</span>
+    <span><b>6</b> sources dédoublonnées</span>
+    <span>Usage réel quotidien</span>
+  </div>
   <div class="cta">
     <a class="btn primary" href="demo/">▶ Essayer la démo interactive</a>
     <a class="btn ghost" href="https://github.com/Opaland/Job-Finder#1-démarrage-rapide-windows">📥 Guide d'installation</a>
@@ -60,17 +90,29 @@
   </div>
   <p class="note">La démo tourne dans ton navigateur avec des données d'exemple.
   L'application complète s'installe en local (« Ouvrir mon appli locale » fonctionne si elle est lancée).</p>
+
+  <div class="hero-shot wrap">
+    <img src="captures/hero.png" alt="Tableau de bord Job Finder : offres classées, objectif de la semaine, pépites à regarder en priorité" loading="eager">
+  </div>
 </header>
+
+<section class="wrap">
+  <h2>Pourquoi celle-ci plutôt qu'un tableur</h2>
+  <div class="grid">
+    <div class="card"><div class="icon">🧪</div><h3>368 tests, pas un prototype</h3>
+      <p>Chaque règle métier (scoring, dédoublonnage, statuts, confidentialité) est testée — y compris contre les vrais sites (APEC, HelloWork) et par mutation testing, pas seulement avec des données bouchonnées.</p></div>
+    <div class="card"><div class="icon">🤖</div><h3>IA locale, aucune clé API</h3>
+      <p>L'affinage du score et les lettres de motivation passent par ta session Claude Code existante — aucune clé Anthropic séparée à payer, aucune donnée envoyée à un tiers inconnu.</p></div>
+    <div class="card"><div class="icon">🔎</div><h3>6 sources, dédoublonnées pour de vrai</h3>
+      <p>France Travail, Adzuna, JSearch, Welcome to the Jungle, APEC, HelloWork — une même offre vue sur plusieurs sites ne fait qu'une seule fiche, par titre ET entreprise, jamais par un simple rapprochement de texte.</p></div>
+  </div>
+</section>
 
 <section class="wrap">
   <h2>Ce qu'elle fait pour toi</h2>
   <div class="grid">
-    <div class="card"><div class="icon">🔎</div><h3>6 sources, dédoublonnées</h3>
-      <p>France Travail, Adzuna, JSearch (offres LinkedIn / Indeed via Google for Jobs), APEC, HelloWork — une même offre vue deux fois ne fait qu'une fiche. APEC et HelloWork répondent sans aucune clé ; Welcome to the Jungle est en panne côté site (<a href="https://github.com/Opaland/Job-Finder#10-limites-connues-assumées">limites connues</a>).</p></div>
     <div class="card"><div class="icon">🧮</div><h3>Classement selon ton CV</h3>
       <p>Score 0-100 expliqué critère par critère : adéquation du poste, compétences citées, séniorité, localisation Lyon / remote, contrat, secteur.</p></div>
-    <div class="card"><div class="icon">🤖</div><h3>IA en local, sans clé API</h3>
-      <p>Ta session Claude Code affine le score des meilleures offres et rédige une lettre de motivation adaptée à chaque annonce, à partir de ta lettre type.</p></div>
     <div class="card"><div class="icon">📬</div><h3>Point quotidien</h3>
       <p>Scan automatique chaque matin, tableau de bord « état des lieux » et email récapitulatif des nouvelles offres classées.</p></div>
     <div class="card"><div class="icon">📌</div><h3>Suivi de candidatures</h3>
