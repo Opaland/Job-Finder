@@ -237,6 +237,35 @@ def test_offre_revue_redevient_en_ligne(db, monkeypatch):
     assert offer.status == "postulee"   # la règle absolue tient : statut jamais touché
 
 
+def test_offre_close_par_lutilisateur_jamais_touchee_par_une_disparition_puis_un_retour(db, monkeypatch):
+    """Règle absolue du scan, cas le plus sensible : une offre que Cédric a
+    lui-même refusée (`STATUTS_CLOS`) ne doit JAMAIS voir son statut bouger —
+    ni quand elle disparaît de la source, ni quand elle y réapparaît."""
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([_offer()])])
+    run_scan(db, trigger="manuel")
+    offer = db.query(Offer).one()
+    offer.status = "refusee"
+    offer.last_seen_at = local_now() - timedelta(days=30)
+    db.commit()
+
+    # Disparition : une autre offre est ramenée, celle-ci non.
+    autre = _offer(source_id="autre-annonce-close", title="QA Engineer")
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([autre])])
+    run_scan(db, trigger="manuel")
+    db.expire_all()
+    offer = db.query(Offer).filter(Offer.source_id == "1").one()
+    assert offer.still_online is False
+    assert offer.status == "refusee"
+
+    # Retour : la même source ramène à nouveau l'offre refusée.
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([_offer(), autre])])
+    run_scan(db, trigger="manuel")
+    db.expire_all()
+    offer = db.query(Offer).filter(Offer.source_id == "1").one()
+    assert offer.still_online is True
+    assert offer.status == "refusee"   # jamais réouverte malgré son retour
+
+
 def test_offre_revue_via_une_autre_source_redevient_en_ligne(db, monkeypatch):
     """Même règle, chemin « jumeau » (scan.py:~220) : l'offre reparaît via une
     AUTRE source, même entreprise et titre proche — pas le même source_id."""
