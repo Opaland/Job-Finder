@@ -1,6 +1,3 @@
-import io
-import re
-
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, load_only
@@ -12,6 +9,7 @@ from ..schemas import InterviewIn, InterviewReport, ManualOffer, SimulationTour,
 # à l'appel, ce qui permet aussi de simuler son absence dans les tests.
 from ..services import claude_ai
 from ..services.enrich import fetch_full_description
+from ..services.exports_offres import classeur_xlsx, lettre_docx, nom_fichier_lettre
 from ..services.journal import log_event
 from ..services.proches import offres_proches
 from ..services.scan import find_twin, offer_to_scoring_dict, profile_to_dict, rescore_offer
@@ -194,28 +192,6 @@ def add_manual_offer(payload: ManualOffer, db: Session = Depends(get_db)):
 @router.get("/export.xlsx")
 def export_xlsx(db: Session = Depends(get_db)):
     """Exporte toutes les offres suivies dans un classeur Excel (tri par score)."""
-    from openpyxl import Workbook
-    from openpyxl.styles import Alignment, Font, PatternFill
-    from openpyxl.utils import get_column_letter
-
-    headers = [
-        ("Score", 8), ("Titre", 42), ("Entreprise", 24), ("Lieu", 20), ("Contrat", 14),
-        ("Salaire", 16), ("Télétravail", 11), ("Statut", 12), ("Favori", 8),
-        ("Source", 16), ("Publiée le", 12), ("Collectée le", 12), ("Avis IA", 40),
-        ("Notes", 40), ("Prochaine action", 30), ("Entretiens", 40), ("Lettre", 50), ("Lien", 45),
-    ]
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Offres"
-    header_fill = PatternFill("solid", fgColor="10192B")
-    for col, (label, width) in enumerate(headers, start=1):
-        cell = ws.cell(row=1, column=col, value=label)
-        cell.font = Font(bold=True, color="FFFFFF")
-        cell.fill = header_fill
-        ws.column_dimensions[get_column_letter(col)].width = width
-    ws.freeze_panes = "A2"
-
     # Pas la description (trop lourde) ; lettre/entretiens/prochaine action
     # manquaient à l'export (issue #16) — exporter pour l'emporter faisait
     # perdre le fil des relances et rendez-vous prévus.
@@ -225,40 +201,8 @@ def export_xlsx(db: Session = Depends(get_db)):
         Offer.published_at, Offer.collected_at, Offer.ai_reason, Offer.notes, Offer.url,
         Offer.next_action_date, Offer.next_action_note, Offer.interviews, Offer.cover_letter,
     ).order_by(Offer.final_score.desc()).all()
-    for row, o in enumerate(offers, start=2):
-        prochaine_action = ""
-        if o.next_action_date:
-            prochaine_action = o.next_action_date.strftime("%d/%m/%Y")
-            if o.next_action_note:
-                prochaine_action += f" — {o.next_action_note}"
-        entretiens = "\n".join(
-            f"{(i.get('date') or '')[:10]} ({i.get('format') or '?'}"
-            f"{', ' + i['interlocuteur'] if i.get('interlocuteur') else ''})"
-            + (f" — {i['ressenti']}" if i.get('ressenti') else "")
-            for i in (o.interviews or [])
-        )
-        values = [
-            round(o.final_score), o.title, o.company, o.location, o.contract_type,
-            o.salary_text, "Oui" if o.remote else "", STATUS_LABELS.get(o.status, o.status),
-            "★" if o.favorite else "",
-            o.source, o.published_at.strftime("%d/%m/%Y") if o.published_at else "",
-            o.collected_at.strftime("%d/%m/%Y"), o.ai_reason, o.notes,
-            prochaine_action, entretiens, o.cover_letter, o.url,
-        ]
-        for col, value in enumerate(values, start=1):
-            cell = ws.cell(row=row, column=col, value=value)
-            if isinstance(value, str) and value.startswith("="):
-                # `data_type` suffit ici, et ne modifie pas la valeur : dans un
-                # .xlsx, l'apostrophe de `cellule_sure` (réservée au CSV, où
-                # Excel la masque) s'afficherait telle quelle.
-                cell.data_type = "s"  # texte collecté, jamais une formule Excel
-            cell.alignment = Alignment(vertical="top", wrap_text=col in (2, 13, 14, 16, 17))
-    ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{max(len(offers) + 1, 2)}"
-
-    buffer = io.BytesIO()
-    wb.save(buffer)
     return Response(
-        content=buffer.getvalue(),
+        content=classeur_xlsx(offers),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": 'attachment; filename="job_finder_offres.xlsx"'},
     )
@@ -578,37 +522,9 @@ def letter_docx(offer_id: int, db: Session = Depends(get_db)):
     if not (offer.cover_letter or "").strip():
         raise HTTPException(400, "Aucune lettre pour cette offre : génère-la ou écris-la d'abord.")
 
-    from docx import Document
-    from docx.shared import Pt
-
     profile = db.get(Profile, 1)
-    doc = Document()
-    style = doc.styles["Normal"]
-    style.font.name = "Calibri"
-    style.font.size = Pt(11)
-
-    header = doc.add_paragraph()
-    run = header.add_run(profile.full_name or "")
-    run.bold = True
-    if profile.email:
-        header.add_run(f"\n{profile.email}")
-
-    title = f"Candidature — {offer.title}"
-    if offer.company:
-        title += f" · {offer.company}"
-    doc.add_paragraph(title).runs[0].bold = True
-    doc.add_paragraph("")
-
-    for paragraph in offer.cover_letter.split("\n\n"):
-        if paragraph.strip():
-            doc.add_paragraph(paragraph.strip())
-
-    buffer = io.BytesIO()
-    doc.save(buffer)
-
-    safe_company = re.sub(r"[^A-Za-z0-9_-]+", "_", offer.company or "offre").strip("_") or "offre"
     return Response(
-        content=buffer.getvalue(),
+        content=lettre_docx(offer, profile),
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={"Content-Disposition": f'attachment; filename="lettre_{safe_company}_{offer.id}.docx"'},
+        headers={"Content-Disposition": f'attachment; filename="{nom_fichier_lettre(offer)}"'},
     )

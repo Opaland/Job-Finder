@@ -2,10 +2,12 @@
 en mode démo était vérifiée (test_demo_couverture.py), jamais ce qu'ils contiennent.
 """
 import io
+from types import SimpleNamespace
 
 from openpyxl import load_workbook
 
 from app.models import Offer
+from app.services.exports_offres import classeur_xlsx, lettre_docx, nom_fichier_lettre
 
 
 def _offre(db, **champs):
@@ -96,3 +98,41 @@ def test_lettre_docx_contenu_reel(client, db):
     assert "Test Manager Santé" in texte and "ACME Santé" in texte
     assert "Premier paragraphe de la lettre." in texte
     assert "Cordialement." in texte
+
+
+# --- Sprint 59 (issue #8) : fonctions pures testées sans passer par la pile HTTP ---
+
+def _offre_legere(**champs):
+    base = dict(
+        final_score=70.0, title="Testeur QA", company="ACME", location="Lyon",
+        contract_type="CDI", salary_text="", remote=False, status="nouvelle",
+        favorite=False, source="apec", published_at=None, collected_at=None,
+        ai_reason="", notes="", url="https://exemple.fr", next_action_date=None,
+        next_action_note=None, interviews=[], cover_letter="",
+    )
+    base.update(champs)
+    return SimpleNamespace(**base)
+
+
+def test_classeur_xlsx_fonction_pure_sans_offre():
+    """Un classeur vide ne doit pas planter (max(len(offers) + 1, 2))."""
+    contenu = classeur_xlsx([])
+    wb = load_workbook(io.BytesIO(contenu))
+    assert [c.value for c in wb.active[1]][:2] == ["Score", "Titre"]
+
+
+def test_lettre_docx_fonction_pure():
+    from docx import Document
+
+    offre = _offre_legere(title="QA Lead", company="Beta", cover_letter="Madame,\n\nTexte.\n\nCordialement.")
+    profil = SimpleNamespace(full_name="Jean Dupont", email="jean@exemple.fr")
+
+    contenu = lettre_docx(offre, profil)
+    doc = Document(io.BytesIO(contenu))
+    texte = "\n".join(p.text for p in doc.paragraphs)
+    assert "Jean Dupont" in texte and "QA Lead" in texte and "Beta" in texte and "Texte." in texte
+
+
+def test_nom_fichier_lettre_assainit_l_entreprise():
+    offre = _offre_legere(company="ACME Santé !", id=42)
+    assert nom_fichier_lettre(offre) == "lettre_ACME_Sant_42.docx"
