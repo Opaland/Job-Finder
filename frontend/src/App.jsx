@@ -120,7 +120,7 @@ export default function App() {
       )}
       <div className="layout">
         <aside className="sidebar">
-          <div className="brand">Job<span>Finder</span></div>
+          <div className="brand"><span className="brand-mark">JF</span>Job<span>Finder</span></div>
           <div className="subtitle">Recherche QA · Cédric Moretti</div>
           {PAGES.map((p) => (
             <button
