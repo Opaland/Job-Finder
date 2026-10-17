@@ -24,6 +24,51 @@ function offerById(id) {
   return state.offers.find((o) => o.id === Number(id))
 }
 
+// Miroir de services/proches.py (issue #43) : signal faible, jamais une fusion.
+const SEUIL_SIMILARITE_PROCHES = 0.85
+const DESCRIPTION_MIN_PROCHES = 50
+
+function normaliseTexte(t) {
+  return (t || '').toLowerCase().replace(/\s+/g, ' ').trim()
+}
+
+function bigrammes(s) {
+  const b = []
+  for (let i = 0; i < s.length - 1; i++) b.push(s.slice(i, i + 2))
+  return b
+}
+
+// Coefficient de Dice sur bigrammes — approximation légère du ratio difflib
+// du backend, suffisante pour la démo (pas de dépendance côté navigateur).
+function similarite(a, b) {
+  const ba = bigrammes(a)
+  const bb = bigrammes(b)
+  if (!ba.length || !bb.length) return 0
+  const compte = new Map()
+  ba.forEach((g) => compte.set(g, (compte.get(g) || 0) + 1))
+  let intersection = 0
+  bb.forEach((g) => {
+    const n = compte.get(g) || 0
+    if (n > 0) { intersection += 1; compte.set(g, n - 1) }
+  })
+  return (2 * intersection) / (ba.length + bb.length)
+}
+
+function offresProches(offer) {
+  const description = normaliseTexte(offer.description)
+  if (description.length < DESCRIPTION_MIN_PROCHES) return []
+  return state.offers
+    .filter((o) => o.id !== offer.id && !STATUTS_CLOS.includes(o.status))
+    .map((o) => ({ o, desc: normaliseTexte(o.description) }))
+    .filter(({ desc }) => desc.length >= DESCRIPTION_MIN_PROCHES)
+    .map(({ o, desc }) => ({
+      id: o.id, title: o.title, company: o.company, source: o.source, url: o.url,
+      ratio: Math.round(similarite(description, desc) * 100) / 100,
+    }))
+    .filter((p) => p.ratio >= SEUIL_SIMILARITE_PROCHES)
+    .sort((a, b) => b.ratio - a.ratio)
+}
+
 function params_get(query, key) {
   return new URLSearchParams(query).get(key)
 }
@@ -227,7 +272,7 @@ export async function demoRequest(path, options = {}) {
       if ('next_action_date' in body) offer.next_action_date = body.next_action_date
       if ('next_action_note' in body) offer.next_action_note = body.next_action_note
     }
-    return offer
+    return { ...offer, offres_proches: offresProches(offer) }
   }
 
   const interviewAdd = route.match(/^\/api\/offers\/(\d+)\/interviews$/)

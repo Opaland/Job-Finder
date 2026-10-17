@@ -45,6 +45,8 @@ class OfferDetail(OfferSummary):
     ats_reformulation: str | None
     status_history: list
     last_seen_at: datetime
+    # Issue #43 : signal faible, jamais une fusion — voir services/proches.py.
+    offres_proches: list = []
 
 
 class InterviewIn(BaseModel):

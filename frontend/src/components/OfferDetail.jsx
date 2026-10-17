@@ -147,6 +147,21 @@ export default function OfferDetail({ offerId, onClose }) {
           </p>
         )}
 
+        {offer.offres_proches?.length > 0 && (
+          <p className="hint proches-warning">
+            ⚠️ Probablement la même mission que {offer.offres_proches.length > 1 ? 'ces offres' : 'cette offre'} (description quasi identique) :{' '}
+            {offer.offres_proches.map((p, i) => (
+              <span key={p.id}>
+                {i > 0 && ' · '}
+                {p.url ? (
+                  <a href={p.url} target="_blank" rel="noreferrer">{p.company || 'Entreprise non précisée'}</a>
+                ) : (p.company || 'Entreprise non précisée')}
+                {' '}({SOURCE_LABELS[p.source] || p.source})
+              </span>
+            ))}
+          </p>
+        )}
+
         <div className="section-title">Pourquoi ce score ?</div>
         <div className="breakdown">
           {(offer.score_breakdown || []).map((item, i) => (

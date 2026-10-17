@@ -13,6 +13,7 @@ from ..schemas import InterviewIn, InterviewReport, ManualOffer, SimulationTour,
 from ..services import claude_ai
 from ..services.enrich import fetch_full_description
 from ..services.journal import log_event
+from ..services.proches import offres_proches
 from ..services.scan import find_twin, offer_to_scoring_dict, profile_to_dict, rescore_offer
 from ..services.textutils import (
     contains_word, escape_like, fingerprint, naif, normalize, teletravail_complet,
@@ -264,12 +265,21 @@ def export_xlsx(db: Session = Depends(get_db)):
 
 
 
+def _offer_detail(db: Session, offer: Offer) -> dict:
+    """Offre + champs calculés (offres_proches) — utilisé par GET et PATCH pour
+    que le signal ne disparaisse pas dès la première action sur l'offre (revue
+    du Sprint 52 : PATCH renvoyait l'ORM brut, sans le champ calculé)."""
+    data = OfferDetail.model_validate(offer).model_dump()
+    data["offres_proches"] = offres_proches(db, offer)
+    return data
+
+
 @router.get("/{offer_id}", response_model=OfferDetail)
 def get_offer(offer_id: int, db: Session = Depends(get_db)):
     offer = db.get(Offer, offer_id)
     if not offer:
         raise HTTPException(404, "Offre introuvable")
-    return offer
+    return _offer_detail(db, offer)
 
 
 @router.patch("/{offer_id}", response_model=OfferDetail)
@@ -323,7 +333,7 @@ def update_offer(offer_id: int, update: OfferUpdate, db: Session = Depends(get_d
         avant, apres = (STATUS_LABELS.get(c, c) for c in status_change)
         log_event(db, "statut", f"« {offer.title} » ({offer.company or 'entreprise inconnue'}) : "
                                 f"{avant} → {apres}", offer.id)
-    return offer
+    return _offer_detail(db, offer)
 
 
 def _generation_ia(db: Session, offer_id: int, generer, *, aide_503: str = "", aide_502: str = "Réessaie dans un instant."):
