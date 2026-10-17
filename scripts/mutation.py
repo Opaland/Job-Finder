@@ -50,15 +50,24 @@ CIBLES = {
         ["tests/test_similarity.py", "tests/test_scoring.py", "tests/test_textutils.py",
          "tests/test_csv.py", "tests/test_hellowork.py", "tests/test_manual_offer.py"],
     ),
-    "scan": ("app/services/scan.py", ["tests/test_scan_dedupe.py", "tests/test_queries.py"]),
-    "digest": ("app/services/digest.py", ["tests/test_digest_enrich.py", "tests/test_rappels.py"]),
+    # test_queries.py ne teste QUE connectors/base.py (profile_queries) malgré
+    # son nom — jamais scan.py. Retiré d'ici (Sprint 61) : il gonflait
+    # artificiellement le nombre de tests rejoués sans rien prouver sur ce
+    # module. test_similarity.py y a été ajouté à la place : sa dernière
+    # fonction (test_fusion_au_scan_meme_entreprise) appelle réellement
+    # run_scan(), pas un double.
+    "scan": ("app/services/scan.py", ["tests/test_scan_dedupe.py", "tests/test_similarity.py"]),
+    "digest": (
+        "app/services/digest.py",
+        ["tests/test_digest_enrich.py", "tests/test_rappels.py", "tests/test_entretiens.py"],
+    ),
     "diagnostic": (
         "app/services/diagnostic.py",
         ["tests/test_diagnostic.py", "tests/test_scan_dedupe.py"],
     ),
     "justificatif": ("app/services/justificatif.py", ["tests/test_justificatif.py"]),
     "marche": ("app/services/marche.py", ["tests/test_marche.py"]),
-    "verrou": ("app/services/verrou.py", ["tests/test_verrou.py"]),
+    "verrou": ("app/services/verrou.py", ["tests/test_verrou.py", "tests/test_cli.py"]),
 }
 
 
