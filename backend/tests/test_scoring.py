@@ -5,7 +5,10 @@ from pathlib import Path
 import pytest
 
 from app.services.cv_parser import extract_skills
-from app.services.scoring import combined_score, score_offer
+from app.services.scoring import (
+    ScoreResult, _contract_score, _location_score, _seniority_score, _skills_score,
+    combined_score, score_offer,
+)
 
 SEED = json.loads(
     (Path(__file__).resolve().parent.parent / "seed" / "profile_seed.json").read_text(encoding="utf-8")
@@ -147,6 +150,198 @@ def test_combined_score():
     assert combined_score(80, None) == 80
     assert combined_score(80, 60) == 70
     assert combined_score(50.5, 49.5) == 50.0
+
+
+# --- Sprint 60 : trous relevés par mutation testing (scripts/mutation.py) ---
+
+def test_score_result_arrondit_les_points_a_une_decimale():
+    res = ScoreResult()
+    res.add("Test", 8.3333333, 25, "detail")
+    assert res.breakdown[0]["points"] == 8.3
+
+
+def test_description_pile_a_50_caracteres_n_est_plus_trop_courte():
+    """_DESCRIPTION_TROP_COURTE = 50 : le seuil est strict (<), 50 caractères
+    pile doivent être jugés normalement, pas excusés comme « trop courte »."""
+    desc = "x" * 50
+    points, detail = _skills_score(desc, "", ["playwright"])
+    assert "trop courte" not in detail
+    assert "Aucune compétence" in detail
+
+    desc_49 = "x" * 49
+    _, detail_49 = _skills_score(desc_49, "", ["playwright"])
+    assert "trop courte" in detail_49
+
+
+def test_skills_score_formule_exacte_sous_le_plafond():
+    """Avec peu de compétences, le plafond de 25 ne joue pas : la formule
+    elle-même (25 * sqrt(n) / 3) doit être exacte, pas seulement son plafond."""
+    points, _ = _skills_score("playwright", "", ["playwright"])
+    assert points == pytest.approx(25.0 * 1 ** 0.5 / 3.0, rel=1e-9)
+
+
+def test_skills_score_plafonne_a_25():
+    beaucoup = [f"competence{i}" for i in range(15)]
+    desc = " ".join(beaucoup)
+    points, _ = _skills_score(desc, "", beaucoup)
+    assert points == 25.0
+
+
+def test_skills_score_tronque_l_affichage_a_8_competences():
+    huit = [f"competence{i}" for i in range(8)]
+    neuf = huit + ["competence9z"]
+    _, detail_8 = _skills_score(" ".join(huit), "", huit)
+    _, detail_9 = _skills_score(" ".join(neuf), "", neuf)
+    assert "…" not in detail_8
+    assert "…" in detail_9
+    # La 9e compétence ne doit pas apparaître dans la liste affichée (hits[:8]).
+    assert "competence9z" not in detail_9
+    assert all(f"competence{i}" in detail_9 for i in range(8))
+
+
+def test_skills_score_zero_sans_match_et_description_suffisante():
+    points, detail = _skills_score("x" * 100, "", ["playwright"])
+    assert points == 0
+    assert "Aucune compétence" in detail
+
+
+def test_location_score_remote_nu_sans_full_ni_complet_reste_partiel():
+    """REMOTE_HINTS[:6] exclut volontairement le mot nu « remote »/« teletravail »
+    (sans « full »/« complet »/« total ») — sinon toute mention vague de remote
+    vaudrait les 13 pts du full remote plutôt que les 6 pts du partiel."""
+    points, detail = _location_score(
+        location_norm="", desc_norm="remote possible", title_norm="",
+        location_keywords=[], remote_ok=True, remote_flag=False,
+    )
+    assert points == 6
+    assert "partiel" in detail
+
+
+def test_location_score_hors_zone_sans_remote_vaut_1():
+    points, detail = _location_score(
+        location_norm="paris", desc_norm="", title_norm="",
+        location_keywords=["lyon"], remote_ok=True, remote_flag=False,
+    )
+    assert points == 1
+    assert "hors de ta zone" in detail
+
+
+def test_contract_score_freelance_matche_par_sous_chaine_du_profil():
+    """Le `or` qui laisse matcher soit une valeur exacte du profil (ex.
+    « freelance / portage ») soit toute valeur qui CONTIENT « freelance »
+    (ex. « mission freelance ») — ici seul le second cas est vrai."""
+    points, detail = _contract_score("freelance", "", ["mission freelance"])
+    assert points == 5
+    assert "freelance" in detail.lower()
+
+
+def test_contract_score_cdd_interim_vaut_2():
+    points, _ = _contract_score("cdd", "", [])
+    assert points == 2
+
+
+def test_contract_score_type_different_non_vide_vaut_2():
+    """Contrat précisé mais hors CDI/freelance/CDD/intérim (ex. vacation) :
+    pas la même branche que « non précisé », même valeur de points."""
+    points, detail = _contract_score("vacation", "", [])
+    assert points == 2
+    assert "différent de ta recherche" in detail
+
+
+def test_seniority_score_non_precise_vaut_4():
+    points, detail, is_junior = _seniority_score("testeur fonctionnel", "")
+    assert points == 4
+    assert is_junior is False
+    assert "non précisé" in detail
+
+
+def test_sector_score_affichage_tronque_a_4_secteurs():
+    from app.services.scoring import _sector_score
+
+    secteurs = ["sante", "banque", "retail", "assurance", "energie"]
+    texte = " ".join(secteurs)
+    points, detail = _sector_score(texte, secteurs)
+    assert points == 5
+    assert "energie" not in detail
+    assert all(s in detail for s in secteurs[:4])
+
+
+def test_poids_tous_a_zero_ne_plante_pas(profile):
+    """`total_weight = sum(weights.values()) or 1` : si l'utilisateur mettait
+    toutes les pondérations à 0 (réglage aberrant mais saisissable), il ne
+    doit pas y avoir de division par zéro — juste un score à 0."""
+    profile = dict(profile, scoring_weights={k: 0 for k in
+                   ("titre", "competences", "seniorite", "localisation", "contrat", "secteur")})
+    offer = {
+        "title": "Test Manager", "company": "X", "location": "Lyon",
+        "contract_type": "CDI", "description": "Pilotage QA.", "remote": False,
+    }
+    result = score_offer(offer, profile)
+    assert result.score == 0.0
+
+
+def test_plafond_junior_affiche_a_zero_point_et_zero_max(profile):
+    offer_junior = {
+        "title": "Testeur QA junior", "company": "ESN", "location": "Lyon",
+        "contract_type": "CDI", "description": "Stage, tests manuels.", "remote": False,
+    }
+    result = score_offer(offer_junior, profile)
+    plafond = next(b for b in result.breakdown if b["label"] == "Plafond")
+    assert plafond["points"] == 0 and plafond["max"] == 0
+    assert "30" in plafond["detail"]
+
+
+def test_plafonds_affiches_a_zero_point_et_zero_max(profile):
+    offer_hors_qa = {
+        "title": "Développeur PHP", "company": "X", "location": "Lyon",
+        "contract_type": "CDI", "description": "PHP, MySQL.", "remote": False,
+    }
+    result = score_offer(offer_hors_qa, profile)
+    plafond = next(b for b in result.breakdown if b["label"] == "Plafond")
+    assert plafond["points"] == 0 and plafond["max"] == 0
+
+    profile_exclu = dict(profile, excluded_keywords=["acme corp"])
+    offer_exclu = {
+        "title": "Test Manager", "company": "Acme Corp", "location": "Lyon",
+        "contract_type": "CDI", "description": "Pilotage QA.", "remote": False,
+    }
+    result_exclu = score_offer(offer_exclu, profile_exclu)
+    exclu = next(b for b in result_exclu.breakdown if b["label"] == "Mot-clé exclu")
+    assert exclu["points"] == 0 and exclu["max"] == 0
+
+
+def test_salaire_pile_au_minimum_ne_declenche_pas_le_signal(profile):
+    """Le seuil est strict (<) : un salaire affiché pile égal au minimum
+    souhaité n'est pas « sous » ce minimum — ne doit pas être signalé."""
+    profile = dict(profile, min_salary=45000)
+    offer = {
+        "title": "Test Manager", "company": "X", "location": "Lyon",
+        "contract_type": "CDI", "description": "Pilotage QA.", "remote": False,
+        "salary_text": "45 000 € / an",
+    }
+    result = score_offer(offer, profile)
+    assert not any(b["label"] == "Salaire" for b in result.breakdown)
+
+
+def test_part_des_criteres_arrondie_a_une_decimale(profile):
+    """`round(share, 1)` (champ "max" du breakdown) : des pondérations qui ne
+    tombent pas rond doivent être arrondies à une décimale, pas deux."""
+    profile = dict(profile, scoring_weights={
+        "titre": 1, "competences": 1, "seniorite": 1,
+        "localisation": 1, "contrat": 1, "secteur": 1,
+    })
+    offer = {
+        "title": "Test Manager", "company": "X", "location": "Lyon",
+        "contract_type": "CDI", "description": "Pilotage QA.", "remote": False,
+    }
+    result = score_offer(offer, profile)
+    titre = next(b for b in result.breakdown if b["label"] == "Adéquation du poste")
+    assert titre["max"] == 16.7  # 100/6 arrondi à une décimale, pas 16.67
+
+
+def test_combined_score_arrondit_a_une_decimale_pas_deux():
+    assert combined_score(80.3333, None) == 80.3
+    assert combined_score(80.11, 60.12) == round((80.11 + 60.12) / 2, 1)
 
 
 # ---------------------------------------------------------------------------

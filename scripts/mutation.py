@@ -39,11 +39,23 @@ RACINE = Path(__file__).resolve().parent.parent
 # couvrent. Cibler les tests garde le temps de réponse raisonnable : la suite
 # complète est rejouée pour chaque mutation.
 CIBLES = {
-    "scoring": ("app/services/scoring.py", ["tests/test_scoring.py"]),
-    "textutils": ("app/services/textutils.py", ["tests/test_similarity.py", "tests/test_scoring.py"]),
+    "scoring": ("app/services/scoring.py", ["tests/test_scoring.py", "tests/test_weights_migration.py"]),
+    # Mapping tenu à jour à la main : un test écrit dans le mauvais fichier
+    # (ex. test_textutils.py absent d'ici jusqu'au Sprint 60) fait croire à un
+    # trou de preuve qui n'existe pas — le score de mutation ment alors dans
+    # le sens optimiste comme pessimiste. Revérifier après tout nouveau
+    # fichier de test touchant l'un de ces modules.
+    "textutils": (
+        "app/services/textutils.py",
+        ["tests/test_similarity.py", "tests/test_scoring.py", "tests/test_textutils.py",
+         "tests/test_csv.py", "tests/test_hellowork.py", "tests/test_manual_offer.py"],
+    ),
     "scan": ("app/services/scan.py", ["tests/test_scan_dedupe.py", "tests/test_queries.py"]),
     "digest": ("app/services/digest.py", ["tests/test_digest_enrich.py", "tests/test_rappels.py"]),
-    "diagnostic": ("app/services/diagnostic.py", ["tests/test_diagnostic.py"]),
+    "diagnostic": (
+        "app/services/diagnostic.py",
+        ["tests/test_diagnostic.py", "tests/test_scan_dedupe.py"],
+    ),
     "justificatif": ("app/services/justificatif.py", ["tests/test_justificatif.py"]),
     "marche": ("app/services/marche.py", ["tests/test_marche.py"]),
     "verrou": ("app/services/verrou.py", ["tests/test_verrou.py"]),

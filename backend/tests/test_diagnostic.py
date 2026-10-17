@@ -114,6 +114,98 @@ def test_rapport_signale_une_description_vide():
     assert "l'IA et le score n'auront rien à lire" in texte
 
 
+def test_champ_none_est_bien_vide():
+    """`_vide()` : None doit compter comme vide, pas seulement la chaîne blanche
+    (ex. un connecteur qui ne renseigne jamais `location` plutôt que d'y mettre
+    une chaîne vide)."""
+    assert champs_vides_sur_toutes_les_offres(
+        [{"title": "QA", "location": None}, {"title": "QA Lead", "location": None}],
+        ["title", "location"],
+    ) == ["location"]
+
+
+def test_rapport_affiche_entreprise_et_lieu_vides_explicitement():
+    """Une fiche d'exemple à l'entreprise/au lieu vides doit le dire en toutes
+    lettres (ENTREPRISE VIDE / LIEU VIDE), pas afficher un trou silencieux."""
+    resultat = diagnostiquer_source(
+        FausseSource(ConnectorResult(offers=[_offre(company="", location="")])), {}
+    )
+    texte = rapport_texte([resultat])
+    assert "ENTREPRISE VIDE" in texte
+    assert "LIEU VIDE" in texte
+
+
+def test_rapport_n_affiche_que_les_erreurs_2_et_3_puis_resume_le_reste():
+    """`verdict()` reprend déjà la première erreur dans l'explication — le
+    rapport n'affiche que les suivantes (indices 1 et 2), et résume le reste
+    plutôt que de les lister toutes."""
+    erreurs = [f"Erreur {i}" for i in range(1, 6)]  # 5 erreurs
+    resultat = diagnostiquer_source(
+        FausseSource(ConnectorResult(offers=[_offre()], errors=erreurs)), {}
+    )
+    texte = rapport_texte([resultat])
+    assert "Erreur 2" in texte and "Erreur 3" in texte
+    assert "Erreur 4" not in texte and "Erreur 5" not in texte
+    assert "et 2 autre(s) erreur(s)" in texte
+
+
+def test_rapport_resume_a_partir_de_4_erreurs_pas_avant():
+    """Frontière exacte (> 3, pas >= 3 ni > 4) : 4 erreurs doivent déclencher
+    le résumé « et N autres », 3 ne le doivent pas (cf. test ci-dessous)."""
+    resultat = diagnostiquer_source(
+        FausseSource(ConnectorResult(offers=[_offre()], errors=["E1", "E2", "E3", "E4"])), {}
+    )
+    texte = rapport_texte([resultat])
+    assert "et 1 autre(s) erreur(s)" in texte
+
+
+def test_rapport_description_absente_ne_plante_pas():
+    """`exemple.get("description") or ""` : une offre sans champ description du
+    tout (None, pas juste une chaîne vide) ne doit pas faire planter .strip()."""
+    resultat = diagnostiquer_source(
+        FausseSource(ConnectorResult(offers=[_offre(description=None)])), {}
+    )
+    texte = rapport_texte([resultat])
+    assert "0 caractère(s)" in texte
+
+
+def test_rapport_n_affiche_pas_le_resume_sous_4_erreurs():
+    """Pile sous le seuil (3 erreurs) : pas de ligne « et N autres »."""
+    resultat = diagnostiquer_source(
+        FausseSource(ConnectorResult(offers=[_offre()], errors=["E1", "E2", "E3"])), {}
+    )
+    texte = rapport_texte([resultat])
+    assert "autre(s) erreur(s)" not in texte
+
+
+def test_rapport_compte_bien_chaque_etat_dans_le_bilan():
+    ok = diagnostiquer_source(FausseSource(ConnectorResult(offers=[_offre()])), {})
+    suspect = diagnostiquer_source(FausseSource(ConnectorResult()), {})
+    ko = diagnostiquer_source(FausseSource(RuntimeError("boum")), {})
+    texte = rapport_texte([ok, suspect, ko])
+    assert "1 source(s) OK, 1 suspecte(s), 1 en échec." in texte
+
+
+def test_diagnostiquer_filtre_par_nom_de_source(monkeypatch):
+    """`sources` ne garde que les connecteurs nommés — sans lui, un diagnostic
+    ciblé interrogerait quand même toutes les sources."""
+    import app.services.diagnostic as diagnostic_module
+
+    monkeypatch.setattr(
+        diagnostic_module, "ALL_CONNECTORS",
+        [FausseSource(ConnectorResult(offers=[_offre()])), _source_nommee("autre")],
+    )
+    resultats = diagnostic_module.diagnostiquer({}, sources=["faux"])
+    assert len(resultats) == 1
+    assert resultats[0]["source"] == "faux"
+
+
+def _source_nommee(nom):
+    source = FausseSource(ConnectorResult(offers=[_offre()]))
+    source.name = nom
+    return source
+
+
 @pytest.mark.parametrize(
     "code, attendu",
     [(401, "clé"), (403, "accès refusé"), (429, "quota"), (503, "maintenance")],

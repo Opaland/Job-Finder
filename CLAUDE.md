@@ -46,9 +46,11 @@ l'image (défaut), les routes IA renvoient leur 503 français et le scan saute l
   7 onglets (Playwright). `python scripts/mesures.py [n]` — chronomètre les opérations
   coûteuses sur n offres générées (alerte au-delà d'une seconde).
   `python scripts/mutation.py [modules]` — test de mutation : injecte des fautes
-  plausibles et vérifie que la suite les attrape. Repères actuels : scoring 76 %,
-  textutils 58 %, diagnostic 42 %. Un survivant = une ligne cassable sans que
-  rien ne le signale.
+  plausibles et vérifie que la suite les attrape. Repères actuels (Sprint 60) :
+  scoring 97 %, textutils 94 %, diagnostic 100 %. Un survivant = une ligne
+  cassable sans que rien ne le signale — les 4 restants sont des mutants
+  équivalents vérifiés à la main (aucune différence de comportement
+  observable possible), pas des trous de preuve.
 - Skills projet : `/verif` (vérification + correction jusqu'au vert), `/revue` (agent
   `revue-jobfinder` + revue IA, applique les correctifs), `/smoke` (test navigateur réel).
 - **Panel de relecteurs** (`.claude/agents/`), à lancer en parallèle pour un audit large —
