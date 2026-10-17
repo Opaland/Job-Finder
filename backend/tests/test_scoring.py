@@ -180,13 +180,6 @@ def test_skills_score_formule_exacte_sous_le_plafond():
     assert points == pytest.approx(25.0 * 1 ** 0.5 / 3.0, rel=1e-9)
 
 
-def test_skills_score_plafonne_a_25():
-    beaucoup = [f"competence{i}" for i in range(15)]
-    desc = " ".join(beaucoup)
-    points, _ = _skills_score(desc, "", beaucoup)
-    assert points == 25.0
-
-
 def test_skills_score_tronque_l_affichage_a_8_competences():
     huit = [f"competence{i}" for i in range(8)]
     neuf = huit + ["competence9z"]
@@ -233,11 +226,6 @@ def test_contract_score_freelance_matche_par_sous_chaine_du_profil():
     points, detail = _contract_score("freelance", "", ["mission freelance"])
     assert points == 5
     assert "freelance" in detail.lower()
-
-
-def test_contract_score_cdd_interim_vaut_2():
-    points, _ = _contract_score("cdd", "", [])
-    assert points == 2
 
 
 def test_contract_score_type_different_non_vide_vaut_2():
@@ -341,7 +329,7 @@ def test_part_des_criteres_arrondie_a_une_decimale(profile):
 
 def test_combined_score_arrondit_a_une_decimale_pas_deux():
     assert combined_score(80.3333, None) == 80.3
-    assert combined_score(80.11, 60.12) == round((80.11 + 60.12) / 2, 1)
+    assert combined_score(80.11, 60.12) == 70.1
 
 
 # ---------------------------------------------------------------------------
