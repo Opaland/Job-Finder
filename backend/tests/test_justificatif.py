@@ -1,5 +1,5 @@
 """Sprint 29 : justificatif de recherche d'emploi (France Travail)."""
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 
 from app.models import Offer, Profile, local_now
 from app.services.justificatif import actes_de_recherche
@@ -102,3 +102,80 @@ def test_un_entretien_fiche_n_est_pas_compte_deux_fois(client, db):
     actes = actes_de_recherche(db, aujourdhui - timedelta(days=30), aujourdhui)
     entretiens = [a["acte"] for a in actes if a["acte"].startswith("Entretien")]
     assert entretiens == ["Entretien (Visio)"]
+
+
+# --- Sprint 61 : trous relevés par mutation testing --------------------------
+#
+# Beaucoup des survivants de `scripts/mutation.py justificatif` portent sur la
+# MISE EN PAGE du PDF (marges, tailles de police, positions en mm, longueurs
+# de troncature d'affichage, seuil de saut de page) : du pur cosmétique, sans
+# effet sur l'exactitude du document. Les traquer exigerait des assertions sur
+# les coordonnées de dessin — fragile et hors de proportion avec l'enjeu (un
+# justificatif légèrement mal aligné n'est pas une donnée fausse). Seuls les
+# trous qui touchent au CONTENU (fenêtre de dates, repli entreprise, comptage
+# des démarches) sont traités ici.
+
+def test_entreprise_manquante_affiche_un_libelle_par_defaut(db):
+    offer = Offer(
+        fingerprint="fp-sansent", source="france_travail", source_id="sansent",
+        title="Test Manager", company="", final_score=85.0, status="postulee",
+        status_history=[{"status": "postulee", "date": local_now().isoformat(), "par": "utilisateur"}],
+    )
+    db.add(offer)
+    db.commit()
+    aujourdhui = local_now().date()
+    actes = actes_de_recherche(db, aujourdhui - timedelta(days=1), aujourdhui)
+    assert actes[0]["entreprise"] == "Entreprise non précisée"
+
+
+def test_entretien_fiche_a_la_limite_exacte_de_la_periode_est_compte(db):
+    """`debut <= quand <= fin` : un entretien daté PILE au début ou à la fin
+    de la période ne doit pas être exclu — les deux bornes sont inclusives."""
+    depuis = date(2026, 1, 5)
+    jusqu_a = date(2026, 1, 20)
+    debut_exact = datetime.combine(depuis, datetime.min.time())
+    fin_exacte = datetime.combine(jusqu_a, datetime.max.time())
+    offer = Offer(
+        fingerprint="fp-bornes", source="manuelle", source_id="bornes",
+        title="Test Manager", company="ACME", final_score=85.0,
+        interviews=[
+            {"date": debut_exact.isoformat(), "format": "Visio"},
+            {"date": fin_exacte.isoformat(), "format": "Sur site"},
+        ],
+    )
+    db.add(offer)
+    db.commit()
+    actes = actes_de_recherche(db, depuis, jusqu_a)
+    assert len(actes) == 2
+
+
+def test_acte_de_statut_a_la_limite_exacte_de_la_periode_est_compte(db):
+    """Même frontière inclusive, côté `status_history` cette fois — chemin
+    de code distinct (ligne ~53), jamais exercé par le test ci-dessus."""
+    depuis = date(2026, 2, 5)
+    jusqu_a = date(2026, 2, 20)
+    debut_exact = datetime.combine(depuis, datetime.min.time())
+    fin_exacte = datetime.combine(jusqu_a, datetime.max.time())
+    offer = Offer(
+        fingerprint="fp-bornes2", source="manuelle", source_id="bornes2",
+        title="Test Manager", company="ACME", final_score=85.0, status="relancee",
+        status_history=[
+            {"status": "postulee", "date": debut_exact.isoformat(), "par": "utilisateur"},
+            {"status": "relancee", "date": fin_exacte.isoformat(), "par": "utilisateur"},
+        ],
+    )
+    db.add(offer)
+    db.commit()
+    actes = actes_de_recherche(db, depuis, jusqu_a)
+    assert len(actes) == 2
+
+
+# Sprint 61 : le comptage par type de démarche (resume[cle] += 1, lignes
+# ~71-76 de justificatif.py) et toute la mise en page du PDF (marges,
+# polices, positions en mm, longueurs de troncature d'affichage, seuil de
+# saut de page) restent non couverts par mutation testing. Vérifier le
+# CONTENU réel du PDF rendu demanderait une extraction de texte (pypdf),
+# indisponible dans cet environnement (son backend crypto plante : module
+# `_cffi_backend` manquant). Chasser le reste — du pur cosmétique de mise en
+# page — serait de toute façon hors de proportion avec l'enjeu : une donnée
+# mal comptée serait grave, un alignement en mm imprécis ne l'est pas.
