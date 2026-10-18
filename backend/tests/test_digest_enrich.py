@@ -228,6 +228,27 @@ def test_nouvelles_offres_tronquees_a_25_mais_new_count_exact(db):
     assert len(payload["new_offers"]) == 25
 
 
+def test_nouvelles_offres_fenetre_de_26_heures_frontiere_exacte(db, monkeypatch):
+    """`since = local_now() - timedelta(hours=26)` : une offre collectée à
+    26h00 pile est encore une « nouvelle offre » ; à 26h30, elle ne l'est
+    déjà plus. Avec une marge de seulement 30 min, un `26` muté en `27`
+    élargit la fenêtre à 27h — assez pour admettre à tort l'offre à 26h30."""
+    maintenant_fixe = local_now()
+    monkeypatch.setattr(digest_module, "local_now", lambda: maintenant_fixe)
+    db.add_all([
+        Offer(fingerprint="fp-26h", source="test", source_id="h26", title="Pile 26h",
+             company="ACME", status="nouvelle", final_score=70,
+             collected_at=maintenant_fixe - timedelta(hours=26)),
+        Offer(fingerprint="fp-26h30", source="test", source_id="h26h30", title="26h30, trop vieille",
+             company="ACME", status="nouvelle", final_score=70,
+             collected_at=maintenant_fixe - timedelta(hours=26, minutes=30)),
+    ])
+    db.commit()
+    titres = [o["title"] for o in build_digest(db).payload["new_offers"]]
+    assert "Pile 26h" in titres
+    assert "26h30, trop vieille" not in titres
+
+
 def test_applications_this_week_compte_juste_et_ignore_les_dates_illisibles(db):
     """`count += 1` (pas +=2) et `applied is not None and applied >= monday` :
     une date illisible (parse_iso_dt → None) ne doit jamais faire planter le
@@ -248,10 +269,14 @@ def test_applications_this_week_compte_juste_et_ignore_les_dates_illisibles(db):
     assert applications_this_week(db) == 1
 
 
-def test_offres_a_relancer_inclut_la_limite_exacte_du_delai(db):
+def test_offres_a_relancer_inclut_la_limite_exacte_du_delai(db, monkeypatch):
     """`changed <= cutoff` : une candidature changée PILE à la limite des 7
-    jours doit déjà être signalée, pas seulement au jour suivant."""
-    cutoff = local_now() - timedelta(days=RELAUNCH_AFTER_DAYS)
+    jours doit déjà être signalée, pas seulement au jour suivant. Horloge
+    figée : sans elle, le `cutoff` calculé par la fonction (légèrement plus
+    tard que celui du test) absorbe l'écart et masque la frontière exacte."""
+    maintenant_fixe = local_now()
+    monkeypatch.setattr(digest_module, "local_now", lambda: maintenant_fixe)
+    cutoff = maintenant_fixe - timedelta(days=RELAUNCH_AFTER_DAYS)
     db.add(Offer(
         fingerprint="fp-pile7", source="test", source_id="pile7", title="Test Manager",
         company="ACME", status="postulee", final_score=80,
@@ -268,24 +293,31 @@ def test_next_interviews_fenetre_par_defaut_inclut_pile_21_jours(db, monkeypatch
     maintenant_fixe = local_now().replace(hour=10, minute=0, second=0, microsecond=0)
     monkeypatch.setattr(digest_module, "local_now", lambda: maintenant_fixe)
     minuit = maintenant_fixe.replace(hour=0, minute=0, second=0, microsecond=0)
-    offer = Offer(fingerprint="fp-21j", source="test", source_id="j21",
-                  title="Test Manager", company="ACME", final_score=80,
-                  interviews=[{"date": (minuit + timedelta(days=21)).isoformat()}])
-    db.add(offer)
+    dans_la_fenetre = Offer(fingerprint="fp-21j", source="test", source_id="j21",
+                            title="Pile 21 jours", company="ACME", final_score=80,
+                            interviews=[{"date": (minuit + timedelta(days=21)).isoformat()}])
+    hors_fenetre = Offer(fingerprint="fp-22j", source="test", source_id="j22",
+                         title="22 jours, hors fenêtre", company="ACME", final_score=80,
+                         interviews=[{"date": (minuit + timedelta(days=22)).isoformat()}])
+    db.add_all([dans_la_fenetre, hors_fenetre])
     db.commit()
-    assert any(e["title"] == "Test Manager" for e in next_interviews(db))
+    titres = [e["title"] for e in next_interviews(db)]
+    assert "Pile 21 jours" in titres
+    assert "22 jours, hors fenêtre" not in titres
 
 
-def test_next_interviews_tres_matinal_aujourdhui_reste_dans_la_fenetre(db, client, monkeypatch):
-    """`debut = local_now().replace(hour=0, ...)` : un entretien programmé à
-    00h01 aujourd'hui doit rester dans la fenêtre, pas être exclu parce que
-    l'horloge réelle est déjà plus avancée dans la journée."""
+def test_next_interviews_tres_matinal_aujourdhui_reste_dans_la_fenetre(db, monkeypatch):
+    """`debut = local_now().replace(hour=0, minute=0, second=0, microsecond=0)` :
+    un entretien programmé exactement à MINUIT aujourd'hui doit rester dans
+    la fenêtre — si l'un des quatre champs n'est pas vraiment ramené à 0,
+    `debut` glisse légèrement après cet instant et l'exclut à tort, alors
+    que l'horloge réelle est largement plus avancée dans la journée."""
     maintenant_fixe = local_now().replace(hour=15, minute=0, second=0, microsecond=0)
     monkeypatch.setattr(digest_module, "local_now", lambda: maintenant_fixe)
-    tres_tot = maintenant_fixe.replace(hour=0, minute=1, second=0, microsecond=0)
+    minuit_pile = maintenant_fixe.replace(hour=0, minute=0, second=0, microsecond=0)
     offer = Offer(fingerprint="fp-matin", source="test", source_id="matin",
                   title="Test Manager", company="ACME", final_score=80,
-                  interviews=[{"date": tres_tot.isoformat()}])
+                  interviews=[{"date": minuit_pile.isoformat()}])
     db.add(offer)
     db.commit()
     a_venir = next_interviews(db)
@@ -299,11 +331,23 @@ def test_action_due_limite_exacte_fin_de_journee_incluse(db, monkeypatch):
     maintenant_fixe = local_now().replace(hour=10, minute=0, second=0, microsecond=0)
     monkeypatch.setattr(digest_module, "local_now", lambda: maintenant_fixe)
     fin_de_journee = maintenant_fixe.replace(hour=23, minute=59, second=59, microsecond=0)
-    db.add(Offer(fingerprint="fp-finj", source="test", source_id="finj", title="Test Manager",
-                 company="ACME", final_score=70, next_action_date=fin_de_journee,
-                 next_action_note="Dernière limite"))
+    # Une microseconde après cette limite ne doit plus apparaître — sans
+    # cette seconde offre, un `microsecond=0` muté en `microsecond=1` (fin de
+    # journée légèrement plus tardive) resterait indétectable : l'offre
+    # incluse serait de toute façon encore <= à la nouvelle limite, élargie.
+    db.add_all([
+        Offer(fingerprint="fp-finj", source="test", source_id="finj", title="Test Manager",
+             company="ACME", final_score=70, next_action_date=fin_de_journee,
+             next_action_note="Dernière limite"),
+        Offer(fingerprint="fp-apresfinj", source="test", source_id="apresfinj", title="Après la limite",
+             company="ACME", final_score=70,
+             next_action_date=fin_de_journee + timedelta(microseconds=1),
+             next_action_note="Une microseconde trop tard"),
+    ])
     db.commit()
-    assert any(a["action_note"] == "Dernière limite" for a in actions_due(db))
+    notes = {a["action_note"] for a in actions_due(db)}
+    assert "Dernière limite" in notes
+    assert "Une microseconde trop tard" not in notes
 
 
 def test_action_due_overdue_faux_pile_a_minuit_vrai_juste_avant(db, monkeypatch):
@@ -390,18 +434,50 @@ def test_daily_focus_une_seule_pepite_et_une_seule_relance_meme_sll_y_en_a_plus(
              title=f"Pépite {i}", company="ACME", status="nouvelle", final_score=99 - i)
         for i in range(2)
     ]
-    db.add_all(gems_)
+    relances_ = [
+        Offer(fingerprint=f"fp-r2-{i}", source="test", source_id=f"r2-{i}",
+             title=f"Relance {i}", company="ACME", status="postulee", final_score=70 - i)
+        for i in range(2)
+    ]
+    db.add_all(gems_ + relances_)
     db.commit()
     focus = daily_focus(db, todo=[], gem_list=gems_, relaunch=[])
     assert len([f for f in focus if f["type"] == "pepite"]) == 1
+    focus2 = daily_focus(db, todo=[], gem_list=[], relaunch=relances_)
+    assert len([f for f in focus2 if f["type"] == "relance"]) == 1
+
+
+def test_daily_focus_push_plafonne_lui_meme_a_trois_sans_attendre_le_retour_de_la_boucle(db):
+    """`push()` a SON PROPRE garde (`len(focus) >= 3`, ligne ~206), distinct
+    du retour anticipé après la boucle des actions (ligne ~215). Avec
+    seulement 2 actions, ce retour anticipé ne se déclenche jamais — c'est
+    alors UNIQUEMENT le garde interne de push() qui doit empêcher une 4e
+    entrée (ici une relance) de dépasser 3."""
+    actions = [
+        Offer(fingerprint=f"fp-pc{i}", source="test", source_id=f"pc{i}",
+             title=f"Action {i}", company="ACME", final_score=70,
+             next_action_date=local_now() - timedelta(days=1), next_action_note=f"n{i}")
+        for i in range(2)
+    ]
+    gem = Offer(fingerprint="fp-pcg", source="test", source_id="pcg", title="Pépite",
+               company="ACME", status="nouvelle", final_score=95)
+    relance = Offer(fingerprint="fp-pcr", source="test", source_id="pcr", title="Relance refusée",
+                    company="ACME", status="postulee", final_score=80)
+    db.add_all(actions + [gem, relance])
+    db.commit()
+
+    todo = actions_due(db)
+    focus = daily_focus(db, todo=todo, gem_list=[gem], relaunch=[relance])
+    assert len(focus) == 3
+    assert not any(f["type"] == "relance" for f in focus)
 
 
 def test_daily_focus_objectif_de_secours_seulement_si_moins_de_trois(db):
     """`len(focus) < 3` : avec déjà 3 entrées, le repli « objectif » ne doit
-    jamais être tenté ; avec 2, il doit compléter à 3."""
-    # Statut "postulee" (pas dans STATUTS_NON_TRAITES) : exclue de la requête
-    # de repli, pour ne pas se faire filtrer par la déduplication du push()
-    # — ce qui fausserait la mesure de cette frontière précise.
+    jamais être tenté ; avec 2, il doit compléter à 3. Le cas « déjà 3 » est
+    construit avec 1 action + 1 pépite + 1 relance — jamais 3 actions, ce qui
+    déclencherait le retour anticipé de la boucle AVANT même d'atteindre ce
+    garde-ci, le rendant invisible."""
     gem = Offer(fingerprint="fp-gfull", source="test", source_id="gfull",
                title="Pépite", company="ACME", status="postulee", final_score=95)
     en_attente = Offer(fingerprint="fp-attente", source="test", source_id="attente",
@@ -414,13 +490,19 @@ def test_daily_focus_objectif_de_secours_seulement_si_moins_de_trois(db):
     assert len(focus) == 2
     assert any(f["type"] == "objectif" for f in focus)
 
-    # 3 actions déjà présentes : le repli ne doit jamais être évalué ni ajouté.
-    actions = [
-        {"id": 1000 + i, "action_note": f"n{i}", "overdue": False, "title": "x", "company": "y",
-         "url": "z", "source": "s", "contract_type": "", "final_score": 10, "ai_reason": "", "remote": False}
-        for i in range(3)
-    ]
-    focus_plein = daily_focus(db, todo=actions, gem_list=[], relaunch=[])
+    # 1 action + 1 pépite + 1 relance = déjà 3, sans jamais passer par le
+    # retour anticipé de la boucle (1 seule action, 1 < 3) : le repli doit
+    # être court-circuité par CE garde précis, pas par un autre.
+    action_offre = Offer(fingerprint="fp-act1", source="test", source_id="act1", title="Action seule",
+                         company="ACME", final_score=70,
+                         next_action_date=local_now() - timedelta(days=1), next_action_note="Seule action")
+    relance = Offer(fingerprint="fp-rel1", source="test", source_id="rel1", title="Relance seule",
+                    company="ACME", status="postulee", final_score=65)
+    db.add_all([action_offre, relance])
+    db.commit()
+    todo = actions_due(db)
+    todo = [a for a in todo if a["title"] == "Action seule"]
+    focus_plein = daily_focus(db, todo=todo, gem_list=[gem], relaunch=[relance])
     assert len(focus_plein) == 3
     assert not any(f["type"] == "objectif" for f in focus_plein)
 
@@ -506,6 +588,24 @@ def test_digest_html_coche_objectif_seulement_si_atteint_et_non_nul():
     assert "✅" not in digest_html({**base, "weekly": {"goal": 3, "sent": 2}})
     # Objectif à 0 (> 0 exclut ce cas) : jamais de coche, même « atteint ».
     assert "✅" not in digest_html({**base, "weekly": {"goal": 0, "sent": 0}})
+    # Objectif à 1 pile atteint : coche. Un `0` muté en `1` dans `goal > 0`
+    # ferait disparaître la coche ici précisément (1 > 1 est faux), alors que
+    # l'objectif à 0 ci-dessus ne peut jamais exercer cette partie du test —
+    # le paragraphe entier est masqué par ailleurs dès que goal vaut 0.
+    assert "✅" in digest_html({**base, "weekly": {"goal": 1, "sent": 1}})
+
+
+def test_digest_html_todo_sans_note_affiche_le_texte_par_defaut():
+    """`a['action_note'] or 'Action prévue'` — propre au rendu email,
+    distinct du même repli côté JSON de `daily_focus` (déjà testé)."""
+    payload = {
+        "date": "2026-01-01", "new_count": 0, "status_counts": {}, "total_offers": 0,
+        "to_follow": [], "to_follow_total": 0, "to_relaunch": [], "gems": [],
+        "interviews": [], "focus": [], "weekly": {"goal": 0, "sent": 0},
+        "new_offers": [], "top_overall": [],
+        "todo_today": [{"overdue": False, "action_note": "", "url": "u", "title": "t", "company": "c"}],
+    }
+    assert "Action prévue" in digest_html(payload)
 
 
 def test_envoi_digest_sans_smtp_nappelle_jamais_lenvoi(db, monkeypatch):
@@ -574,6 +674,16 @@ def test_resume_semaine_inclut_le_changement_pile_au_debut_de_semaine(db):
     assert resume_semaine(db)["candidatures_envoyees"] == 1
 
 
+def test_resume_semaine_nouvelles_offres_frontiere_exacte_du_lundi(db):
+    """`Offer.collected_at >= debut` : une offre collectée PILE au lundi
+    00h00 compte déjà parmi les nouvelles offres de la semaine."""
+    lundi = debut_de_semaine()
+    db.add(Offer(fingerprint="fp-nvlundi", source="test", source_id="nvlundi",
+                 title="Test Manager", company="ACME", collected_at=lundi))
+    db.commit()
+    assert resume_semaine(db)["nouvelles_offres_collectees"] == 1
+
+
 def test_resume_semaine_distingue_relances_et_entretiens_en_valeur_exacte(db):
     offre = Offer(fingerprint="fp-actes", source="test", source_id="actes",
                   title="Test Manager", company="ACME",
@@ -600,6 +710,18 @@ def test_objectif_hebdo_du_digest_reprend_aussi_le_vrai_profil(db):
     profil.weekly_goal = 9
     db.commit()
     assert build_digest(db).payload["weekly"]["goal"] == 9
+
+
+def test_objectif_hebdo_replie_sur_5_si_le_profil_nexiste_pas(db):
+    """`profile.weekly_goal if profile else 5` : un profil absent (jamais le
+    cas en usage réel, mais le code s'en protège) doit retomber sur 5 pile —
+    une valeur DIFFÉRENTE du défaut réel du modèle rendrait ce test aveugle
+    à un `5` muté en `6`, donc on supprime bien le profil, pas seulement
+    son `weekly_goal`."""
+    db.query(Profile).filter(Profile.id == 1).delete()
+    db.commit()
+    assert build_digest(db).payload["weekly"]["goal"] == 5
+    assert resume_semaine(db)["objectif_hebdo"] == 5
 
 
 def test_objectif_hebdo_a_zero_reste_zero_pas_un(db):
