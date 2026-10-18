@@ -55,7 +55,14 @@ l'image (défaut), les routes IA renvoient leur 503 français et le scan saute l
   retours anticipés de `daily_focus` redondants avec le garde propre de
   `push()`, et `COUNT(*) or 0`/`> 0` déjà garanti par SQLAlchemy ou par un
   garde englobant qui ne laisse jamais passer la valeur qui distinguerait
-  la mutation). Un survivant = une ligne cassable sans que rien ne le signale ; justificatif et marche restent à mesurer.
+  la mutation), justificatif 18 % (le contenu réel est couvert ; la quasi-
+  totalité des survivants porte sur la mise en page du PDF — hors de
+  proportion avec l'enjeu, voir le commentaire dans test_justificatif.py),
+  marche 91 % (91/100 — 9 mutants équivalents vérifiés à la main : limites
+  de plausibilité salariale qui retombent de toute façon hors bornes dans
+  les deux cas, `title`/`description` jamais `None` en pratique, `or 0`
+  déjà garanti ailleurs). Un survivant = une ligne cassable sans que rien
+  ne le signale.
   justificatif et marche restent à mesurer.
 - Skills projet : `/verif` (vérification + correction jusqu'au vert), `/revue` (agent
   `revue-jobfinder` + revue IA, applique les correctifs), `/smoke` (test navigateur réel).
