@@ -472,6 +472,16 @@ def test_daily_focus_push_plafonne_lui_meme_a_trois_sans_attendre_le_retour_de_l
     assert not any(f["type"] == "relance" for f in focus)
 
 
+# NOTE (Sprint 61, mutation testing) : les deux retours anticipés
+# `len(focus) >= 3` des lignes ~215 et ~225 restent des survivants
+# équivalents, vérifiés à la main. Chacun n'est qu'une optimisation —
+# éviter d'évaluer gem_list/relaunch/la requête de repli une fois focus
+# plein — JAMAIS la seule protection : le garde propre de push() (ligne
+# ~206, lui bien tué ci-dessus) bloque de toute façon toute 4e entrée.
+# Neutraliser un seul de ces deux retours à la fois (comme le fait la
+# mutation) ne peut donc jamais être observé sur le résultat final.
+
+
 def test_daily_focus_objectif_de_secours_seulement_si_moins_de_trois(db):
     """`len(focus) < 3` : avec déjà 3 entrées, le repli « objectif » ne doit
     jamais être tenté ; avec 2, il doit compléter à 3. Le cas « déjà 3 » est

@@ -50,8 +50,12 @@ l'image (défaut), les routes IA renvoient leur 503 français et le scan saute l
   scoring 97 %, textutils 94 %, diagnostic 100 %, verrou 100 %, scan 96 %
   (80/83 — 3 mutants équivalents vérifiés à la main, dont un confirmé par
   test manuel : SQLAlchemy réabsorbe un `None` explicite dans le défaut `""`
-  de la colonne, ce qui rend `raw.description or ""` indifférent à `and`).
-  Un survivant = une ligne cassable sans que rien ne le signale ; digest,
+  de la colonne, ce qui rend `raw.description or ""` indifférent à `and`),
+  digest 92 % (96/104 — 8 mutants équivalents vérifiés à la main : deux
+  retours anticipés de `daily_focus` redondants avec le garde propre de
+  `push()`, et `COUNT(*) or 0`/`> 0` déjà garanti par SQLAlchemy ou par un
+  garde englobant qui ne laisse jamais passer la valeur qui distinguerait
+  la mutation). Un survivant = une ligne cassable sans que rien ne le signale ; justificatif et marche restent à mesurer.
   justificatif et marche restent à mesurer.
 - Skills projet : `/verif` (vérification + correction jusqu'au vert), `/revue` (agent
   `revue-jobfinder` + revue IA, applique les correctifs), `/smoke` (test navigateur réel).
