@@ -223,3 +223,252 @@ def test_tranches_de_fraicheur_a_leurs_frontieres_exactes(client, db):
     assert tranches["8-30"] == 2      # p8, p30
     assert tranches["31-60"] == 2     # p31, p{FANTOME_APRES_JOURS}
     assert tranches["60+"] == 1       # p{FANTOME_APRES_JOURS + 1}
+
+
+# --- Sprint 61 : trous relevés par mutation testing ---------------------------
+
+def test_le_plus_long_mot_de_la_taxonomie_est_cherche_dabord(client, db):
+    """`sorted(SKILL_TAXONOMY, key=len, reverse=True)` : sans le tri du plus
+    long au plus court, « javascript » se ferait happer par « java » (préfixe
+    de la taxonomie) et ne serait jamais reconnu pour lui-même."""
+    _offre(db, "m-js", "Développeur", "Projet entièrement en javascript, migré depuis PHP.")
+    classement = {c["competence"]: c["offres"] for c in competences_demandees(db)["competences"]}
+    assert classement.get("javascript") == 1
+    assert "java" not in classement
+
+
+def test_classement_plafonne_a_25_competences_par_defaut(client, db):
+    from app.services.cv_parser import SKILL_TAXONOMY
+    choisies = list(SKILL_TAXONOMY)[:26]
+    assert len(choisies) == 26
+    _offre(db, "m-26", "QA", " ".join(choisies))
+    assert len(competences_demandees(db)["competences"]) == 25
+
+
+def test_score_pile_au_plancher_est_compte_juste_sous_pas(client, db):
+    from app.models import Offer
+    from app.services.marche import SCORE_PLANCHER
+    db.add_all([
+        Offer(fingerprint="fp-plancher", source="manuelle", source_id="plancher",
+             title="QA", company="ACME", description="Selenium partout.", final_score=SCORE_PLANCHER),
+        Offer(fingerprint="fp-sousplancher", source="manuelle", source_id="sousplancher",
+             title="QA", company="ACME", description="Selenium partout.", final_score=SCORE_PLANCHER - 1),
+    ])
+    db.commit()
+    assert competences_demandees(db)["total_offres"] == 1
+
+
+def test_titre_absent_ne_plante_pas_le_classement(client, db):
+    from app.models import Offer
+    db.add(Offer(fingerprint="fp-sanstitre", source="manuelle", source_id="sanstitre",
+                 title="", company="ACME", description="Selenium et Cypress.", final_score=70.0))
+    db.commit()
+    assert "selenium" in {c["competence"] for c in competences_demandees(db)["competences"]}
+
+
+def test_part_en_pourcentage_sans_coincidence_darrondi(client, db):
+    """`round(100 * nombre / total)` : un tiers (33 %) distingue un `100`
+    muté en `101` (33,67 → 34), contrairement à une moitié déjà testée
+    ailleurs (50,5 arrondit à 50 dans les deux cas — round-half-to-even)."""
+    _offre(db, "m1", "QA", "Selenium.")
+    _offre(db, "m2", "QA", "Rien.")
+    _offre(db, "m3", "QA", "Rien non plus.")
+    selenium = next(c for c in competences_demandees(db)["competences"] if c["competence"] == "selenium")
+    assert selenium["part"] == 33
+
+
+def test_classement_egalite_triee_par_ordre_alphabetique(client, db):
+    """`sorted(..., key=lambda kv: (-kv[1], kv[0]))` : à nombre d'offres
+    égal, le tri retombe sur l'ordre alphabétique — pas un second tri par
+    nombre (redondant, donc muet sur l'ordre réel)."""
+    _offre(db, "m1", "QA", "Playwright et Jira.")
+    competences = [c["competence"] for c in competences_demandees(db)["competences"]
+                  if c["competence"] in ("playwright", "jira")]
+    assert competences == sorted(competences)
+
+
+def test_manquantes_plafonnees_a_dix(client, db):
+    from app.models import Offer
+    from app.services.cv_parser import SKILL_TAXONOMY
+    choisies = list(SKILL_TAXONOMY)[:11]
+    db.add(Offer(fingerprint="fp-11manques", source="manuelle", source_id="m11",
+                 title="QA", company="ACME", description=" ".join(choisies), final_score=70.0))
+    db.commit()
+    assert len(competences_demandees(db)["manquantes"]) == 10
+
+
+def test_montants_bornes_de_plausibilite_inclusives():
+    from app.services.marche import montants_annuels
+    assert montants_annuels("15 000 € / an") == [15000]     # pile le plancher : retenu
+    assert montants_annuels("14 999 € / an") == []          # juste en dessous : écarté
+    assert montants_annuels("250 000 € / an") == [250000]   # pile le plafond : retenu
+    assert montants_annuels("250 001 € / an") == []         # juste au-dessus : écarté
+
+
+def test_montants_annuels_texte_vide_ou_sans_montant():
+    from app.services.marche import montants_annuels
+    assert montants_annuels("") == []
+
+
+def test_dernier_nombre_sans_unite_nest_jamais_recherche_hors_liste():
+    """`rang + 1 < len(trouves)` : un nombre sans unité en DERNIÈRE position
+    (pas de borne suivante à qui emprunter une unité) ne doit ni planter, ni
+    être pris pour un salaire."""
+    from app.services.marche import montants_annuels
+    assert montants_annuels("45 K€ pour un poste de 39h hebdomadaires") == [45000]
+
+
+def test_conversion_k_euros_a_la_limite_exacte_de_1000():
+    """`valeur < 1000` : sous 1000, « K€ » est bien un multiplicateur (16 K€ =
+    16 000 €) ; à 1000 pile, la valeur est déjà en euros bruts — un second
+    ×1000 la rendrait absurde (1 000 000 €), elle reste donc 1000 € telle
+    quelle (et sort du calcul, bien trop bas pour un salaire plausible)."""
+    from app.services.marche import montants_annuels
+    assert montants_annuels("16 K€ / an") == [16000]
+    assert montants_annuels("1000 K€ / an") == []
+
+
+def test_conversion_mensuelle_a_la_limite_exacte_du_plancher():
+    """`mensuel and valeur < SALAIRE_MIN` : pile au plancher (15 000), le
+    nombre lu est déjà un montant annuel plausible en soi — pas de ×12
+    (limite connue et assumée du code : un vrai 15 000 €/mois resterait
+    compté comme 15 000 €/an). Juste sous le plancher, le ×12 s'applique."""
+    from app.services.marche import montants_annuels
+    assert montants_annuels("15000 € par mois") == [15000]          # pile au plancher : pas de ×12
+    assert montants_annuels("14999 € par mois") == [179988]         # juste sous : ×12 appliqué
+
+
+def test_mediane_sur_nombre_impair_prend_bien_lelement_du_milieu():
+    from app.services.marche import _mediane
+    assert _mediane([50, 10, 100, 20, 40]) == 40  # trié : 10,20,40,50,100 → milieu = 40
+
+
+def test_mediane_sur_nombre_pair_moyenne_les_deux_elements_du_milieu():
+    from app.services.marche import _mediane
+    assert _mediane([10, 20, 30, 41]) == 25  # (20 + 30) // 2
+
+
+def test_score_absent_compte_comme_zero_pas_comme_exclu(client, db):
+    from app.models import Offer
+    from app.services.marche import qui_recrute
+    db.add(Offer(fingerprint="fp-sansscore", source="manuelle", source_id="sansscore",
+                 title="QA", company="ACME", final_score=None))
+    db.commit()
+    resultat = qui_recrute(db)
+    assert resultat["entreprises"][0]["score_moyen"] == 0.0
+
+
+def test_intitule_sans_titre_exploitable_se_replie_sur_autre(client, db):
+    """`canonical_title(titre or "") or "autre"` : aussi bien un titre
+    absent qu'un titre réel mais sans forme canonique (« H/F » seul) doivent
+    retomber sur "autre", pas planter ni créer une entrée vide."""
+    from app.models import Offer
+    from app.services.marche import qui_recrute
+    db.add_all([
+        Offer(fingerprint="fp-titrevide", source="manuelle", source_id="titrevide",
+             title="", company="A", salary_text="45 000 € / an", final_score=70.0),
+        Offer(fingerprint="fp-titrenoncanon", source="manuelle", source_id="titrenoncanon",
+             title="H/F", company="B", salary_text="46 000 € / an", final_score=70.0),
+    ])
+    db.commit()
+    intitules = {s["intitule"] for s in qui_recrute(db)["salaires"]}
+    assert intitules == {"autre"}
+
+
+def test_score_moyen_arrondi_a_une_decimale_pas_a_lentier(client, db):
+    from app.models import Offer
+    from app.services.marche import qui_recrute
+    db.add_all([
+        Offer(fingerprint="fp-sm1", source="manuelle", source_id="sm1",
+             title="QA", company="ACME", final_score=70.0),
+        Offer(fingerprint="fp-sm2", source="manuelle", source_id="sm2",
+             title="QA", company="ACME", final_score=71.0),
+        Offer(fingerprint="fp-sm3", source="manuelle", source_id="sm3",
+             title="QA", company="ACME", final_score=73.0),
+    ])
+    db.commit()
+    assert qui_recrute(db)["entreprises"][0]["score_moyen"] == 71.3
+
+
+def test_salaire_fiable_pile_au_seuil_de_min_offres(client, db):
+    from app.models import Offer
+    from app.services.marche import MIN_OFFRES, qui_recrute
+    for i in range(MIN_OFFRES):
+        db.add(Offer(fingerprint=f"fp-fiable{i}", source="manuelle", source_id=f"fiable{i}",
+                     title="Expert QA", company="ACME", salary_text="50 000 € / an", final_score=70.0))
+    db.commit()
+    assert qui_recrute(db)["salaires"][0]["fiable"] is True
+
+
+def test_qui_recrute_plafonne_a_20_entreprises_par_defaut(client, db):
+    from app.models import Offer
+    from app.services.marche import qui_recrute
+    for i in range(21):
+        db.add(Offer(fingerprint=f"fp-ent{i}", source="manuelle", source_id=f"ent{i}",
+                     title="QA", company=f"Entreprise {i}", final_score=70.0))
+    db.commit()
+    assert len(qui_recrute(db)["entreprises"]) == 20
+
+
+def test_manques_recurrents_plafonne_a_15_par_defaut(client, db):
+    from app.models import Offer, Profile
+    from app.services.cv_parser import SKILL_TAXONOMY
+    from app.services.marche import manques_recurrents
+    db.get(Profile, 1).skills = []
+    choisies = list(SKILL_TAXONOMY)[:16]
+    db.add(Offer(fingerprint="fp-manques16", source="manuelle", source_id="manques16",
+                 title="QA", company="ACME", final_score=70.0,
+                 gap_analysis="Manquent : " + ", ".join(choisies)))
+    db.commit()
+    assert len(manques_recurrents(db)["manques"]) == 15
+
+
+def test_manques_recurrents_egalite_triee_par_ordre_alphabetique(client, db):
+    from app.models import Offer, Profile
+    from app.services.marche import manques_recurrents
+    db.get(Profile, 1).skills = []
+    db.add(Offer(fingerprint="fp-manquesalpha", source="manuelle", source_id="manquesalpha",
+                 title="QA", company="ACME", final_score=70.0,
+                 gap_analysis="Manquent Playwright et Jira."))
+    db.commit()
+    competences = [m["competence"] for m in manques_recurrents(db)["manques"]
+                  if m["competence"] in ("playwright", "jira")]
+    assert competences == sorted(competences)
+
+
+def test_manques_recurrents_ignore_une_competence_sous_chaine_dune_competence_du_cv(client, db):
+    """`competence in s or s in competence` : « java » est une sous-chaîne de
+    « javascript ». Si le CV a « javascript », « java » cité dans une analyse
+    ne doit pas être signalé comme un manque — l'OR doit tenir dans les deux
+    sens, pas seulement un."""
+    from app.models import Offer, Profile
+    from app.services.marche import manques_recurrents
+    profile = db.get(Profile, 1)
+    profile.skills = ["javascript"]
+    db.commit()
+    db.add(Offer(fingerprint="fp-javamanque", source="manuelle", source_id="javamanque",
+                 title="QA", company="ACME", final_score=70.0,
+                 gap_analysis="Le profil ne connaît pas le java ni le k6."))
+    db.commit()
+    manques = {m["competence"] for m in manques_recurrents(db)["manques"]}
+    assert "java" not in manques
+    assert "k6" in manques
+
+
+def test_fantome_apres_jours_vaut_bien_60():
+    from app.services.marche import FANTOME_APRES_JOURS
+    assert FANTOME_APRES_JOURS == 60
+
+
+def test_fraicheur_plafonne_les_fantomes_a_20_par_defaut(client, db):
+    from datetime import timedelta
+
+    from app.models import Offer, local_now
+    from app.services.marche import fraicheur
+    maintenant = local_now()
+    for i in range(21):
+        db.add(Offer(fingerprint=f"fp-fantome{i}", source="manuelle", source_id=f"fantome{i}",
+                     title="QA", company="ACME", final_score=60.0,
+                     published_at=maintenant - timedelta(days=100 + i), still_online=True))
+    db.commit()
+    assert len(fraicheur(db)["fantomes"]) == 20
