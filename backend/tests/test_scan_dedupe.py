@@ -80,6 +80,27 @@ def _offer(source_id="1", title="Test Manager", company="ACME", source_list=None
     )
 
 
+def test_scan_status_vrai_pendant_le_scan_et_faux_apres(db, monkeypatch):
+    """Doit être le TOUT PREMIER test du module : `_current_scan` est une
+    valeur par défaut au niveau du module (`{"running": False, ...}`,
+    scan.py:31), jamais réaffectée avant le premier scan. Un seul scan déjà
+    lancé par un test précédent dans le même process suffit à masquer pour
+    toujours une mutation de ce littéral initial — ce test doit donc rester
+    en tête de fichier."""
+    vu_pendant = []
+
+    class ConnecteurObservateur(FakeConnector):
+        def fetch(self, profile):
+            vu_pendant.append(scan_module.scan_status()["running"])
+            return ConnectorResult(offers=list(self._offers))
+
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [ConnecteurObservateur([_offer()])])
+    assert scan_module.scan_status()["running"] is False
+    run_scan(db, trigger="manuel")
+    assert vu_pendant == [True]
+    assert scan_module.scan_status()["running"] is False
+
+
 def test_scan_insere_et_score(db, monkeypatch):
     monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([_offer()])])
     run = run_scan(db, trigger="manuel")
@@ -494,21 +515,6 @@ def test_run_scan_refuse_un_second_scan_concurrent(db, monkeypatch):
         scan_module._scan_lock.release()
 
 
-def test_scan_status_vrai_pendant_le_scan_et_faux_apres(db, monkeypatch):
-    vu_pendant = []
-
-    class ConnecteurObservateur(FakeConnector):
-        def fetch(self, profile):
-            vu_pendant.append(scan_module.scan_status()["running"])
-            return ConnectorResult(offers=list(self._offers))
-
-    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [ConnecteurObservateur([_offer()])])
-    assert scan_module.scan_status()["running"] is False
-    run_scan(db, trigger="manuel")
-    assert vu_pendant == [True]
-    assert scan_module.scan_status()["running"] is False
-
-
 def test_sources_enabled_a_none_traite_toutes_les_sources_comme_actives(db, monkeypatch):
     profil = db.get(Profile, 1)
     profil.sources_enabled = None
@@ -607,7 +613,8 @@ def test_champs_de_la_nouvelle_offre_tronques_et_valeurs_absentes_videes(db, mon
         url="https://x.com/1",
     )
     sans_rien = RawOffer(source="fake", source_id="vide1", title="Titre minimal",
-                         company=None, location=None, contract_type=None, salary_text=None)
+                         company=None, location=None, description=None, url=None,
+                         contract_type=None, salary_text=None)
     monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [FakeConnector([longue, sans_rien])])
     run_scan(db, trigger="manuel")
 
@@ -621,6 +628,8 @@ def test_champs_de_la_nouvelle_offre_tronques_et_valeurs_absentes_videes(db, mon
     offre_vide = db.query(Offer).filter(Offer.source_id == "vide1").one()
     assert offre_vide.company == ""
     assert offre_vide.location == ""
+    assert offre_vide.description == ""
+    assert offre_vide.url == ""
     assert offre_vide.contract_type == ""
     assert offre_vide.salary_text == ""
 
@@ -740,3 +749,54 @@ def test_rescore_all_recalcule_chaque_offre_et_compte_juste(db):
     assert compte == 2
     scores = [o.score for o in db.query(Offer).all()]
     assert all(s > 0 for s in scores)
+
+
+def test_budget_ia_vaut_bien_20_minutes(db):
+    """`AI_BUDGET_SECONDES = 20 * 60` : les tests de budget vérifient tous un
+    comportement RELATIF à cette constante — aucun ne prouve sa valeur réelle,
+    documentée dans le commentaire du module (marge sous l'heure Windows)."""
+    assert scan_module.AI_BUDGET_SECONDES == 1200
+
+
+def test_entreprise_de_trois_lettres_indexee_pendant_le_scan_meme_pour_une_offre_toute_neuve(db, monkeypatch):
+    """`if len(new_key) >= 3` (scan.py:~280) : une offre tout juste créée dans
+    CE scan doit être indexée par entreprise pour que l'offre suivante — même
+    scan, autre source — puisse la retrouver par titre proche. Index déjà
+    couvert à la frontière pour les offres PRÉEXISTANTES (voir
+    `test_index_offres_connues_...`) ; ici, pour une offre née pendant le scan."""
+    premiere = RawOffer(source="fake1", source_id="n1", title="Test Manager Senior",
+                        company="EDF", url="https://un.com/1")  # "edf" normalisé = 3 caractères
+    fake1 = FakeConnector([premiere])
+    fake1.name = "fake1"
+    seconde = RawOffer(source="fake2", source_id="n2", title="Test Manager Senior H/F",
+                       company="EDF", url="https://deux.com/2")
+    fake2 = FakeConnector([seconde])
+    fake2.name = "fake2"
+
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [fake1, fake2])
+    run_scan(db, trigger="manuel")
+
+    assert db.query(Offer).count() == 1, "fusionnées dans le même scan grâce à l'index entreprise"
+
+
+def test_source_desactivee_ne_fausse_pas_le_balayage_hors_ligne(db, monkeypatch):
+    """`stats` d'une source désactivée n'a pas de clé `fetched` du tout
+    (`{"label": ..., "skipped": True}`) : `s.get("fetched", 0) > 0` doit
+    retomber sur 0, jamais sur une valeur qui la ferait compter comme
+    « a balayé » alors qu'elle n'a même pas été appelée."""
+    ancienne = Offer(fingerprint="fp-skip", source="desactivee", source_id="skip1",
+                     title="Test Manager", company="ACME", final_score=50,
+                     still_online=True, last_seen_at=local_now() - timedelta(days=30))
+    db.add(ancienne)
+    profil = db.get(Profile, 1)
+    profil.sources_enabled = {"desactivee": False}
+    db.commit()
+
+    desactivee = FakeConnector([])
+    desactivee.name = "desactivee"
+    monkeypatch.setattr(scan_module, "ALL_CONNECTORS", [desactivee])
+    run_scan(db, trigger="manuel")
+    db.expire_all()
+    assert db.query(Offer).one().still_online is True, (
+        "une source désactivée n'a rien balayé : elle ne doit jamais rendre une offre hors-ligne"
+    )
