@@ -57,9 +57,14 @@ CIBLES = {
     # fonction (test_fusion_au_scan_meme_entreprise) appelle réellement
     # run_scan(), pas un double.
     "scan": ("app/services/scan.py", ["tests/test_scan_dedupe.py", "tests/test_similarity.py"]),
+    # test_rappels.py ne teste QUE rappels.py malgré le nom voisin — il
+    # n'importe jamais digest.py (rappels.py a sa propre fonction
+    # echeances_de_demain, indépendante). Retiré d'ici (Sprint 61) : même
+    # défaut que test_queries.py plus haut. test_ia_v3.py y est ajouté à la
+    # place : il exerce resume_semaine(), jamais mappé jusqu'ici.
     "digest": (
         "app/services/digest.py",
-        ["tests/test_digest_enrich.py", "tests/test_rappels.py", "tests/test_entretiens.py"],
+        ["tests/test_digest_enrich.py", "tests/test_entretiens.py", "tests/test_ia_v3.py"],
     ),
     "diagnostic": (
         "app/services/diagnostic.py",
