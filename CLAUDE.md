@@ -46,11 +46,13 @@ l'image (défaut), les routes IA renvoient leur 503 français et le scan saute l
   7 onglets (Playwright). `python scripts/mesures.py [n]` — chronomètre les opérations
   coûteuses sur n offres générées (alerte au-delà d'une seconde).
   `python scripts/mutation.py [modules]` — test de mutation : injecte des fautes
-  plausibles et vérifie que la suite les attrape. Repères actuels (Sprint 60) :
-  scoring 97 %, textutils 94 %, diagnostic 100 %. Un survivant = une ligne
-  cassable sans que rien ne le signale — les 4 restants sont des mutants
-  équivalents vérifiés à la main (aucune différence de comportement
-  observable possible), pas des trous de preuve.
+  plausibles et vérifie que la suite les attrape. Repères actuels (Sprint 61) :
+  scoring 97 %, textutils 94 %, diagnostic 100 %, verrou 100 %, scan 96 %
+  (80/83 — 3 mutants équivalents vérifiés à la main, dont un confirmé par
+  test manuel : SQLAlchemy réabsorbe un `None` explicite dans le défaut `""`
+  de la colonne, ce qui rend `raw.description or ""` indifférent à `and`).
+  Un survivant = une ligne cassable sans que rien ne le signale ; digest,
+  justificatif et marche restent à mesurer.
 - Skills projet : `/verif` (vérification + correction jusqu'au vert), `/revue` (agent
   `revue-jobfinder` + revue IA, applique les correctifs), `/smoke` (test navigateur réel).
 - **Panel de relecteurs** (`.claude/agents/`), à lancer en parallèle pour un audit large —

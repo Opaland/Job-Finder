@@ -780,10 +780,16 @@ def test_entreprise_de_trois_lettres_indexee_pendant_le_scan_meme_pour_une_offre
 
 
 def test_source_desactivee_ne_fausse_pas_le_balayage_hors_ligne(db, monkeypatch):
-    """`stats` d'une source désactivée n'a pas de clé `fetched` du tout
-    (`{"label": ..., "skipped": True}`) : `s.get("fetched", 0) > 0` doit
-    retomber sur 0, jamais sur une valeur qui la ferait compter comme
-    « a balayé » alors qu'elle n'a même pas été appelée."""
+    """Régression : une source désactivée n'a pas de clé `fetched` dans ses
+    stats (`{"label": ..., "skipped": True}`) — elle ne doit jamais être
+    comptée parmi les sources qui ont balayé le marché (scan.py:~294).
+    Ne tue PAS, en pratique, le littéral `s.get("fetched", 0)` : ce défaut
+    est gardé avant par `not s.get("skipped")`, toujours faux ici — les deux
+    conditions ne sont jamais évaluées côté droit pour une source
+    désactivée. Vérifié par mutation manuelle (Sprint 61) : le défaut `0`
+    de ce `.get()` est un mutant équivalent — aucune entrée de `stats` qui
+    passe le garde `skipped` n'est jamais dépourvue de la clé `fetched`
+    (toujours posée avant le fetch, ligne 202)."""
     ancienne = Offer(fingerprint="fp-skip", source="desactivee", source_id="skip1",
                      title="Test Manager", company="ACME", final_score=50,
                      still_online=True, last_seen_at=local_now() - timedelta(days=30))
