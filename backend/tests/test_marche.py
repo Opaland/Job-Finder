@@ -48,6 +48,19 @@ def test_competences_du_cv_reperees(client, db):
     assert "selenium" not in [c["competence"] for c in resultat["manquantes"]]
 
 
+def test_dans_le_cv_reconnait_une_sous_chaine_dans_les_deux_sens(client, db):
+    """`competence in s or s in competence` : « java » cité dans une offre
+    doit être marqué « déjà au CV » si le CV contient « javascript » — la
+    sous-chaîne joue dans CE sens-là aussi, pas seulement l'inverse."""
+    profile = db.get(Profile, 1)
+    profile.skills = ["javascript"]
+    db.commit()
+    _offre(db, "m-java", "Développeur", "Poste principalement en java, avec un peu de k6.")
+    classement = {c["competence"]: c for c in competences_demandees(db)["competences"]}
+    assert classement["java"]["dans_le_cv"] is True
+    assert classement["k6"]["dans_le_cv"] is False
+
+
 def test_base_vide_ne_casse_pas(client, db):
     resultat = competences_demandees(db)
     assert resultat["total_offres"] == 0
@@ -248,6 +261,7 @@ def test_classement_plafonne_a_25_competences_par_defaut(client, db):
 def test_score_pile_au_plancher_est_compte_juste_sous_pas(client, db):
     from app.models import Offer
     from app.services.marche import SCORE_PLANCHER
+    assert SCORE_PLANCHER == 25  # la valeur réelle, pas seulement son effet de bord
     db.add_all([
         Offer(fingerprint="fp-plancher", source="manuelle", source_id="plancher",
              title="QA", company="ACME", description="Selenium partout.", final_score=SCORE_PLANCHER),
@@ -258,7 +272,12 @@ def test_score_pile_au_plancher_est_compte_juste_sous_pas(client, db):
     assert competences_demandees(db)["total_offres"] == 1
 
 
-def test_titre_absent_ne_plante_pas_le_classement(client, db):
+def test_titre_vide_ne_plante_pas_le_classement(client, db):
+    """`titre or ''` : `title` est NOT NULL en base (jamais None réellement),
+    et `description` a un défaut Python absorbant un `None` explicite —
+    seule l'alternative restante (titre vide "") est atteignable, mais elle
+    ne distingue pas `or` de `and` ("" des deux côtés). Ce `or`-ci est donc
+    un mutant équivalent, vérifié à la main ; régression gardée quand même."""
     from app.models import Offer
     db.add(Offer(fingerprint="fp-sanstitre", source="manuelle", source_id="sanstitre",
                  title="", company="ACME", description="Selenium et Cypress.", final_score=70.0))
@@ -318,14 +337,35 @@ def test_dernier_nombre_sans_unite_nest_jamais_recherche_hors_liste():
     assert montants_annuels("45 K€ pour un poste de 39h hebdomadaires") == [45000]
 
 
+def test_separateur_de_fourchette_regarde_le_vrai_texte_entre_deux_nombres():
+    """`texte[correspondance.end(1):suivant.start(1)]` : si ce calcul utilisait
+    la mauvaise référence de groupe, la tranche de texte inspectée s'effondre
+    en chaîne vide — qui satisfait toujours le motif de séparateur (il
+    accepte l'absence de séparateur). Un nombre séparé par un texte qui n'a
+    RIEN d'une fourchette (« du lundi au vendredi ») emprunterait alors à
+    tort l'unité du nombre suivant."""
+    from app.services.marche import montants_annuels
+    assert montants_annuels("39h du lundi au vendredi, 45 K€ de budget formation") == [45000]
+
+
 def test_conversion_k_euros_a_la_limite_exacte_de_1000():
     """`valeur < 1000` : sous 1000, « K€ » est bien un multiplicateur (16 K€ =
     16 000 €) ; à 1000 pile, la valeur est déjà en euros bruts — un second
     ×1000 la rendrait absurde (1 000 000 €), elle reste donc 1000 € telle
-    quelle (et sort du calcul, bien trop bas pour un salaire plausible)."""
+    quelle (et sort du calcul, bien trop bas pour un salaire plausible).
+    Les frontières exactes de `< 1000` (opérateur et littéral) sont, elles,
+    des mutants équivalents vérifiés à la main : à 1000 pile avec « K€ »,
+    multiplier ou non donne 1000 (trop bas) ou 1 000 000 (trop haut) — les
+    deux sortent de toute façon des bornes de plausibilité."""
     from app.services.marche import montants_annuels
     assert montants_annuels("16 K€ / an") == [16000]
     assert montants_annuels("1000 K€ / an") == []
+    # `and` muté en `or` : un montant SANS « K » (donc sans raison d'être
+    # ×1000) mais < 1000 ne doit pas être multiplié pour autant — sinon
+    # « 50 € » (un acompte, une prime...) deviendrait un salaire de 50 000 €
+    # (vérifié à la main : « 500 € » retombait hors plafond dans les deux
+    # cas et ne distinguait rien).
+    assert montants_annuels("50 € / an") == []
 
 
 def test_conversion_mensuelle_a_la_limite_exacte_du_plancher():
@@ -358,21 +398,28 @@ def test_score_absent_compte_comme_zero_pas_comme_exclu(client, db):
     assert resultat["entreprises"][0]["score_moyen"] == 0.0
 
 
-def test_intitule_sans_titre_exploitable_se_replie_sur_autre(client, db):
-    """`canonical_title(titre or "") or "autre"` : aussi bien un titre
-    absent qu'un titre réel mais sans forme canonique (« H/F » seul) doivent
-    retomber sur "autre", pas planter ni créer une entrée vide."""
+def test_intitule_reflete_le_vrai_titre_pas_toujours_autre(client, db):
+    """`canonical_title(titre or "") or "autre"` : un `or` devenu `and` sur
+    la PREMIÈRE moitié (`titre or ""`) ferait toujours retomber `cle` sur ""
+    puis "autre", QUEL QUE SOIT le titre réel — jamais remarqué si aucun
+    test ne regarde `intitule` pour un titre normal, non vide."""
     from app.models import Offer
     from app.services.marche import qui_recrute
-    db.add_all([
-        Offer(fingerprint="fp-titrevide", source="manuelle", source_id="titrevide",
-             title="", company="A", salary_text="45 000 € / an", final_score=70.0),
-        Offer(fingerprint="fp-titrenoncanon", source="manuelle", source_id="titrenoncanon",
-             title="H/F", company="B", salary_text="46 000 € / an", final_score=70.0),
-    ])
+    db.add(Offer(fingerprint="fp-titrereel", source="manuelle", source_id="titrereel",
+                 title="Test Manager", company="A", salary_text="45 000 € / an", final_score=70.0))
     db.commit()
-    intitules = {s["intitule"] for s in qui_recrute(db)["salaires"]}
-    assert intitules == {"autre"}
+    assert qui_recrute(db)["salaires"][0]["intitule"] == "test manager"
+
+
+def test_intitule_sans_forme_canonique_se_replie_sur_autre(client, db):
+    """Second repli de la même ligne : un titre réel mais sans forme
+    canonique (« H/F » seul) doit retomber sur "autre", pas planter."""
+    from app.models import Offer
+    from app.services.marche import qui_recrute
+    db.add(Offer(fingerprint="fp-titrenoncanon", source="manuelle", source_id="titrenoncanon",
+                 title="H/F", company="B", salary_text="46 000 € / an", final_score=70.0))
+    db.commit()
+    assert qui_recrute(db)["salaires"][0]["intitule"] == "autre"
 
 
 def test_score_moyen_arrondi_a_une_decimale_pas_a_lentier(client, db):
