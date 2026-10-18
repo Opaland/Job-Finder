@@ -299,10 +299,16 @@ def test_part_en_pourcentage_sans_coincidence_darrondi(client, db):
 def test_classement_egalite_triee_par_ordre_alphabetique(client, db):
     """`sorted(..., key=lambda kv: (-kv[1], kv[0]))` : à nombre d'offres
     égal, le tri retombe sur l'ordre alphabétique — pas un second tri par
-    nombre (redondant, donc muet sur l'ordre réel)."""
-    _offre(db, "m1", "QA", "Playwright et Jira.")
+    nombre (redondant, donc muet sur l'ordre réel). `compteur` est construit
+    à partir d'un `set` (ordre d'itération randomisé par processus) : avec
+    SEULEMENT deux compétences à égalité, un tri cassé reste indétectable
+    une fois sur deux (ordre déjà "bon" par hasard). Six compétences
+    rendent la coïncidence négligeable (1 chance sur 6! ≈ 720)."""
+    from app.services.cv_parser import SKILL_TAXONOMY
+    choisies = sorted(SKILL_TAXONOMY, key=len)[:6]  # 6 compétences courtes, toutes citées 1 fois
+    _offre(db, "m1", "QA", " ".join(choisies))
     competences = [c["competence"] for c in competences_demandees(db)["competences"]
-                  if c["competence"] in ("playwright", "jira")]
+                  if c["competence"] in choisies]
     assert competences == sorted(competences)
 
 
@@ -471,15 +477,20 @@ def test_manques_recurrents_plafonne_a_15_par_defaut(client, db):
 
 
 def test_manques_recurrents_egalite_triee_par_ordre_alphabetique(client, db):
+    """Même piège que pour `competences_demandees` (set à ordre randomisé) :
+    six compétences à égalité plutôt que deux, pour que la coïncidence d'un
+    ordre déjà "bon" malgré un tri cassé devienne négligeable."""
     from app.models import Offer, Profile
+    from app.services.cv_parser import SKILL_TAXONOMY
     from app.services.marche import manques_recurrents
     db.get(Profile, 1).skills = []
+    choisies = sorted(SKILL_TAXONOMY, key=len)[:6]
     db.add(Offer(fingerprint="fp-manquesalpha", source="manuelle", source_id="manquesalpha",
                  title="QA", company="ACME", final_score=70.0,
-                 gap_analysis="Manquent Playwright et Jira."))
+                 gap_analysis="Manquent : " + ", ".join(choisies)))
     db.commit()
     competences = [m["competence"] for m in manques_recurrents(db)["manques"]
-                  if m["competence"] in ("playwright", "jira")]
+                  if m["competence"] in choisies]
     assert competences == sorted(competences)
 
 
