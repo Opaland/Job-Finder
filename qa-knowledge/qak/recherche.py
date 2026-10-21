@@ -37,11 +37,23 @@ class Groupe:
         return "(" + " OR ".join(f'"{p}"' for p in phrases) + ")"
 
 
+def sigles(requete: str) -> set[str]:
+    """Sigles écrits en majuscules (SQL, GUI, ISO, API) : courts mais porteurs de sens."""
+    return {normaliser(m) for m in re.findall(r"\b[A-Z][A-Z0-9]{1,5}\b", requete)}
+
+
 def groupes(requete: str) -> list[Groupe]:
     concepts, reste = reperer_concepts(requete)
+    garder = sigles(requete)
     out = [Groupe(cid, list(termes), 1 if cid.startswith("lex-") else 2) for cid, termes in concepts]
-    out += [Groupe(m, [m]) for m in reste if m not in MOTS_GENERIQUES and len(m) > 3]
+    out += [Groupe(m, [m]) for m in reste if m not in MOTS_GENERIQUES and (len(m) > 3 or m in garder)]
     return out
+
+
+def mots_ignores(requete: str) -> list[str]:
+    _, reste = reperer_concepts(requete)
+    garder = sigles(requete)
+    return [m for m in reste if m not in MOTS_GENERIQUES and len(m) <= 3 and m not in garder and not m.isdigit()]
 
 
 def chercher(requete: str, n: int = 8, docs: list[str] | None = None, niveau: str | None = None,
@@ -60,7 +72,11 @@ def chercher(requete: str, n: int = 8, docs: list[str] | None = None, niveau: st
                 "avertissements": ["Requête vide après retrait des mots vides : préciser les notions cherchées."]}
     filtres, params = [], []
     if not toutes_versions:
-        filtres.append("d.statut_version = 'courant'")
+        # Un doc_id précis demandé explicitement (même remplacé) reste cherchable.
+        exacts = [d for d in (docs or []) if "-" in d and any(c.isdigit() for c in d)]
+        filtres.append("(d.statut_version = 'courant'"
+                       + (f" OR d.doc_id COLLATE NOCASE IN ({', '.join('?' * len(exacts))})" if exacts else "") + ")")
+        params += exacts
     if not inclure_sommaires:
         filtres.append("p.sommaire = 0")
     if docs:
@@ -130,6 +146,9 @@ def chercher(requete: str, n: int = 8, docs: list[str] | None = None, niveau: st
                               "groupes_trouves": [gs[k].libelle for k in sorted(trouves[r["id"]])]})
             if len(resultats) >= n:
                 break
+        ignores = mots_ignores(requete)
+        if ignores:
+            avert.append(f"Mots trop courts ignorés : {', '.join(ignores)} (écrire un sigle en MAJUSCULES pour le garder).")
         if not resultats:
             avert.append("Aucun passage trouvé dans la bibliothèque locale : reformuler (termes anglais des "
                          "syllabus), élargir les filtres, ou justifier une recherche Web.")

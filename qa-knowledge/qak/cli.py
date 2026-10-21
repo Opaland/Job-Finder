@@ -116,7 +116,7 @@ def cmd_importer(a):
 def cmd_actualiser(a):
     r = bibliotheque.actualiser(forcer=a.forcer)
     _ecrire(f"Inchangés : {r['inchanges']} · importés : {len(r['importes'])} · réindexés : {len(r['reindexes'])}")
-    for cle, titre in (("importes", "Importés"), ("reindexes", "Réindexés"), ("doublons", "Doublons ignorés"),
+    for cle, titre in (("importes", "Importés"), ("modifies", "Modifiés sur place"), ("reindexes", "Réindexés"), ("doublons", "Doublons ignorés"),
                        ("absents", "Sources disparues (passages retirés de l'index)"), ("echecs", "ÉCHECS"),
                        ("versions", "Versions remplacées")):
         if r[cle]:
@@ -543,6 +543,9 @@ def _normaliser_idee(a) -> None:
         a.statut = a.requete[0]
     elif a.action == "lier" and not a.cible and a.requete:
         a.cible = a.requete[0]
+    elif a.action == "lister" and (a.id or a.requete):
+        raise SystemExit("Erreur : `idee lister` ne prend pas de texte : utiliser --theme <code> / --statut, "
+                         "ou `idee chercher <texte>`.")
     besoin_id = {"modifier", "statut", "retour", "lier", "voir"}
     if a.action in besoin_id and not a.id:
         raise SystemExit(f"Erreur : `idee {a.action}` attend un identifiant (QA-xxxx).")

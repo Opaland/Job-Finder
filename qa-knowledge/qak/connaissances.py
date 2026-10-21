@@ -100,18 +100,29 @@ def ouvrir() -> sqlite3.Connection:
 
 
 def _reconstruire(cx: sqlite3.Connection) -> None:
+    idees = [json.loads(l) for l in chemins.connaissances_jsonl().read_text(encoding="utf-8").splitlines()
+             if l.strip()]
+    vus, doubles = set(), set()
+    for i in idees:
+        (doubles if i["id"] in vus else vus).add(i["id"])
+    if doubles:
+        # Typiquement un conflit Git résolu en gardant les deux côtés : reconstruire
+        # garderait une seule des deux lignes et la perte deviendrait définitive au
+        # prochain export. On refuse et on laisse l'arbitrage à l'utilisateur.
+        raise ErreurValidation(
+            f"Identifiants en double dans {chemins.connaissances_jsonl().name} : {', '.join(sorted(doubles))}. "
+            "Fusionner ou renuméroter ces lignes à la main (conflit Git ?), puis relancer.")
     for t in ("idees", "idee_themes", "refs", "relations", "retours", "idees_fts"):
         cx.execute(f"DELETE FROM {t}")
-    for ligne in chemins.connaissances_jsonl().read_text(encoding="utf-8").splitlines():
-        if ligne.strip():
-            _inserer(cx, json.loads(ligne), relations=True)
+    for idee in idees:
+        _inserer(cx, idee, relations=True)
     cx.execute("INSERT OR REPLACE INTO meta VALUES ('hash_jsonl', ?)", (_empreinte_fichier(),))
     cx.commit()
 
 
-def _inserer(cx, idee: dict, relations: bool = False) -> None:
+def _inserer(cx, idee: dict, relations: bool = False, nouvelle: bool = False) -> None:
     cols = ("id", *CHAMPS_TEXTE, "theme_principal", "maturite", "statut", "provenance", "cree_le", "maj_le")
-    cx.execute(f"INSERT OR REPLACE INTO idees({', '.join(cols)}) VALUES ({', '.join('?' * len(cols))})",
+    cx.execute(f"INSERT {'' if nouvelle else 'OR REPLACE '}INTO idees({', '.join(cols)}) VALUES ({', '.join('?' * len(cols))})",
                [idee.get(c) for c in cols])
     cx.execute("DELETE FROM idee_themes WHERE idee_id=?", (idee["id"],))
     cx.execute("INSERT INTO idee_themes VALUES (?,?,1)", (idee["id"], idee["theme_principal"]))
@@ -167,6 +178,14 @@ def _charger(cx, idee_id: str) -> dict:
 
 # ---------------------------------------------------------------- validation
 
+def _pages(texte: str) -> set[int]:
+    """« 31 », « 31-33 », « 4, 6 » → ensemble de pages."""
+    pages = set()
+    for a, b in re.findall(r"(\d+)\s*(?:[-–]\s*(\d+))?", texte):
+        pages |= set(range(int(a), int(b or a) + 1)) if int(b or a) - int(a) < 200 else {int(a)}
+    return pages
+
+
 def _verifier_reference_istqb(ref: dict) -> list[str]:
     """Contrôle une référence ISTQB contre la bibliothèque indexée : document présent,
     pages existantes, extrait réellement présent sur les pages citées."""
@@ -183,25 +202,36 @@ def _verifier_reference_istqb(ref: dict) -> list[str]:
         ref["doc_id"] = d["doc_id"]
         ref.setdefault("version", d["version"])
         ref.setdefault("titre", d["titre"])
-        if d["statut_version"] == "remplace":
+        if d["statut_version"] == "absent":
+            problemes.append(f"{d['doc_id']} : fichier source absent de la bibliothèque (référence non relisible)")
+        elif d["statut_version"] == "remplace":
             problemes.append(f"{d['doc_id']} est une version remplacée (par {d['remplace_par']})")
-        pages = [int(x) for x in re.findall(r"\d+", str(ref.get("pages") or ""))]
-        if not pages and not ref.get("section"):
+        pages = _pages(str(ref.get("pages") or ""))
+        section = str(ref.get("section") or "").strip().rstrip(".")
+        if not pages and not section:
             raise ErreurValidation(f"Référence ISTQB {d['doc_id']} sans page ni section : impossible à vérifier.")
-        for p in pages:
+        for p in sorted(pages):
             if not 1 <= p <= (d["nb_pages"] or 0):
                 raise ErreurValidation(f"Page {p} inexistante dans {d['doc_id']} ({d['nb_pages']} pages).")
-        if ref.get("extrait"):
-            debut, fin = (min(pages), max(pages)) if pages else (1, d["nb_pages"])
-            texte = " ".join(x["texte"] for x in cx.execute(
-                "SELECT texte FROM passages WHERE doc_id=? AND page BETWEEN ? AND ?", (d["doc_id"], debut, fin + 1)))
-            mots_extrait = normaliser(ref["extrait"]).split()
-            texte_n = normaliser(texte)
-            trouves = sum(1 for m in set(mots_extrait) if f" {m} " in f" {texte_n} ")
-            if mots_extrait and trouves / len(set(mots_extrait)) < 0.7:
+        if section and not cx.execute("SELECT 1 FROM sections WHERE doc_id=? AND (numero=? OR numero LIKE ?)",
+                                      (d["doc_id"], section, section + ".%")).fetchone():
+            raise ErreurValidation(f"Section {section} absente du plan de {d['doc_id']} (voir `plan {d['doc_id']}`).")
+        if ref.get("extrait") and d["statut_version"] != "absent":
+            sql, params = "SELECT texte FROM passages WHERE doc_id=?", [d["doc_id"]]
+            if pages:  # exactement les pages citées
+                sql += f" AND page IN ({', '.join('?' * len(pages))})"
+                params += sorted(pages)
+            else:      # sinon, la section citée et ses sous-sections
+                sql += " AND (section_num=? OR section_num LIKE ?)"
+                params += [section, section + ".%"]
+            texte_n = f" {normaliser(' '.join(x['texte'] for x in cx.execute(sql, params)))} "
+            mots_extrait = set(normaliser(ref["extrait"]).split())
+            trouves = sum(1 for m in mots_extrait if f" {m} " in texte_n)
+            if mots_extrait and trouves / len(mots_extrait) < 0.7:
+                lieu = f"aux pages {ref.get('pages')}" if pages else f"dans la section {section}"
                 raise ErreurValidation(
-                    f"L'extrait cité n'apparaît pas aux pages {ref.get('pages')} de {d['doc_id']} "
-                    f"({trouves}/{len(set(mots_extrait))} mots retrouvés). Relire le passage (`lire`) et corriger.")
+                    f"L'extrait cité n'apparaît pas {lieu} de {d['doc_id']} "
+                    f"({trouves}/{len(mots_extrait)} mots retrouvés). Relire le passage (`lire`) et corriger.")
     finally:
         cx.close()
     return problemes
@@ -290,7 +320,11 @@ def doublons(candidat: dict, exclure: str | None = None, cx: sqlite3.Connection 
 # ---------------------------------------------------------------- écriture
 
 def _nouvel_id(cx) -> str:
-    n = max([int(r[0][3:]) for r in cx.execute("SELECT id FROM idees WHERE id LIKE 'QA-%'")] or [0])
+    """Prochain identifiant, jamais réattribué : on tient compte des idées présentes, des
+    cibles de relations et du journal (une idée retirée du JSONL y laisse sa trace)."""
+    vus = {r[0] for r in cx.execute("SELECT id FROM idees UNION SELECT cible FROM relations")}
+    vus |= {e["cible"] for e in journal.lire(limite=10 ** 9)}
+    n = max([int(m.group(1)) for v in vus if (m := re.fullmatch(r"QA-(\d+)", v or ""))] or [0])
     return f"QA-{n + 1:04d}"
 
 
@@ -300,9 +334,13 @@ def ajouter(donnees: dict, forcer: bool = False, motif: str | None = None) -> di
     idee, avert = valider(donnees)
     cx = ouvrir()
     try:
+        # Verrou d'écriture AVANT de lire les doublons et le dernier identifiant : deux
+        # ajouts simultanés ne peuvent plus obtenir le même QA-xxxx.
+        cx.execute("BEGIN IMMEDIATE")
         sim = doublons(idee, cx=cx)
         probables = [s for s in sim if s["verdict"] == "doublon probable"]
         if probables and not forcer:
+            cx.rollback()
             return {"etat": "refuse", "doublons": sim, "avertissements": avert,
                     "message": "Doublon probable : compléter l'idée existante (`idee modifier`) ou la lier "
                                "(`idee lier`) plutôt que d'en créer une nouvelle."}
@@ -311,7 +349,7 @@ def ajouter(donnees: dict, forcer: bool = False, motif: str | None = None) -> di
         maintenant = datetime.now().isoformat(timespec="seconds")
         idee.update(id=_nouvel_id(cx), cree_le=maintenant, maj_le=maintenant)
         idee.setdefault("provenance", "saisie conversationnelle")
-        _inserer(cx, idee)
+        _inserer(cx, idee, nouvelle=True)
         _exporter(cx)
         journal.noter("idee_creee", idee["id"], {"titre": idee["titre"], "doublons_signales": sim}, motif)
         return {"etat": "cree", "id": idee["id"], "doublons": sim, "avertissements": avert}
@@ -455,18 +493,18 @@ def chercher(requete: str, n: int = 10, theme: str | None = None) -> list[dict]:
     if not gs:
         return []
     expr = " OR ".join(g.fts() for g in gs)
+    filtre, params = "", []
+    if theme:
+        codes = sorted(_descendants(taxonomie.resoudre(theme)))
+        filtre = f" AND i.id IN (SELECT idee_id FROM idee_themes WHERE theme IN ({', '.join('?' * len(codes))}))"
+        params = codes
     cx = ouvrir()
     try:
-        rows = [dict(r) for r in cx.execute(
+        return [dict(r) for r in cx.execute(
             "SELECT i.*, bm25(idees_fts, 0, 3.0, 1.0) AS score, "
             "snippet(idees_fts, 2, '«', '»', ' … ', 20) AS extrait FROM idees_fts "
-            "JOIN idees i ON i.id = idees_fts.id WHERE idees_fts MATCH ? ORDER BY score LIMIT ?", (expr, n * 3))]
-        if theme:
-            codes = _descendants(taxonomie.resoudre(theme))
-            ids = {r["idee_id"] for r in cx.execute(
-                f"SELECT idee_id FROM idee_themes WHERE theme IN ({', '.join('?' * len(codes))})", sorted(codes))}
-            rows = [r for r in rows if r["id"] in ids]
-        return rows[:n]
+            f"JOIN idees i ON i.id = idees_fts.id WHERE idees_fts MATCH ?{filtre} ORDER BY score LIMIT ?",
+            (expr, *params, n))]
     finally:
         cx.close()
 

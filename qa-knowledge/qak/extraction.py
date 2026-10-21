@@ -14,7 +14,7 @@ from .textes import normaliser
 # Toute modification de l'extraction, du découpage ou de la détection des métadonnées doit
 # incrémenter ce numéro :
 # l'actualisation réindexe alors les documents extraits par une version antérieure.
-VERSION_EXTRACTEUR = 8
+VERSION_EXTRACTEUR = 9
 
 TAILLE_PASSAGE = 1400   # caractères visés par passage
 PAGE_VIDE = 40          # moins de caractères utiles = page vide (scan, image)
@@ -247,6 +247,24 @@ def _plan_depuis_texte(pages: list[Page]) -> list[Titre]:
     return chaine[::-1]
 
 
+def _ligne_du_titre(lignes: list[str], num: str, libelle: str) -> int:
+    """Ligne où commence le titre d'un signet : titre complet, titre coupé sur deux lignes,
+    puis numéro seul en début de ligne. 0 (début de page) en dernier recours."""
+    cle = normaliser(libelle)[:30]
+    norm = [normaliser(l) for l in lignes]
+    for i, l in enumerate(norm):
+        if cle and cle in l:
+            return i
+    for i in range(len(norm) - 1):
+        if cle and cle in f"{norm[i]} {norm[i + 1]}" and normaliser(libelle)[:8] in norm[i]:
+            return i
+    if num:
+        for i, l in enumerate(lignes):
+            if re.match(rf"\s*{re.escape(num)}\.?\s", l):
+                return i
+    return 0
+
+
 def _plan_depuis_signets(signets, pages: list[Page]) -> list[Titre]:
     plan, dernier = [], ""
     for _niveau, titre, page in signets:
@@ -255,12 +273,7 @@ def _plan_depuis_signets(signets, pages: list[Page]) -> list[Titre]:
         num, libelle = _numero(titre)
         # Un signet non numéroté (« Mots-clés », intertitre) reste dans sa section parente.
         dernier = num = num or dernier
-        cle = normaliser(libelle)[:30]
-        ligne = 0
-        for i, l in enumerate(pages[page - 1].texte.split("\n")):
-            if cle and cle in normaliser(l):
-                ligne = i
-                break
+        ligne = _ligne_du_titre(pages[page - 1].texte.split("\n"), num, libelle)
         plan.append(Titre(page, ligne, num, libelle))
     plan.sort(key=lambda t: (t.page, t.ligne))
     return plan

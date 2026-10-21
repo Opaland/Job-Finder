@@ -8,6 +8,7 @@ Deux fichiers :
   passages + table FTS5. `actualiser()` le remet à jour de façon incrémentale.
 """
 import hashlib
+from functools import cmp_to_key
 import json
 import re
 import shutil
@@ -218,9 +219,27 @@ def _cle_version(v: str | None) -> tuple:
     return tuple(int(p) if p.isdigit() else ord(p) - 96 for p in parts)
 
 
+def _numero_version(v: str | None) -> tuple:
+    """Numéro comparable, ou () pour une « version » qui est une année (2019) ou absente."""
+    cle = _cle_version(v)
+    return () if not cle or cle[0] >= 1900 else cle
+
+
+def _comparer_versions(a, b) -> int:
+    va, vb = _numero_version(a["version"]), _numero_version(b["version"])
+    if va and vb and va != vb:
+        return 1 if va > vb else -1
+    da, db = a["date_publication"], b["date_publication"]
+    if da and db and da != db:
+        return 1 if da > db else -1
+    return 0
+
+
 def calculer_versions(cx: sqlite3.Connection) -> list[str]:
     """Pour chaque (code, type, langue), la version la plus récente est « courant »,
-    les autres « remplace ». Priorité à la date de publication, puis au numéro."""
+    les autres « remplace ». Deux numéros de version comparables (« 3.0 », « 4.0 ») font
+    foi ; sinon (version « 2019 », numéro absent) on compare les dates. Faute de critère
+    commun, l'ordre est signalé comme incertain (corriger la date ou la version)."""
     notes = []
     groupes: dict[tuple, list] = {}
     for r in cx.execute("SELECT doc_id, code, type, langue, version, date_publication, statut_version "
@@ -230,9 +249,12 @@ def calculer_versions(cx: sqlite3.Connection) -> list[str]:
     for (code, typ, langue), docs in groupes.items():
         if len(docs) < 2:
             continue
-        docs.sort(key=lambda r: (r["date_publication"] or "", _cle_version(r["version"])), reverse=True)
+        docs.sort(key=cmp_to_key(_comparer_versions), reverse=True)
         tete = docs[0]
         for r in docs[1:]:
+            if _comparer_versions(tete, r) == 0 and r["version"] != tete["version"]:
+                notes.append(f"ordre incertain entre {tete['doc_id']} et {r['doc_id']} (date ou numéro de "
+                             "version manquant) : `corriger <doc_id> --date AAAA-MM-JJ`")
             cx.execute("UPDATE documents SET statut_version='remplace', remplace_par=? WHERE doc_id=?",
                        (tete["doc_id"], r["doc_id"]))
             meme = (r["version"] == tete["version"])
@@ -342,8 +364,8 @@ def actualiser(forcer: bool = False) -> dict:
     """Synchronise l'index avec bibliotheque/sources/ : nouveaux fichiers importés,
     fichiers modifiés ou extraits par un ancien extracteur réindexés, fichiers
     disparus signalés. Ne supprime jamais un fichier source."""
-    rapport = {"importes": [], "reindexes": [], "inchanges": 0, "doublons": [], "absents": [], "echecs": [],
-               "versions": []}
+    rapport = {"importes": [], "reindexes": [], "modifies": [], "inchanges": 0, "doublons": [], "absents": [],
+               "echecs": [], "versions": []}
     manif = lire_manifeste()
     cx = connecter()
     try:
@@ -360,6 +382,16 @@ def actualiser(forcer: bool = False) -> dict:
                 continue
             presents.add(sha)
             entree = manif["documents"].get(sha)
+            if entree is None:
+                # Même nom, contenu modifié sur place (fichier corrigé, PDF ré-exporté) : on
+                # reprend l'entrée existante (doc_id et corrections manuelles conservés).
+                ancien = next((k for k, e in manif["documents"].items() if e["fichier"] == f.name), None)
+                if ancien:
+                    entree = manif["documents"].pop(ancien)
+                    entree["sha256"] = sha
+                    manif["documents"][sha] = entree
+                    cx.execute("DELETE FROM documents WHERE sha256=?", (ancien,))
+                    rapport["modifies"].append(f"{entree['doc_id']} ({f.name}) : contenu modifié, réindexé")
             if entree and entree["fichier"] != f.name:
                 if (dossier / entree["fichier"]).exists():
                     rapport["doublons"].append(f"{f.name} = {entree['fichier']}")
