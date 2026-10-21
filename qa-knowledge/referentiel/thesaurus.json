@@ -1,0 +1,1730 @@
+{
+ "description": "Thésaurus FR/EN des concepts QA. Sert à (1) traduire une question française vers le vocabulaire des syllabus anglais et inversement, (2) élargir aux synonymes, (3) comparer des idées pour la déduplication. Ajouter des termes plutôt que des concepts quand c'est possible.",
+ "concepts": [
+  {
+   "id": "partition-equivalence",
+   "termes": [
+    "equivalence partitioning",
+    "equivalence partition",
+    "equivalence class",
+    "partitionnement par équivalence",
+    "partitionnement en classes d'équivalence",
+    "partition d'équivalence",
+    "partitions d'équivalence",
+    "classe d'équivalence",
+    "classes d'équivalence"
+   ]
+  },
+  {
+   "id": "valeurs-limites",
+   "termes": [
+    "boundary value analysis",
+    "boundary value",
+    "boundary values",
+    "analyse des valeurs limites",
+    "valeur limite",
+    "valeurs limites",
+    "bva"
+   ]
+  },
+  {
+   "id": "table-decision",
+   "termes": [
+    "decision table",
+    "decision table testing",
+    "table de décision",
+    "tables de décision",
+    "test par tables de décision"
+   ]
+  },
+  {
+   "id": "transition-etats",
+   "termes": [
+    "state transition testing",
+    "state transition",
+    "state diagram",
+    "transition d'état",
+    "transitions d'état",
+    "test de transition d'état",
+    "diagramme d'états",
+    "machine à états"
+   ]
+  },
+  {
+   "id": "cas-utilisation",
+   "termes": [
+    "use case testing",
+    "use case",
+    "cas d'utilisation",
+    "test des cas d'utilisation"
+   ]
+  },
+  {
+   "id": "pairwise",
+   "termes": [
+    "pairwise testing",
+    "pairwise",
+    "combinatorial testing",
+    "combinatorial",
+    "test combinatoire",
+    "tests combinatoires",
+    "test par paires",
+    "all-pairs",
+    "classification tree",
+    "arbre de classification"
+   ]
+  },
+  {
+   "id": "couverture-code",
+   "termes": [
+    "statement coverage",
+    "branch coverage",
+    "decision coverage",
+    "code coverage",
+    "couverture des instructions",
+    "couverture des branches",
+    "couverture des décisions",
+    "couverture du code",
+    "mc/dc",
+    "condition coverage",
+    "couverture des conditions"
+   ]
+  },
+  {
+   "id": "couverture",
+   "termes": [
+    "coverage",
+    "couverture",
+    "test coverage",
+    "couverture des tests",
+    "couverture de test"
+   ]
+  },
+  {
+   "id": "estimation-erreur",
+   "termes": [
+    "error guessing",
+    "estimation d'erreur",
+    "devinette d'erreur",
+    "fault attack",
+    "attaque de fautes"
+   ]
+  },
+  {
+   "id": "checklist",
+   "termes": [
+    "checklist-based testing",
+    "checklist",
+    "checklists",
+    "liste de contrôle",
+    "listes de contrôle",
+    "test basé sur des checklists"
+   ]
+  },
+  {
+   "id": "exploratoire",
+   "termes": [
+    "exploratory testing",
+    "exploratory",
+    "test exploratoire",
+    "tests exploratoires",
+    "exploratoire",
+    "session-based test management",
+    "session-based testing",
+    "test basé sur les sessions",
+    "charte de test",
+    "test charter"
+   ]
+  },
+  {
+   "id": "collaboratif",
+   "termes": [
+    "collaboration-based test approaches",
+    "collaborative user story writing",
+    "approche collaborative",
+    "rédaction collaborative",
+    "three amigos",
+    "trois amigos"
+   ]
+  },
+  {
+   "id": "mbt",
+   "termes": [
+    "model-based testing",
+    "test basé sur les modèles",
+    "test à base de modèles",
+    "mbt"
+   ]
+  },
+  {
+   "id": "mutation",
+   "termes": [
+    "mutation testing",
+    "test de mutation",
+    "mutation analysis",
+    "analyse de mutation",
+    "mutant",
+    "mutants"
+   ]
+  },
+  {
+   "id": "metamorphique",
+   "termes": [
+    "metamorphic testing",
+    "test métamorphique",
+    "metamorphic relation",
+    "relation métamorphique"
+   ]
+  },
+  {
+   "id": "risque",
+   "termes": [
+    "risk",
+    "risque",
+    "risques",
+    "risk-based testing",
+    "test basé sur les risques",
+    "tests basés sur les risques",
+    "risk analysis",
+    "analyse des risques",
+    "analyse de risque",
+    "risk assessment",
+    "évaluation des risques",
+    "product risk",
+    "risque produit",
+    "project risk",
+    "risque projet",
+    "risk level",
+    "niveau de risque",
+    "risk identification",
+    "identification des risques",
+    "risk mitigation",
+    "atténuation des risques",
+    "risk control",
+    "contrôle des risques"
+   ]
+  },
+  {
+   "id": "priorisation",
+   "termes": [
+    "prioritization",
+    "priorisation",
+    "prioritisation",
+    "test prioritization",
+    "priorité",
+    "priorities",
+    "priorités",
+    "prioriser",
+    "test case prioritization",
+    "priorisation des tests",
+    "ordonnancement",
+    "test execution schedule",
+    "calendrier d'exécution"
+   ]
+  },
+  {
+   "id": "strategie",
+   "termes": [
+    "test strategy",
+    "stratégie de test",
+    "stratégie de tests",
+    "test approach",
+    "approche de test",
+    "test policy",
+    "politique de test",
+    "organizational test strategy",
+    "stratégie de test organisationnelle"
+   ]
+  },
+  {
+   "id": "plan-test",
+   "termes": [
+    "test plan",
+    "plan de test",
+    "plans de test",
+    "test planning",
+    "planification des tests",
+    "planification de test"
+   ]
+  },
+  {
+   "id": "estimation",
+   "termes": [
+    "test estimation",
+    "estimation des tests",
+    "estimation",
+    "estimate",
+    "estimer",
+    "effort estimation",
+    "estimation de l'effort",
+    "wideband delphi",
+    "planning poker",
+    "three-point estimation",
+    "estimation à trois points"
+   ]
+  },
+  {
+   "id": "pilotage",
+   "termes": [
+    "test monitoring",
+    "test control",
+    "suivi des tests",
+    "contrôle des tests",
+    "pilotage des tests",
+    "test progress",
+    "avancement des tests"
+   ]
+  },
+  {
+   "id": "metriques",
+   "termes": [
+    "metric",
+    "metrics",
+    "métrique",
+    "métriques",
+    "measurement",
+    "mesure",
+    "mesures",
+    "indicator",
+    "indicateur",
+    "indicateurs",
+    "kpi",
+    "kpis",
+    "dashboard",
+    "tableau de bord"
+   ]
+  },
+  {
+   "id": "rapport",
+   "termes": [
+    "test report",
+    "test reporting",
+    "rapport de test",
+    "rapports de test",
+    "reporting",
+    "test progress report",
+    "rapport d'avancement",
+    "test completion report",
+    "rapport de clôture"
+   ]
+  },
+  {
+   "id": "defaut",
+   "termes": [
+    "defect",
+    "defects",
+    "défaut",
+    "défauts",
+    "bug",
+    "bugs",
+    "anomalie",
+    "anomalies",
+    "incident",
+    "incidents",
+    "fault",
+    "faute",
+    "failure",
+    "défaillance",
+    "defect report",
+    "rapport de défaut",
+    "defect management",
+    "gestion des défauts",
+    "gestion des anomalies"
+   ]
+  },
+  {
+   "id": "cause-racine",
+   "termes": [
+    "root cause analysis",
+    "root cause",
+    "cause racine",
+    "causes racines",
+    "analyse des causes racines",
+    "ishikawa",
+    "five whys",
+    "5 pourquoi",
+    "cinq pourquoi",
+    "causal loop diagram",
+    "diagramme de boucle causale"
+   ]
+  },
+  {
+   "id": "prevention-defauts",
+   "termes": [
+    "defect prevention",
+    "prévention des défauts",
+    "phase containment",
+    "confinement de phase"
+   ]
+  },
+  {
+   "id": "criteres-entree-sortie",
+   "termes": [
+    "entry criteria",
+    "exit criteria",
+    "critères d'entrée",
+    "critères de sortie",
+    "definition of done",
+    "définition de fini",
+    "definition of ready",
+    "définition de prêt"
+   ]
+  },
+  {
+   "id": "regression",
+   "termes": [
+    "regression testing",
+    "regression",
+    "test de régression",
+    "tests de régression",
+    "non-régression",
+    "tests de non-régression"
+   ]
+  },
+  {
+   "id": "maintenance-test",
+   "termes": [
+    "maintenance testing",
+    "test de maintenance",
+    "tests de maintenance",
+    "impact analysis",
+    "analyse d'impact"
+   ]
+  },
+  {
+   "id": "testware",
+   "termes": [
+    "testware",
+    "test case",
+    "test cases",
+    "cas de test",
+    "test script",
+    "script de test",
+    "scripts de test",
+    "test procedure",
+    "procédure de test",
+    "test suite",
+    "suite de tests"
+   ]
+  },
+  {
+   "id": "base-test",
+   "termes": [
+    "test basis",
+    "base de test",
+    "test conditions",
+    "test condition",
+    "condition de test",
+    "conditions de test",
+    "test object",
+    "objet de test"
+   ]
+  },
+  {
+   "id": "tracabilite",
+   "termes": [
+    "traceability",
+    "traçabilité",
+    "bidirectional traceability",
+    "traçabilité bidirectionnelle",
+    "requirements traceability"
+   ]
+  },
+  {
+   "id": "niveaux-test",
+   "termes": [
+    "test level",
+    "test levels",
+    "niveau de test",
+    "niveaux de test",
+    "component testing",
+    "test de composants",
+    "tests unitaires",
+    "unit testing",
+    "unit test",
+    "integration testing",
+    "test d'intégration",
+    "tests d'intégration",
+    "system testing",
+    "test système",
+    "tests système",
+    "system integration testing"
+   ]
+  },
+  {
+   "id": "acceptation",
+   "termes": [
+    "acceptance testing",
+    "test d'acceptation",
+    "tests d'acceptation",
+    "recette",
+    "user acceptance testing",
+    "uat",
+    "acceptance criteria",
+    "critères d'acceptation",
+    "critère d'acceptation",
+    "atdd",
+    "acceptance test-driven development",
+    "développement piloté par les tests d'acceptation"
+   ]
+  },
+  {
+   "id": "bdd",
+   "termes": [
+    "behavior-driven development",
+    "behaviour-driven development",
+    "bdd",
+    "gherkin",
+    "given when then",
+    "specification by example",
+    "spécification par l'exemple",
+    "example mapping",
+    "développement piloté par le comportement"
+   ]
+  },
+  {
+   "id": "tdd",
+   "termes": [
+    "test-driven development",
+    "tdd",
+    "développement piloté par les tests",
+    "test first"
+   ]
+  },
+  {
+   "id": "user-story",
+   "termes": [
+    "user story",
+    "user stories",
+    "histoire utilisateur",
+    "récit utilisateur",
+    "récits utilisateurs",
+    "backlog",
+    "product backlog",
+    "invest"
+   ]
+  },
+  {
+   "id": "exigences",
+   "termes": [
+    "requirement",
+    "requirements",
+    "exigence",
+    "exigences",
+    "requirements engineering",
+    "ingénierie des exigences",
+    "specification",
+    "spécifications"
+   ]
+  },
+  {
+   "id": "statique",
+   "termes": [
+    "static testing",
+    "test statique",
+    "tests statiques"
+   ]
+  },
+  {
+   "id": "shift-left",
+   "termes": [
+    "shift-left",
+    "shift-left testing",
+    "early testing",
+    "test au plus tôt",
+    "tests au plus tôt",
+    "tester tôt",
+    "test précoce",
+    "tester au plus tôt",
+    "test early",
+    "testing early"
+   ]
+  },
+  {
+   "id": "shift-right",
+   "termes": [
+    "shift-right",
+    "testing in production",
+    "test en production",
+    "production monitoring",
+    "surveillance en production",
+    "observability",
+    "observabilité",
+    "a/b testing",
+    "canary release",
+    "canary",
+    "feature toggle",
+    "feature flag",
+    "chaos engineering"
+   ]
+  },
+  {
+   "id": "ci",
+   "termes": [
+    "continuous integration",
+    "intégration continue",
+    "ci/cd",
+    "pipeline",
+    "pipelines",
+    "build pipeline",
+    "deployment pipeline",
+    "pipeline de déploiement",
+    "continuous delivery",
+    "livraison continue",
+    "continuous deployment",
+    "déploiement continu",
+    "continuous testing",
+    "test en continu",
+    "tests en continu",
+    "quality gate",
+    "porte qualité",
+    "barrière qualité"
+   ]
+  },
+  {
+   "id": "devops",
+   "termes": [
+    "devops",
+    "dev ops",
+    "site reliability engineering",
+    "dora metrics",
+    "métriques dora"
+   ]
+  },
+  {
+   "id": "automatisation",
+   "termes": [
+    "test automation",
+    "automatisation des tests",
+    "automatisation",
+    "automated testing",
+    "tests automatisés",
+    "test automatisé",
+    "automate",
+    "automatiser",
+    "automation",
+    "test automation solution",
+    "solution d'automatisation des tests",
+    "test automation architecture",
+    "architecture d'automatisation des tests",
+    "test automation framework",
+    "framework d'automatisation"
+   ]
+  },
+  {
+   "id": "pyramide",
+   "termes": [
+    "test pyramid",
+    "pyramide des tests",
+    "pyramide de tests"
+   ]
+  },
+  {
+   "id": "roi-automatisation",
+   "termes": [
+    "return on investment",
+    "roi",
+    "retour sur investissement",
+    "business case",
+    "automation benefits",
+    "bénéfices de l'automatisation",
+    "cost of automation",
+    "coût de l'automatisation"
+   ]
+  },
+  {
+   "id": "maintenance-automatisation",
+   "termes": [
+    "test maintenance",
+    "maintenance des tests",
+    "test script maintenance",
+    "maintenance des scripts",
+    "flaky test",
+    "flaky tests",
+    "test instable",
+    "tests instables",
+    "flakiness",
+    "fragile tests",
+    "tests fragiles",
+    "page object",
+    "page object model",
+    "locator",
+    "locators",
+    "sélecteur",
+    "sélecteurs",
+    "test smells",
+    "code smell"
+   ]
+  },
+  {
+   "id": "keyword-driven",
+   "termes": [
+    "keyword-driven testing",
+    "keyword-driven",
+    "test piloté par les mots-clés",
+    "tests dirigés par les mots-clés",
+    "data-driven testing",
+    "data-driven",
+    "test piloté par les données",
+    "tests pilotés par les données",
+    "capture/replay",
+    "capture rejeu",
+    "enregistrement rejeu",
+    "linear scripting",
+    "structured scripting"
+   ]
+  },
+  {
+   "id": "api",
+   "termes": [
+    "api",
+    "apis",
+    "api testing",
+    "test d'api",
+    "tests d'api",
+    "web service",
+    "web services",
+    "service web",
+    "soap",
+    "graphql",
+    "microservice",
+    "microservices",
+    "contract testing",
+    "test de contrat",
+    "tests de contrat",
+    "consumer-driven contract"
+   ]
+  },
+  {
+   "id": "virtualisation",
+   "termes": [
+    "service virtualization",
+    "virtualisation de services",
+    "mock",
+    "mocks",
+    "stub",
+    "stubs",
+    "bouchon",
+    "bouchons",
+    "simulateur",
+    "simulator",
+    "emulator",
+    "émulateur",
+    "test double",
+    "doublure de test",
+    "harness",
+    "test harness",
+    "harnais de test"
+   ]
+  },
+  {
+   "id": "outils",
+   "termes": [
+    "playwright",
+    "selenium",
+    "cypress",
+    "appium",
+    "jmeter",
+    "gatling",
+    "k6",
+    "postman",
+    "junit",
+    "pytest",
+    "cucumber",
+    "robot framework",
+    "sonarqube",
+    "test tool",
+    "test tools",
+    "outil de test",
+    "outils de test",
+    "test management tool",
+    "outil de gestion des tests"
+   ]
+  },
+  {
+   "id": "environnement",
+   "termes": [
+    "test environment",
+    "test environments",
+    "environnement de test",
+    "environnements de test",
+    "test infrastructure",
+    "infrastructure de test"
+   ]
+  },
+  {
+   "id": "donnees-test",
+   "termes": [
+    "test data",
+    "données de test",
+    "test data management",
+    "gestion des données de test",
+    "synthetic data",
+    "données synthétiques",
+    "data anonymization",
+    "anonymisation",
+    "masquage des données",
+    "data masking"
+   ]
+  },
+  {
+   "id": "configuration",
+   "termes": [
+    "configuration management",
+    "gestion de configuration",
+    "version control",
+    "gestion de versions",
+    "contrôle de version"
+   ]
+  },
+  {
+   "id": "performance",
+   "termes": [
+    "performance testing",
+    "test de performance",
+    "tests de performance",
+    "performance"
+   ]
+  },
+  {
+   "id": "securite",
+   "termes": [
+    "security testing",
+    "security",
+    "test de sécurité",
+    "tests de sécurité",
+    "sécurité",
+    "vulnerability",
+    "vulnerabilities",
+    "vulnérabilité",
+    "vulnérabilités",
+    "penetration testing",
+    "pentest",
+    "test d'intrusion",
+    "tests d'intrusion",
+    "owasp",
+    "threat modeling",
+    "modélisation des menaces",
+    "sast",
+    "dast",
+    "security audit",
+    "audit de sécurité"
+   ]
+  },
+  {
+   "id": "utilisabilite",
+   "termes": [
+    "usability",
+    "utilisabilité",
+    "usability testing",
+    "test d'utilisabilité",
+    "tests d'utilisabilité",
+    "user experience",
+    "ux",
+    "expérience utilisateur",
+    "usability evaluation",
+    "évaluation de l'utilisabilité",
+    "heuristic evaluation",
+    "évaluation heuristique"
+   ]
+  },
+  {
+   "id": "accessibilite",
+   "termes": [
+    "accessibility",
+    "accessibilité",
+    "wcag",
+    "rgaa",
+    "accessibility testing",
+    "test d'accessibilité"
+   ]
+  },
+  {
+   "id": "fiabilite",
+   "termes": [
+    "reliability",
+    "fiabilité",
+    "reliability testing",
+    "test de fiabilité",
+    "availability",
+    "disponibilité",
+    "fault tolerance",
+    "tolérance aux pannes",
+    "recoverability",
+    "récupérabilité",
+    "failover",
+    "resilience"
+   ]
+  },
+  {
+   "id": "maintenabilite",
+   "termes": [
+    "maintainability",
+    "maintenabilité",
+    "maintainability testing",
+    "modularity",
+    "modularité",
+    "technical debt",
+    "dette technique",
+    "maintainability of the test automation solution",
+    "maintenabilité de la solution d'automatisation",
+    "maintenabilité des tests",
+    "test maintainability"
+   ]
+  },
+  {
+   "id": "compatibilite",
+   "termes": [
+    "compatibility",
+    "compatibilité",
+    "interoperability",
+    "interopérabilité",
+    "coexistence",
+    "portability",
+    "portabilité",
+    "installability",
+    "installabilité",
+    "adaptability",
+    "adaptabilité",
+    "cross-browser",
+    "multi-navigateur",
+    "inter-navigateur"
+   ]
+  },
+  {
+   "id": "qualite-produit",
+   "termes": [
+    "quality characteristics",
+    "caractéristiques qualité",
+    "caractéristiques de qualité",
+    "iso 25010",
+    "iso/iec 25010",
+    "quality model",
+    "modèle de qualité",
+    "non-functional",
+    "non fonctionnel",
+    "non-functional testing",
+    "tests non fonctionnels"
+   ]
+  },
+  {
+   "id": "fonctionnel",
+   "termes": [
+    "functional testing",
+    "test fonctionnel",
+    "tests fonctionnels",
+    "functional suitability",
+    "aptitude fonctionnelle",
+    "functional correctness",
+    "exactitude fonctionnelle",
+    "functional completeness",
+    "complétude fonctionnelle"
+   ]
+  },
+  {
+   "id": "mobile",
+   "termes": [
+    "mobile application",
+    "mobile app",
+    "mobile testing",
+    "application mobile",
+    "applications mobiles",
+    "test d'application mobile",
+    "mobile device",
+    "appareil mobile",
+    "smartphone"
+   ]
+  },
+  {
+   "id": "amelioration-processus",
+   "termes": [
+    "test process improvement",
+    "amélioration du processus de test",
+    "amélioration des processus de test",
+    "process improvement",
+    "amélioration des processus",
+    "continuous improvement",
+    "amélioration continue"
+   ]
+  },
+  {
+   "id": "tmmi",
+   "termes": [
+    "tmmi",
+    "test maturity model integration",
+    "tmm",
+    "maturity model",
+    "modèle de maturité",
+    "maturity level",
+    "niveau de maturité",
+    "maturité",
+    "maturity"
+   ]
+  },
+  {
+   "id": "tpi",
+   "termes": [
+    "tpi next",
+    "tpi",
+    "test process improvement model",
+    "ctp",
+    "critical testing processes",
+    "systematic test and evaluation process"
+   ]
+  },
+  {
+   "id": "ideal",
+   "termes": [
+    "ideal model",
+    "modèle ideal",
+    "ideal",
+    "ideal framework",
+    "cadre ideal",
+    "processus ideal"
+   ]
+  },
+  {
+   "id": "pdca",
+   "termes": [
+    "pdca",
+    "plan-do-check-act",
+    "deming",
+    "deming cycle",
+    "roue de deming"
+   ]
+  },
+  {
+   "id": "retrospective",
+   "termes": [
+    "retrospective",
+    "retrospectives",
+    "lessons learned",
+    "leçons apprises",
+    "retour d'expérience",
+    "retex",
+    "post-mortem"
+   ]
+  },
+  {
+   "id": "evaluation-processus",
+   "termes": [
+    "assessment",
+    "assessments",
+    "test process assessment",
+    "évaluation du processus de test",
+    "audit",
+    "audits",
+    "gap analysis",
+    "analyse d'écart"
+   ]
+  },
+  {
+   "id": "normes",
+   "termes": [
+    "iso 29119",
+    "iso/iec/ieee 29119",
+    "29119",
+    "norme",
+    "normes",
+    "iso 9001",
+    "cmmi",
+    "iso 33000",
+    "spice",
+    "automotive spice",
+    "iso 26262",
+    "do-178c",
+    "iec 62304",
+    "iec 61508"
+   ]
+  },
+  {
+   "id": "reglementaire",
+   "termes": [
+    "regulated",
+    "réglementé",
+    "réglementée",
+    "regulatory",
+    "réglementaire",
+    "compliance",
+    "conformité",
+    "safety-critical",
+    "critique pour la sécurité",
+    "sûreté de fonctionnement",
+    "certification",
+    "audit trail",
+    "piste d'audit",
+    "gxp"
+   ]
+  },
+  {
+   "id": "agile",
+   "termes": [
+    "agile",
+    "agilité",
+    "scrum",
+    "kanban",
+    "sprint",
+    "sprints",
+    "iteration",
+    "itérations",
+    "agile team",
+    "équipe agile",
+    "agile tester",
+    "testeur agile",
+    "whole team",
+    "équipe intégrée",
+    "whole-team approach",
+    "approche équipe intégrée"
+   ]
+  },
+  {
+   "id": "echelle",
+   "termes": [
+    "at scale",
+    "à l'échelle",
+    "scaled agile",
+    "large-scale",
+    "grande échelle",
+    "agile release train",
+    "train de release",
+    "multiple teams",
+    "plusieurs équipes"
+   ]
+  },
+  {
+   "id": "assistance-qualite",
+   "termes": [
+    "quality assistance",
+    "assistance qualité",
+    "quality coaching",
+    "coaching qualité",
+    "quality culture",
+    "culture qualité",
+    "état d'esprit"
+   ]
+  },
+  {
+   "id": "chaine-valeur",
+   "termes": [
+    "value stream",
+    "value stream mapping",
+    "chaîne de valeur",
+    "cartographie de la chaîne de valeur",
+    "flux de valeur",
+    "lead time",
+    "cycle time",
+    "temps de cycle"
+   ]
+  },
+  {
+   "id": "organisation",
+   "termes": [
+    "test organization",
+    "organisation des tests",
+    "organisation du test",
+    "test team",
+    "équipe de test",
+    "équipes de test"
+   ]
+  },
+  {
+   "id": "competences",
+   "termes": [
+    "skills",
+    "skill",
+    "compétences",
+    "compétence",
+    "team composition",
+    "composition de l'équipe",
+    "motivation",
+    "coaching",
+    "mentoring",
+    "mentorat",
+    "training",
+    "formation",
+    "career",
+    "carrière",
+    "recruitment",
+    "recrutement",
+    "hiring",
+    "embauche",
+    "team building",
+    "leadership",
+    "management of the test team",
+    "gestion de l'équipe de test"
+   ]
+  },
+  {
+   "id": "parties-prenantes",
+   "termes": [
+    "stakeholder",
+    "stakeholders",
+    "partie prenante",
+    "parties prenantes",
+    "product owner"
+   ]
+  },
+  {
+   "id": "externalisation",
+   "termes": [
+    "outsourcing",
+    "externalisation",
+    "offshore",
+    "sous-traitance",
+    "distributed testing",
+    "test distribué",
+    "insourcing",
+    "crowdtesting",
+    "crowd testing"
+   ]
+  },
+  {
+   "id": "cout-qualite",
+   "termes": [
+    "cost of quality",
+    "coût de la qualité",
+    "coûts de la qualité",
+    "cost of failure",
+    "coût des défaillances",
+    "business value",
+    "valeur métier"
+   ]
+  },
+  {
+   "id": "ia",
+   "termes": [
+    "artificial intelligence",
+    "intelligence artificielle",
+    "ai",
+    "ia",
+    "machine learning",
+    "apprentissage automatique",
+    "ml",
+    "neural network",
+    "réseau de neurones",
+    "deep learning",
+    "apprentissage profond"
+   ]
+  },
+  {
+   "id": "ia-generative",
+   "termes": [
+    "generative ai",
+    "genai",
+    "gen ai",
+    "ia générative",
+    "llm",
+    "llms",
+    "large language model",
+    "grand modèle de langage",
+    "prompt",
+    "prompts",
+    "prompt engineering",
+    "ingénierie des prompts",
+    "ingénierie de prompts",
+    "chatgpt",
+    "copilot",
+    "hallucination",
+    "hallucinations",
+    "rag",
+    "retrieval augmented generation"
+   ]
+  },
+  {
+   "id": "biais",
+   "termes": [
+    "bias",
+    "biais",
+    "fairness",
+    "équité",
+    "explainability",
+    "explicabilité",
+    "transparency",
+    "transparence",
+    "interpretability",
+    "interprétabilité"
+   ]
+  },
+  {
+   "id": "auto-reparation",
+   "termes": [
+    "self-healing",
+    "auto-réparation",
+    "autoréparation"
+   ]
+  },
+  {
+   "id": "test-base-experience",
+   "termes": [
+    "experience-based testing",
+    "experience-based test techniques",
+    "techniques basées sur l'expérience",
+    "test basé sur l'expérience",
+    "heuristic",
+    "heuristics",
+    "heuristique",
+    "heuristiques"
+   ]
+  },
+  {
+   "id": "boite-noire",
+   "termes": [
+    "black-box",
+    "black-box test techniques",
+    "boîte noire",
+    "techniques de test boîte noire",
+    "specification-based",
+    "basées sur les spécifications"
+   ]
+  },
+  {
+   "id": "boite-blanche",
+   "termes": [
+    "white-box",
+    "white-box test techniques",
+    "boîte blanche",
+    "techniques de test boîte blanche",
+    "structure-based",
+    "basées sur la structure"
+   ]
+  },
+  {
+   "id": "techniques-test",
+   "termes": [
+    "test technique",
+    "test techniques",
+    "technique de test",
+    "techniques de test",
+    "test design technique",
+    "technique de conception de tests",
+    "techniques de conception de tests"
+   ]
+  },
+  {
+   "id": "conception",
+   "termes": [
+    "test design",
+    "conception des tests",
+    "conception de tests",
+    "test analysis",
+    "analyse de test",
+    "analyse des tests",
+    "test implementation",
+    "implémentation des tests"
+   ]
+  },
+  {
+   "id": "execution",
+   "termes": [
+    "test execution",
+    "exécution des tests",
+    "exécution de tests",
+    "test run",
+    "campagne de test",
+    "test campaign"
+   ]
+  },
+  {
+   "id": "qualification",
+   "termes": [
+    "qualification",
+    "processus de qualification",
+    "verification",
+    "v&v",
+    "validation et vérification"
+   ]
+  },
+  {
+   "id": "cout-maintenance",
+   "termes": [
+    "maintenance cost",
+    "coût de maintenance",
+    "coûts de maintenance",
+    "maintenance effort",
+    "effort de maintenance"
+   ]
+  },
+  {
+   "id": "oracle",
+   "termes": [
+    "test oracle",
+    "oracle de test",
+    "oracle problem",
+    "problème de l'oracle",
+    "expected result",
+    "résultat attendu"
+   ]
+  },
+  {
+   "id": "cycle-vie",
+   "termes": [
+    "software development lifecycle",
+    "sdlc",
+    "cycle de vie du développement logiciel",
+    "cycle de vie",
+    "lifecycle",
+    "sequential development",
+    "modèle en v",
+    "v-model",
+    "cycle en v",
+    "waterfall",
+    "cascade",
+    "iterative",
+    "incremental",
+    "itératif"
+   ]
+  },
+  {
+   "id": "documentation",
+   "termes": [
+    "test documentation",
+    "documentation des tests",
+    "documentation de test",
+    "test summary"
+   ]
+  },
+  {
+   "id": "psychologie",
+   "termes": [
+    "psychology of testing",
+    "psychologie du test",
+    "confirmation bias",
+    "biais de confirmation",
+    "état d'esprit du testeur"
+   ]
+  },
+  {
+   "id": "jeux",
+   "termes": [
+    "game testing",
+    "test de jeux",
+    "tests de jeux vidéo",
+    "gambling",
+    "jeux d'argent"
+   ]
+  },
+  {
+   "id": "automobile",
+   "termes": [
+    "automotive",
+    "automobile",
+    "embedded",
+    "embarqué",
+    "systèmes embarqués",
+    "hil",
+    "sil",
+    "hardware in the loop"
+   ]
+  },
+  {
+   "id": "independance",
+   "termes": [
+    "independence of testing",
+    "test independence",
+    "indépendance du test",
+    "indépendance des tests",
+    "indépendance des testeurs",
+    "independent testing",
+    "tests indépendants"
+   ]
+  },
+  {
+   "id": "roles",
+   "termes": [
+    "roles",
+    "role",
+    "responsibilities",
+    "responsabilités",
+    "responsibility",
+    "responsabilité",
+    "roles and responsibilities",
+    "rôles et responsabilités"
+   ]
+  },
+  {
+   "id": "test-manager",
+   "termes": [
+    "test manager",
+    "gestionnaire de tests",
+    "test management role",
+    "responsable des tests"
+   ]
+  },
+  {
+   "id": "analyste",
+   "termes": [
+    "test analyst",
+    "analyste de test",
+    "technical test analyst",
+    "analyste technique de test"
+   ]
+  },
+  {
+   "id": "revue",
+   "termes": [
+    "review",
+    "reviews",
+    "revue",
+    "revues",
+    "inspection",
+    "inspections",
+    "walkthrough",
+    "walkthroughs",
+    "technical review",
+    "revue technique",
+    "peer review",
+    "revue par les pairs",
+    "review process",
+    "processus de revue"
+   ]
+  },
+  {
+   "id": "analyse-statique",
+   "termes": [
+    "static analysis",
+    "analyse statique",
+    "static code analysis",
+    "linter",
+    "linting"
+   ]
+  },
+  {
+   "id": "charge",
+   "termes": [
+    "load testing",
+    "load test",
+    "test de charge",
+    "tests de charge",
+    "stress testing",
+    "test de stress",
+    "tests de stress",
+    "scalability testing",
+    "test d'évolutivité",
+    "scalabilité",
+    "endurance testing",
+    "test d'endurance",
+    "spike testing",
+    "capacity testing",
+    "test de capacité",
+    "operational profile",
+    "profil opérationnel"
+   ]
+  },
+  {
+   "id": "mesure-perf",
+   "termes": [
+    "response time",
+    "temps de réponse",
+    "throughput",
+    "débit",
+    "resource utilization",
+    "utilisation des ressources",
+    "latency",
+    "latence",
+    "performance metrics",
+    "métriques de performance"
+   ]
+  },
+  {
+   "id": "quadrants",
+   "termes": [
+    "testing quadrants",
+    "agile testing quadrants",
+    "test quadrants",
+    "quadrants de test",
+    "quadrants des tests",
+    "quadrants des tests agiles",
+    "quadrants de tests agiles"
+   ]
+  },
+  {
+   "id": "lex-processus",
+   "termes": [
+    "processus",
+    "process",
+    "processes"
+   ]
+  },
+  {
+   "id": "lex-ameliorer",
+   "termes": [
+    "amélioration",
+    "améliorations",
+    "improvement",
+    "improvements",
+    "améliorer",
+    "improve",
+    "improving"
+   ]
+  },
+  {
+   "id": "lex-equipe",
+   "termes": [
+    "équipe",
+    "équipes",
+    "team",
+    "teams"
+   ]
+  },
+  {
+   "id": "lex-outil",
+   "termes": [
+    "outil",
+    "outils",
+    "tool",
+    "tools",
+    "tooling",
+    "outillage"
+   ]
+  },
+  {
+   "id": "lex-collecte",
+   "termes": [
+    "collecte",
+    "collecter",
+    "collectées",
+    "collectés",
+    "collected",
+    "collect",
+    "collecting",
+    "gathering",
+    "recueillir"
+   ]
+  },
+  {
+   "id": "lex-cout",
+   "termes": [
+    "coût",
+    "coûts",
+    "cost",
+    "costs"
+   ]
+  },
+  {
+   "id": "lex-reduire",
+   "termes": [
+    "réduire",
+    "réduction",
+    "reduce",
+    "reducing"
+   ]
+  },
+  {
+   "id": "lex-produit",
+   "termes": [
+    "produit",
+    "produits",
+    "product",
+    "products"
+   ]
+  },
+  {
+   "id": "lex-integrer",
+   "termes": [
+    "intégrer",
+    "intégration",
+    "integrate",
+    "integrating"
+   ]
+  },
+  {
+   "id": "lex-identifier",
+   "termes": [
+    "identifier",
+    "identification",
+    "identify",
+    "identifying"
+   ]
+  },
+  {
+   "id": "lex-evaluer",
+   "termes": [
+    "évaluer",
+    "evaluate",
+    "assess",
+    "assessing",
+    "analyser",
+    "analyse",
+    "analysis"
+   ]
+  },
+  {
+   "id": "lex-qualite",
+   "termes": [
+    "qualité",
+    "quality"
+   ]
+  },
+  {
+   "id": "lex-donnees",
+   "termes": [
+    "données",
+    "data"
+   ]
+  },
+  {
+   "id": "lex-exigence",
+   "termes": []
+  },
+  {
+   "id": "lex-conception",
+   "termes": [
+    "concevoir",
+    "design",
+    "designing"
+   ]
+  },
+  {
+   "id": "lex-maintenance",
+   "termes": [
+    "maintenance",
+    "maintenir",
+    "maintain",
+    "maintaining"
+   ]
+  },
+  {
+   "id": "lex-avantages",
+   "termes": [
+    "avantages",
+    "bénéfices",
+    "benefits",
+    "advantages",
+    "inconvénients",
+    "drawbacks",
+    "disadvantages"
+   ]
+  },
+  {
+   "id": "lex-difficulte",
+   "termes": [
+    "difficultés",
+    "défis",
+    "challenges",
+    "pièges",
+    "pitfalls"
+   ]
+  },
+  {
+   "id": "lex-entreprise",
+   "termes": [
+    "organisation",
+    "organization",
+    "organisationnel",
+    "organizational"
+   ]
+  },
+  {
+   "id": "generation-charge",
+   "termes": [
+    "load generation",
+    "génération de charge",
+    "generating load",
+    "générer de la charge",
+    "load generator",
+    "générateur de charge",
+    "injecteur de charge"
+   ]
+  }
+ ]
+}

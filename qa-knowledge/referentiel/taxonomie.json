@@ -1,0 +1,737 @@
+{
+ "description": "Taxonomie QA hiérarchique. Point de départ, pas une liste fermée : ajouter un sous-thème avec `theme ajouter` (contrôle des redondances). Ne jamais supprimer un thème utilisé : le marquer statut=obsolete avec remplace_par pour conserver l'historique.",
+ "version": 1,
+ "themes": [
+  {
+   "code": "strategie",
+   "parent": null,
+   "libelle": "Stratégie et gouvernance QA",
+   "mots_cles": [
+    "test strategy",
+    "test policy",
+    "stratégie de test",
+    "politique de test",
+    "gouvernance",
+    "governance",
+    "test approach",
+    "approche de test",
+    "organizational test strategy"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "test-management",
+   "parent": null,
+   "libelle": "Test management",
+   "mots_cles": [
+    "test management",
+    "gestion des tests",
+    "test manager",
+    "test plan",
+    "plan de test",
+    "test monitoring",
+    "test control",
+    "pilotage des tests",
+    "test completion"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "rbt",
+   "parent": "test-management",
+   "libelle": "Risk-Based Testing",
+   "mots_cles": [
+    "risk-based testing",
+    "test basé sur les risques",
+    "risk analysis",
+    "analyse des risques",
+    "product risk",
+    "risque produit",
+    "risk mitigation",
+    "risk level",
+    "niveau de risque"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "estimation",
+   "parent": "test-management",
+   "libelle": "Estimation et planification",
+   "mots_cles": [
+    "test estimation",
+    "estimation",
+    "planification",
+    "planning",
+    "effort",
+    "wideband delphi",
+    "planning poker"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "metriques",
+   "parent": "test-management",
+   "libelle": "Métriques et reporting",
+   "mots_cles": [
+    "metrics",
+    "métriques",
+    "indicateurs",
+    "kpi",
+    "test report",
+    "rapport de test",
+    "reporting",
+    "dashboard",
+    "tableau de bord",
+    "measurement"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "anomalies",
+   "parent": "test-management",
+   "libelle": "Gestion des anomalies",
+   "mots_cles": [
+    "defect management",
+    "gestion des défauts",
+    "defect report",
+    "rapport de défaut",
+    "anomalie",
+    "incident",
+    "bug triage",
+    "root cause",
+    "cause racine"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "priorisation",
+   "parent": "test-management",
+   "libelle": "Priorisation des tests",
+   "mots_cles": [
+    "test prioritization",
+    "priorisation",
+    "test case prioritization",
+    "ordre d'exécution",
+    "regression selection",
+    "sélection des tests"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "conception",
+   "parent": null,
+   "libelle": "Analyse et conception des tests",
+   "mots_cles": [
+    "test analysis",
+    "test design",
+    "analyse de test",
+    "conception des tests",
+    "test conditions",
+    "conditions de test",
+    "test case",
+    "cas de test",
+    "test technique"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "boite-noire",
+   "parent": "conception",
+   "libelle": "Techniques boîte noire",
+   "mots_cles": [
+    "black-box",
+    "boîte noire",
+    "equivalence partitioning",
+    "partitions d'équivalence",
+    "boundary value",
+    "valeurs limites",
+    "decision table",
+    "table de décision",
+    "state transition",
+    "transition d'états",
+    "pairwise",
+    "combinatorial",
+    "classification tree"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "boite-blanche",
+   "parent": "conception",
+   "libelle": "Techniques boîte blanche et couverture structurelle",
+   "mots_cles": [
+    "white-box",
+    "boîte blanche",
+    "statement coverage",
+    "branch coverage",
+    "couverture des instructions",
+    "couverture des branches",
+    "mc/dc",
+    "code coverage",
+    "couverture de code"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "experience",
+   "parent": "conception",
+   "libelle": "Techniques basées sur l'expérience",
+   "mots_cles": [
+    "experience-based",
+    "basées sur l'expérience",
+    "error guessing",
+    "estimation d'erreur",
+    "checklist",
+    "checklist-based",
+    "test heuristics",
+    "heuristiques"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "exploratoire",
+   "parent": "conception",
+   "libelle": "Tests exploratoires",
+   "mots_cles": [
+    "exploratory testing",
+    "tests exploratoires",
+    "session-based",
+    "test charter",
+    "charte de test",
+    "test tours",
+    "session"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "mbt",
+   "parent": "conception",
+   "libelle": "Test basé sur les modèles",
+   "mots_cles": [
+    "model-based testing",
+    "test basé sur les modèles",
+    "mbt",
+    "test model",
+    "modèle de test"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "couverture",
+   "parent": "conception",
+   "libelle": "Couverture des tests",
+   "mots_cles": [
+    "test coverage",
+    "couverture",
+    "coverage criteria",
+    "critères de couverture",
+    "traceability",
+    "traçabilité"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "statique",
+   "parent": null,
+   "libelle": "Tests statiques et revues",
+   "mots_cles": [
+    "static testing",
+    "tests statiques",
+    "review",
+    "revue",
+    "inspection",
+    "walkthrough",
+    "static analysis",
+    "analyse statique"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "exigences",
+   "parent": null,
+   "libelle": "Exigences et critères d'acceptation",
+   "mots_cles": [
+    "requirements",
+    "exigences",
+    "acceptance criteria",
+    "critères d'acceptation",
+    "user story",
+    "bdd",
+    "atdd",
+    "acceptance test-driven",
+    "definition of ready",
+    "example mapping",
+    "specification by example",
+    "tests d'acceptation"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "fonctionnel",
+   "parent": null,
+   "libelle": "Tests fonctionnels",
+   "mots_cles": [
+    "functional testing",
+    "tests fonctionnels",
+    "functional suitability",
+    "aptitude fonctionnelle",
+    "system testing",
+    "test système",
+    "integration testing",
+    "tests d'intégration",
+    "regression testing",
+    "tests de régression",
+    "mobile",
+    "game testing"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "non-fonctionnel",
+   "parent": null,
+   "libelle": "Tests non fonctionnels",
+   "mots_cles": [
+    "non-functional testing",
+    "tests non fonctionnels",
+    "quality characteristics",
+    "caractéristiques qualité",
+    "iso 25010",
+    "reliability",
+    "fiabilité",
+    "maintainability",
+    "maintenabilité",
+    "portability",
+    "portabilité",
+    "compatibility",
+    "compatibilité"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "performance",
+   "parent": "non-fonctionnel",
+   "libelle": "Tests de performance",
+   "mots_cles": [
+    "performance testing",
+    "tests de performance",
+    "load testing",
+    "test de charge",
+    "stress testing",
+    "scalability",
+    "temps de réponse",
+    "response time",
+    "throughput",
+    "endurance"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "securite",
+   "parent": "non-fonctionnel",
+   "libelle": "Tests de sécurité",
+   "mots_cles": [
+    "security testing",
+    "tests de sécurité",
+    "vulnerability",
+    "vulnérabilité",
+    "penetration testing",
+    "test d'intrusion",
+    "owasp",
+    "threat modeling",
+    "sast",
+    "dast"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "utilisabilite",
+   "parent": "non-fonctionnel",
+   "libelle": "Utilisabilité et accessibilité",
+   "mots_cles": [
+    "usability",
+    "utilisabilité",
+    "user experience",
+    "expérience utilisateur",
+    "accessibility",
+    "accessibilité",
+    "wcag",
+    "ergonomie"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "automatisation",
+   "parent": null,
+   "libelle": "Automatisation des tests",
+   "mots_cles": [
+    "test automation",
+    "automatisation des tests",
+    "test automation framework",
+    "framework d'automatisation",
+    "test automation architecture",
+    "architecture d'automatisation",
+    "scripting",
+    "keyword-driven",
+    "data-driven",
+    "test pyramid",
+    "pyramide des tests"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "strategie-automatisation",
+   "parent": "automatisation",
+   "libelle": "Stratégie et ROI de l'automatisation",
+   "mots_cles": [
+    "test automation strategy",
+    "stratégie d'automatisation",
+    "automation roi",
+    "retour sur investissement",
+    "business case",
+    "automation candidates",
+    "what to automate"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "maintenance-automatisation",
+   "parent": "automatisation",
+   "libelle": "Maintenabilité des tests automatisés",
+   "mots_cles": [
+    "test maintenance",
+    "maintenance des tests",
+    "flaky tests",
+    "tests instables",
+    "page object",
+    "locator",
+    "sélecteurs",
+    "test smells",
+    "maintainability of test scripts",
+    "playwright",
+    "selenium",
+    "test flakiness"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "api",
+   "parent": "automatisation",
+   "libelle": "Test d'API et de services",
+   "mots_cles": [
+    "api testing",
+    "test d'api",
+    "contract testing",
+    "test de contrat",
+    "service virtualization",
+    "virtualisation de services",
+    "rest",
+    "microservices",
+    "mock",
+    "stub",
+    "bouchon"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "cicd",
+   "parent": null,
+   "libelle": "CI/CD et qualité des pipelines",
+   "mots_cles": [
+    "continuous integration",
+    "intégration continue",
+    "continuous delivery",
+    "livraison continue",
+    "continuous deployment",
+    "pipeline",
+    "devops",
+    "quality gate",
+    "build",
+    "deployment pipeline",
+    "continuous testing",
+    "test en continu"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "shift",
+   "parent": null,
+   "libelle": "Shift-left et shift-right",
+   "mots_cles": [
+    "shift-left",
+    "shift left",
+    "shift-right",
+    "shift right",
+    "early testing",
+    "test au plus tôt"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "shift-left",
+   "parent": "shift",
+   "libelle": "Shift-left",
+   "mots_cles": [
+    "shift-left",
+    "shift left",
+    "early testing",
+    "tests au plus tôt",
+    "static analysis",
+    "tdd",
+    "test-driven development",
+    "prévention des défauts",
+    "defect prevention"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "shift-right",
+   "parent": "shift",
+   "libelle": "Shift-right et test en production",
+   "mots_cles": [
+    "shift-right",
+    "testing in production",
+    "test en production",
+    "monitoring",
+    "observabilité",
+    "observability",
+    "a/b testing",
+    "canary",
+    "feature toggle",
+    "chaos engineering"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "maturite",
+   "parent": null,
+   "libelle": "Maturité et amélioration continue",
+   "mots_cles": [
+    "test process improvement",
+    "amélioration du processus de test",
+    "continuous improvement",
+    "amélioration continue",
+    "retrospective",
+    "rétrospective",
+    "maturity",
+    "maturité",
+    "pdca",
+    "lessons learned",
+    "leçons apprises"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "referentiels",
+   "parent": "maturite",
+   "libelle": "TMMi et référentiels qualité",
+   "mots_cles": [
+    "tmmi",
+    "tpi next",
+    "tpi",
+    "cmmi",
+    "iso 29119",
+    "iso/iec/ieee 29119",
+    "assessment model",
+    "modèle d'évaluation",
+    "ctp",
+    "step",
+    "ideal"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "ia",
+   "parent": null,
+   "libelle": "IA et ingénierie des tests",
+   "mots_cles": [
+    "artificial intelligence",
+    "intelligence artificielle",
+    "machine learning",
+    "apprentissage automatique",
+    "generative ai",
+    "ia générative",
+    "llm",
+    "large language model"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "test-de-ia",
+   "parent": "ia",
+   "libelle": "Tester des systèmes d'IA",
+   "mots_cles": [
+    "testing ai-based systems",
+    "test des systèmes d'ia",
+    "ml model testing",
+    "bias",
+    "biais",
+    "explainability",
+    "explicabilité",
+    "data quality",
+    "qualité des données",
+    "metamorphic testing",
+    "test métamorphique"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "ia-pour-tester",
+   "parent": "ia",
+   "libelle": "L'IA au service du test",
+   "mots_cles": [
+    "ai for testing",
+    "ia pour le test",
+    "prompt engineering",
+    "ingénierie des prompts",
+    "test generation",
+    "génération de tests",
+    "self-healing",
+    "auto-réparation",
+    "hallucination"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "reglementee",
+   "parent": null,
+   "libelle": "Qualité logicielle réglementée",
+   "mots_cles": [
+    "regulated",
+    "réglementé",
+    "safety-critical",
+    "sûreté de fonctionnement",
+    "compliance",
+    "conformité",
+    "audit",
+    "iso 26262",
+    "automotive spice",
+    "do-178c",
+    "iec 62304",
+    "gxp",
+    "finance",
+    "gambling"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "organisation",
+   "parent": null,
+   "libelle": "Outils, méthodes et organisation des équipes",
+   "mots_cles": [
+    "test organization",
+    "organisation des tests",
+    "test team",
+    "équipe de test",
+    "roles",
+    "rôles",
+    "whole team",
+    "approche équipe intégrée",
+    "test tools",
+    "outils de test",
+    "communication",
+    "stakeholders",
+    "parties prenantes"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "agile",
+   "parent": "organisation",
+   "libelle": "Test en contexte agile et à l'échelle",
+   "mots_cles": [
+    "agile",
+    "scrum",
+    "kanban",
+    "safe",
+    "scaled agile",
+    "agilité à l'échelle",
+    "sprint",
+    "iteration",
+    "itération",
+    "quality assistance",
+    "assistance qualité",
+    "value stream",
+    "chaîne de valeur"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "competences",
+   "parent": "organisation",
+   "libelle": "Compétences et animation d'équipe",
+   "mots_cles": [
+    "skills",
+    "compétences",
+    "team building",
+    "motivation",
+    "coaching",
+    "mentoring",
+    "recruitment",
+    "recrutement",
+    "leadership",
+    "career path",
+    "parcours de carrière"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  },
+  {
+   "code": "environnements",
+   "parent": null,
+   "libelle": "Environnements et données de test",
+   "mots_cles": [
+    "test environment",
+    "environnement de test",
+    "test data",
+    "données de test",
+    "test data management",
+    "gestion des données de test",
+    "anonymization",
+    "anonymisation",
+    "synthetic data",
+    "données synthétiques",
+    "configuration management",
+    "gestion de configuration"
+   ],
+   "statut": "actif",
+   "cree_le": "2026-10-21"
+  }
+ ]
+}

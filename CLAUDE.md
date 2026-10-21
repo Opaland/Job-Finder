@@ -81,6 +81,18 @@ l'image (défaut), les routes IA renvoient leur 503 français et le scan saute l
   « disponible uniquement dans l'appli locale ».
 - `data/` — SQLite + uploads, jamais versionné.
 
+## QA Knowledge Agent (`qa-knowledge/`)
+
+Module indépendant de l'appli : assistant conversationnel de connaissances QA (skill
+`.claude/skills/qa-knowledge/`, CLI `python qa-knowledge/qa.py`). Bibliothèque ISTQB locale
+(SQLite FTS5, PDF non versionnés, `manifeste.json` versionné), base d'idées versionnée en
+JSONL (`connaissances/`), taxonomie et thésaurus FR/EN dans `referentiel/`. Tests :
+`python -m pytest qa-knowledge/tests -q -rs` (inclus dans `scripts/verif.sh` et la CI).
+Règles propres : une référence ISTQB n'est enregistrée que vérifiée (page, extrait) ;
+téléchargement depuis istqb.org uniquement ; tout changement d'extraction incrémente
+`VERSION_EXTRACTEUR` ; mesurer la recherche (`qa.py evaluer --jeu controle`) avant/après
+toute modification du moteur. Détails : `qa-knowledge/README.md`, `qa-knowledge/docs/`.
+
 ## Déploiement / CI
 
 - `.github/workflows/ci.yml` — pytest + build frontend à chaque push.

@@ -1,0 +1,431 @@
+{
+ "description": "Catalogue des syllabus ISTQB officiels (anglais), relevé sur istqb.org/certifications. Ordre = priorité de détection : codes spécifiques avant codes généraux. Les traductions françaises (CFTL) ne sont pas téléchargées automatiquement : les importer avec `importer`.",
+ "verifie_le": "2026-10-21",
+ "domaines_autorises": [
+  "istqb.org"
+ ],
+ "conditions": "Notice de copyright ISTQB : le document peut être copié en tout ou partie si la source est citée. Les PDF restent la propriété de l'ISTQB ; ce dépôt ne versionne que leurs métadonnées.",
+ "documents": [
+  {
+   "code": "CTEL-TM",
+   "titre": "Expert Level Test Management (Strategic, Operational, Managing the Test Team)",
+   "niveau": "expert",
+   "domaine": "test-management",
+   "version_constatee": "1.0 (2011)",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-expert-level-test-management-strategic-test-management-ctel-tm-sm/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3687",
+   "fichier_constate": "ISTQB-CTEL-TM_Syllabus_v1.0_2011.pdf",
+   "langue": "en",
+   "motifs": [
+    "ctel tm",
+    "expert level test management",
+    "expert gestion des tests",
+    "niveau expert gestion des tests"
+   ]
+  },
+  {
+   "code": "CTEL-ITP",
+   "titre": "Expert Level Improving the Test Process (Assessing / Implementing)",
+   "niveau": "expert",
+   "domaine": "maturite",
+   "version_constatee": "1.0 (2011)",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-expert-level-assessing-test-processes-ctel-itp-atp/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3669",
+   "fichier_constate": "ISTQB-CTEL-ITP_Syllabus_v1.0_2011.pdf",
+   "langue": "en",
+   "motifs": [
+    "ctel itp",
+    "improving the test process",
+    "amelioration du processus de test",
+    "expert amelioration"
+   ]
+  },
+  {
+   "code": "CTAL-TTA",
+   "titre": "Advanced Level Technical Test Analyst",
+   "niveau": "avance",
+   "domaine": "non-fonctionnel",
+   "version_constatee": "4.0",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-advanced-level-technical-test-analyst-ctal-tta/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3463",
+   "fichier_constate": "ISTQB-CTAL-TTA_Syllabus_v4.0.pdf",
+   "langue": "en",
+   "motifs": [
+    "ctal tta",
+    "technical test analyst",
+    "analyste technique de test"
+   ]
+  },
+  {
+   "code": "CTAL-ATT",
+   "titre": "Advanced Level Agile Technical Tester",
+   "niveau": "avance",
+   "domaine": "automatisation",
+   "version_constatee": "1.1",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-advanced-level-agile-technical-tester-ctal-att/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3658",
+   "fichier_constate": "ISTQB-CTAL-ATT_Syllabus_v1.1.pdf",
+   "langue": "en",
+   "motifs": [
+    "ctal att",
+    "agile technical tester",
+    "testeur technique agile"
+   ]
+  },
+  {
+   "code": "CT-ATLaS",
+   "titre": "Agile Test Leadership at Scale",
+   "niveau": "avance",
+   "domaine": "organisation",
+   "version_constatee": "2.0",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-agile-test-leadership-at-scale-ct-atlas/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3532",
+   "fichier_constate": "ISTQB_CT-ATLaS_Syllabus_v2.0.pdf",
+   "langue": "en",
+   "motifs": [
+    "atlas",
+    "agile test leadership at scale",
+    "conduite des tests en mode agile a l echelle"
+   ]
+  },
+  {
+   "code": "CTAL-AT",
+   "titre": "Advanced Level Agile Tester",
+   "niveau": "avance",
+   "domaine": "organisation",
+   "version_constatee": "2.0",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-advanced-level-agile-tester-ctal-at/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=9324",
+   "fichier_constate": "ISTQB-CTAL-AT-Syllabus-v2.0-EN-1.pdf",
+   "langue": "en",
+   "motifs": [
+    "ctal at\\b",
+    "advanced level agile tester"
+   ]
+  },
+  {
+   "code": "CTAL-TAE",
+   "titre": "Advanced Level Test Automation Engineering",
+   "niveau": "avance",
+   "domaine": "automatisation",
+   "version_constatee": "2.0",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-advanced-level-test-automation-engineering-ctal-tae-v2-0/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3435",
+   "fichier_constate": "ISTQB_CTAL-TAE_Syllabus_v2.0.pdf",
+   "langue": "en",
+   "motifs": [
+    "ctal tae",
+    "test automation engineer",
+    "ingenieur en automatisation",
+    "ingenierie de l automatisation"
+   ]
+  },
+  {
+   "code": "CTAL-TM",
+   "titre": "Advanced Level Test Management",
+   "niveau": "avance",
+   "domaine": "test-management",
+   "version_constatee": "3.0",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-advanced-level-test-management-ctal-tm-v3-0/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3445",
+   "fichier_constate": "ISTQB_CTAL-TM_Syllabus_v3.0.pdf",
+   "langue": "en",
+   "motifs": [
+    "ctal tm",
+    "advanced level test manag",
+    "gestionnaire de tests",
+    "niveau avance gestion(naire)? de(s)? test"
+   ]
+  },
+  {
+   "code": "CTAL-TA",
+   "titre": "Advanced Level Test Analyst",
+   "niveau": "avance",
+   "domaine": "conception",
+   "version_constatee": "4.0",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-advanced-level-test-analyst/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=5745",
+   "fichier_constate": "ISTQB-CTAL-TA-Syllabus-v4.0-EN-4.pdf",
+   "langue": "en",
+   "motifs": [
+    "ctal ta\\b",
+    "advanced level test analyst",
+    "analyste de test"
+   ]
+  },
+  {
+   "code": "CTFL-AT",
+   "titre": "Foundation Level Agile Tester",
+   "niveau": "fondation",
+   "domaine": "organisation",
+   "version_constatee": "1.0",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-foundation-level-agile-tester-ctfl-at/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3647",
+   "fichier_constate": "ISTQB-CTFL-AT_Syllabus_v1.0.pdf",
+   "langue": "en",
+   "motifs": [
+    "ctfl at\\b",
+    "foundation level agile tester",
+    "testeur agile",
+    "extension du niveau fondation testeur agile"
+   ]
+  },
+  {
+   "code": "CT-AcT",
+   "titre": "Acceptance Testing",
+   "niveau": "specialiste",
+   "domaine": "exigences",
+   "version_constatee": "1.0 (2019)",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-acceptance-testing-ct-act/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3585",
+   "fichier_constate": "ISTQB-CT-AcT_Syllabus_v1.0_2019.pdf",
+   "langue": "en",
+   "motifs": [
+    "ct act\\b",
+    "acceptance testing",
+    "tests? d acceptation"
+   ]
+  },
+  {
+   "code": "CT-MAT",
+   "titre": "Mobile Application Testing",
+   "niveau": "specialiste",
+   "domaine": "fonctionnel",
+   "version_constatee": "1.0 (2019)",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-mobile-application-testing-ct-mat/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3551",
+   "fichier_constate": "ISTQB-CT-MAT_Syllabus_v1.0_2019.pdf",
+   "langue": "en",
+   "motifs": [
+    "ct mat\\b",
+    "ctfl mat",
+    "mobile application testing",
+    "application mobile"
+   ]
+  },
+  {
+   "code": "CT-UT",
+   "titre": "Usability Testing",
+   "niveau": "specialiste",
+   "domaine": "non-fonctionnel",
+   "version_constatee": "1.0 (2018)",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-usability-testing-ct-ut/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3607",
+   "fichier_constate": "ISTQB-CT-UT_Syllabus_v1.0_2018.pdf",
+   "langue": "en",
+   "motifs": [
+    "ct ut\\b",
+    "usability testing",
+    "utilisabilite"
+   ]
+  },
+  {
+   "code": "CT-PT",
+   "titre": "Performance Testing",
+   "niveau": "specialiste",
+   "domaine": "performance",
+   "version_constatee": "1.0 (2018)",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-performance-testing-ct-pt/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3591",
+   "fichier_constate": "ISTQB-CT-PT_Syllabus_v1.0_2018.pdf",
+   "langue": "en",
+   "motifs": [
+    "ct pt\\b",
+    "performance testing",
+    "tests? de performance"
+   ]
+  },
+  {
+   "code": "CT-MBT",
+   "titre": "Model-Based Tester",
+   "niveau": "specialiste",
+   "domaine": "conception",
+   "version_constatee": "1.1",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-model-based-tester-ct-mbt/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3562",
+   "fichier_constate": "ISTQB_CT-MBT_-_Syllabus_Version_v1.1.pdf",
+   "langue": "en",
+   "motifs": [
+    "ct mbt",
+    "model based test",
+    "bases? sur les modeles"
+   ]
+  },
+  {
+   "code": "CT-STE",
+   "titre": "Security Test Engineer",
+   "niveau": "specialiste",
+   "domaine": "securite",
+   "version_constatee": "1.0.1",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-security-test-engineer/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=5103",
+   "fichier_constate": "ISTQB_STE_v1.0.1-Syllabus.pdf",
+   "langue": "en",
+   "motifs": [
+    "ct ste\\b",
+    "\\bste\\b.*syllabus",
+    "security test engineer"
+   ]
+  },
+  {
+   "code": "CT-SEC",
+   "titre": "Security Tester",
+   "niveau": "specialiste",
+   "domaine": "securite",
+   "version_constatee": "1.0 (2016)",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-security-tester-ct-sec/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3599",
+   "fichier_constate": "ISTQB-CT-SEC_Syllabus_v1.0_2016.pdf",
+   "langue": "en",
+   "motifs": [
+    "ct sec\\b",
+    "security tester",
+    "testeur securite",
+    "tests? de securite"
+   ]
+  },
+  {
+   "code": "CT-TAS",
+   "titre": "Test Automation Strategy",
+   "niveau": "specialiste",
+   "domaine": "automatisation",
+   "version_constatee": "1.0",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-test-automation-strategy-ct-tas/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3571",
+   "fichier_constate": "ISTQB_CT-TAS_Syllabus_v1.0.pdf",
+   "langue": "en",
+   "motifs": [
+    "ct tas\\b",
+    "test automation strategy",
+    "strategie d automatisation"
+   ]
+  },
+  {
+   "code": "CT-GenAI",
+   "titre": "Testing with Generative AI",
+   "niveau": "specialiste",
+   "domaine": "ia",
+   "version_constatee": "1.1",
+   "page_officielle": "https://istqb.org/certifications/gen-ai/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=6295",
+   "fichier_constate": "ISTQB-CT-GenAI-Syllabus-v1.1.pdf",
+   "langue": "en",
+   "motifs": [
+    "genai",
+    "generative ai",
+    "ia generative"
+   ]
+  },
+  {
+   "code": "CT-AI",
+   "titre": "AI Testing",
+   "niveau": "specialiste",
+   "domaine": "ia",
+   "version_constatee": "2.0",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-ai-testing-ct-ai/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=9558",
+   "fichier_constate": "ISTQB-_CTAI_Syllabus_v2.0_Release.pdf",
+   "langue": "en",
+   "motifs": [
+    "ct ai\\b",
+    "ctai",
+    "ai testing",
+    "test(s)? de l ia",
+    "systemes? d ia"
+   ]
+  },
+  {
+   "code": "CT-QDO",
+   "titre": "Quality in DevOps",
+   "niveau": "specialiste",
+   "domaine": "cicd",
+   "version_constatee": "1.0",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-quality-in-devops-ct-qdo/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=9630",
+   "fichier_constate": "ISTQB-CT-QDO-Syllabus-v1.0-EN-1.pdf",
+   "langue": "en",
+   "motifs": [
+    "ct qdo",
+    "quality in devops",
+    "qualite (dans|en) devops"
+   ]
+  },
+  {
+   "code": "CT-AuT",
+   "titre": "Automotive Software Tester",
+   "niveau": "specialiste",
+   "domaine": "reglementee",
+   "version_constatee": "2.1.1",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-automotive-software-tester-ct-aut/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3615",
+   "fichier_constate": "ISTQB_CT-AuT_Syllabus_EN-1.pdf",
+   "langue": "en",
+   "motifs": [
+    "ct aut\\b",
+    "automotive"
+   ]
+  },
+  {
+   "code": "CT-GaMe",
+   "titre": "Game Testing",
+   "niveau": "specialiste",
+   "domaine": "fonctionnel",
+   "version_constatee": "1.0.1",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-game-testing-ct-game/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3621",
+   "fichier_constate": "ISTQB_CT_GaMe_Syllabus_v1.0.1_LtrKuyi.pdf",
+   "langue": "en",
+   "motifs": [
+    "ct game\\b",
+    "game testing",
+    "tests? de jeux"
+   ]
+  },
+  {
+   "code": "CT-GT",
+   "titre": "Gambling Industry Tester",
+   "niveau": "specialiste",
+   "domaine": "reglementee",
+   "version_constatee": "1.0 (2019)",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-gambling-industry-tester-ct-gt/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3632",
+   "fichier_constate": "ISTQB-CT-GT_Syllabus_v1.0_2019.pdf",
+   "langue": "en",
+   "motifs": [
+    "ct gt\\b",
+    "gambling"
+   ]
+  },
+  {
+   "code": "CT-FT",
+   "titre": "Finance Testing",
+   "niveau": "specialiste",
+   "domaine": "reglementee",
+   "version_constatee": "1.0",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-finance-testing-ct-ft/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=9870",
+   "fichier_constate": "ISTQB-CT-FT-Syllabus-Release-v1.0.pdf",
+   "langue": "en",
+   "motifs": [
+    "ct ft\\b",
+    "finance testing"
+   ]
+  },
+  {
+   "code": "CTFL",
+   "titre": "Foundation Level",
+   "niveau": "fondation",
+   "domaine": "conception",
+   "version_constatee": "4.0.1",
+   "page_officielle": "https://istqb.org/certifications/certified-tester-foundation-level-ctfl-v4-0/",
+   "telechargement": "https://istqb.org/?sdm_process_download=1&download_id=3345",
+   "fichier_constate": "ISTQB_CTFL_Syllabus_v4.0.1.pdf",
+   "langue": "en",
+   "motifs": [
+    "\\bctfl\\b",
+    "foundation level syllabus",
+    "niveau fondation"
+   ]
+  }
+ ]
+}

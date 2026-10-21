@@ -39,6 +39,24 @@ jobs:
         working-directory: backend
         run: python -m pytest tests/ -q -rs
 
+  # QA Knowledge Agent (qa-knowledge/) : bibliothèque ISTQB + base de connaissances.
+  # test_sources_reelles.py appelle vraiment istqb.org : ignoré avec sa raison si bloqué.
+  qa-knowledge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: qa-knowledge/requirements.txt
+      - name: Installer les dépendances
+        working-directory: qa-knowledge
+        run: pip install -r requirements.txt
+      - name: Tests
+        working-directory: qa-knowledge
+        run: python -m pytest tests/ -q -rs
+
   frontend:
     runs-on: ubuntu-latest
     steps:

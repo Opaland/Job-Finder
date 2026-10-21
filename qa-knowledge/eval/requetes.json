@@ -1,0 +1,697 @@
+{
+ "description": "Jeu d'évaluation de la recherche locale. Une question réussit si l'un des passages attendus (code ISTQB + préfixe de section ; section vide = tout le document) figure dans les k premiers résultats. Rédigé à partir des plans réels des syllabus, AVANT réglage du moteur sur ces questions.",
+ "cas": [
+  {
+   "requete": "Comment identifier et évaluer les risques qualité ?",
+   "attendus": [
+    {
+     "code": "CTAL-TM",
+     "section": "1.3"
+    },
+    {
+     "code": "CTFL",
+     "section": "5.2"
+    }
+   ]
+  },
+  {
+   "requete": "partitions d'équivalence",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "4.2.1"
+    },
+    {
+     "code": "CTAL-TA",
+     "section": "3.1"
+    }
+   ]
+  },
+  {
+   "requete": "analyse des valeurs limites",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "4.2.2"
+    },
+    {
+     "code": "CTAL-TA",
+     "section": "3.1"
+    }
+   ]
+  },
+  {
+   "requete": "test de transition d'états et couverture des transitions",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "4.2.4"
+    },
+    {
+     "code": "CTAL-TA",
+     "section": "3.1"
+    }
+   ]
+  },
+  {
+   "requete": "table de décision",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "4.2.3"
+    },
+    {
+     "code": "CTAL-TA",
+     "section": "3.1"
+    }
+   ]
+  },
+  {
+   "requete": "approche équipe intégrée whole team",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "1.5.2"
+    },
+    {
+     "code": "CTFL-AT",
+     "section": "1"
+    }
+   ]
+  },
+  {
+   "requete": "indépendance des tests",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "1.5.3"
+    },
+    {
+     "code": "CTAL-TM",
+     "section": "3"
+    },
+    {
+     "code": "CTFL-AT",
+     "section": "2.1.5"
+    }
+   ]
+  },
+  {
+   "requete": "shift left tester au plus tôt",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "2.1.5"
+    },
+    {
+     "code": "CT-QDO",
+     "section": ""
+    }
+   ]
+  },
+  {
+   "requete": "rétrospectives et amélioration du processus",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "2.1.6"
+    },
+    {
+     "code": "CTAL-TM",
+     "section": "1.5.4"
+    }
+   ]
+  },
+  {
+   "requete": "modèle IDEAL d'amélioration du processus de test",
+   "attendus": [
+    {
+     "code": "CTEL-ITP",
+     "section": "2.4.2"
+    },
+    {
+     "code": "CTAL-TM",
+     "section": "1.5.1"
+    }
+   ]
+  },
+  {
+   "requete": "comparaison entre TPI Next et TMMi",
+   "attendus": [
+    {
+     "code": "CTEL-ITP",
+     "section": "3.3"
+    },
+    {
+     "code": "CTAL-TM",
+     "section": "1.5.2"
+    }
+   ]
+  },
+  {
+   "requete": "roue de Deming PDCA",
+   "attendus": [
+    {
+     "code": "CTEL-ITP",
+     "section": "2.4.1"
+    },
+    {
+     "code": "CT-ATLaS",
+     "section": "3.1"
+    }
+   ]
+  },
+  {
+   "requete": "techniques d'estimation de l'effort de test",
+   "attendus": [
+    {
+     "code": "CTAL-TM",
+     "section": "2.2"
+    },
+    {
+     "code": "CTFL",
+     "section": "5.1.4"
+    }
+   ]
+  },
+  {
+   "requete": "facteurs qui influencent l'effort de test",
+   "attendus": [
+    {
+     "code": "CTAL-TM",
+     "section": "2.2.2"
+    },
+    {
+     "code": "CTFL",
+     "section": "5.1.4"
+    }
+   ]
+  },
+  {
+   "requete": "cycle de vie des défauts",
+   "attendus": [
+    {
+     "code": "CTAL-TM",
+     "section": "2.3.1"
+    },
+    {
+     "code": "CTFL",
+     "section": "5.5"
+    }
+   ]
+  },
+  {
+   "requete": "maintenabilité de la solution d'automatisation des tests",
+   "attendus": [
+    {
+     "code": "CTAL-TAE",
+     "section": "4.3"
+    },
+    {
+     "code": "CT-TAS",
+     "section": ""
+    }
+   ]
+  },
+  {
+   "requete": "intégrer les tests automatisés dans un pipeline CI/CD",
+   "attendus": [
+    {
+     "code": "CTAL-TAE",
+     "section": "5.1"
+    },
+    {
+     "code": "CT-QDO",
+     "section": ""
+    }
+   ]
+  },
+  {
+   "requete": "test exploratoire basé sur les sessions et chartes",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "4.4.2"
+    },
+    {
+     "code": "CTAL-TA",
+     "section": ""
+    }
+   ]
+  },
+  {
+   "requete": "rôles et responsabilités dans les revues",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "3.2.3"
+    }
+   ]
+  },
+  {
+   "requete": "critères d'acceptation et ATDD",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "4.5"
+    },
+    {
+     "code": "CT-AcT",
+     "section": ""
+    }
+   ]
+  },
+  {
+   "requete": "priorisation des cas de test",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "5.1.5"
+    },
+    {
+     "code": "CTAL-TA",
+     "section": ""
+    },
+    {
+     "code": "CTAL-TM",
+     "section": ""
+    }
+   ]
+  },
+  {
+   "requete": "pyramide des tests",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "5.1.6"
+    },
+    {
+     "code": "CTAL-TAE",
+     "section": ""
+    },
+    {
+     "code": "CT-TAS",
+     "section": ""
+    }
+   ]
+  },
+  {
+   "requete": "quadrants de test agiles",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "5.1.7"
+    },
+    {
+     "code": "CTFL-AT",
+     "section": ""
+    }
+   ]
+  },
+  {
+   "requete": "critères d'entrée et critères de sortie",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "5.1.3"
+    },
+    {
+     "code": "CTAL-TM",
+     "section": ""
+    }
+   ]
+  },
+  {
+   "requete": "génération de charge pour les tests de performance",
+   "attendus": [
+    {
+     "code": "CT-PT",
+     "section": "1.4"
+    }
+   ]
+  },
+  {
+   "requete": "métriques collectées pendant un test de performance",
+   "attendus": [
+    {
+     "code": "CT-PT",
+     "section": "2.1"
+    }
+   ]
+  },
+  {
+   "requete": "biais dans les systèmes d'IA",
+   "attendus": [
+    {
+     "code": "CT-AI",
+     "section": ""
+    }
+   ]
+  },
+  {
+   "requete": "hallucinations des LLM utilisés pour tester",
+   "attendus": [
+    {
+     "code": "CT-GenAI",
+     "section": ""
+    }
+   ]
+  },
+  {
+   "requete": "évaluation heuristique de l'utilisabilité",
+   "attendus": [
+    {
+     "code": "CT-UT",
+     "section": ""
+    }
+   ]
+  },
+  {
+   "requete": "analyse causale des défauts diagramme d'Ishikawa",
+   "attendus": [
+    {
+     "code": "CTEL-ITP",
+     "section": "4.2"
+    },
+    {
+     "code": "CT-ATLaS",
+     "section": "3.2"
+    }
+   ]
+  },
+  {
+   "requete": "métriques d'efficacité du test",
+   "attendus": [
+    {
+     "code": "CTEL-ITP",
+     "section": "4.4"
+    },
+    {
+     "code": "CTAL-TM",
+     "section": "2.1"
+    }
+   ]
+  },
+  {
+   "requete": "ROI de l'automatisation des tests",
+   "attendus": [
+    {
+     "code": "CT-TAS",
+     "section": ""
+    },
+    {
+     "code": "CTAL-TAE",
+     "section": "1.1"
+    },
+    {
+     "code": "CTAL-TM",
+     "section": "1.6.3"
+    }
+   ]
+  },
+  {
+   "requete": "chaîne de valeur et délai de livraison",
+   "attendus": [
+    {
+     "code": "CT-ATLaS",
+     "section": ""
+    },
+    {
+     "code": "CT-QDO",
+     "section": ""
+    }
+   ]
+  },
+  {
+   "requete": "equivalence partitioning boundary values",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "4.2"
+    },
+    {
+     "code": "CTAL-TA",
+     "section": "3.1"
+    }
+   ]
+  },
+  {
+   "requete": "risk-based testing techniques",
+   "attendus": [
+    {
+     "code": "CTAL-TM",
+     "section": "1.3"
+    },
+    {
+     "code": "CTAL-TA",
+     "section": ""
+    },
+    {
+     "code": "CTAL-TTA",
+     "section": "1"
+    }
+   ]
+  },
+  {
+   "requete": "test oracle problem",
+   "attendus": [
+    {
+     "code": "CT-AI",
+     "section": ""
+    },
+    {
+     "code": "CTAL-TA",
+     "section": ""
+    },
+    {
+     "code": "CT-MBT",
+     "section": ""
+    }
+   ]
+  },
+  {
+   "requete": "Comment rédiger un rapport d'avancement des tests ?",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "5.3"
+    },
+    {
+     "code": "CTAL-TM",
+     "section": "2.1.3"
+    },
+    {
+     "code": "CTAL-TAE",
+     "section": "6.1.3"
+    }
+   ],
+   "controle": true
+  },
+  {
+   "requete": "contenu d'un plan de test",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "5.1.1"
+    },
+    {
+     "code": "CTAL-TM",
+     "section": "1.1.1"
+    }
+   ],
+   "controle": true
+  },
+  {
+   "requete": "couverture des branches et des instructions",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "4.3"
+    },
+    {
+     "code": "CTAL-TTA",
+     "section": "2"
+    }
+   ],
+   "controle": true
+  },
+  {
+   "requete": "estimation d'erreur et attaques de fautes",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "4.4.1"
+    },
+    {
+     "code": "CTAL-TA",
+     "section": ""
+    }
+   ],
+   "controle": true
+  },
+  {
+   "requete": "test basé sur des checklists",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "4.4.3"
+    },
+    {
+     "code": "CTAL-TA",
+     "section": ""
+    },
+    {
+     "code": "CTAL-TTA",
+     "section": "5.2"
+    }
+   ],
+   "controle": true
+  },
+  {
+   "requete": "gestion de configuration du testware",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "5.4"
+    },
+    {
+     "code": "CTAL-TAE",
+     "section": "5.1.2"
+    }
+   ],
+   "controle": true
+  },
+  {
+   "requete": "tests de confirmation et de régression",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "2.2.3"
+    }
+   ],
+   "controle": true
+  },
+  {
+   "requete": "test de maintenance et analyse d'impact",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "2.3"
+    },
+    {
+     "code": "CTAL-TTA",
+     "section": ""
+    }
+   ],
+   "controle": true
+  },
+  {
+   "requete": "principes du test",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "1.3"
+    }
+   ],
+   "controle": true
+  },
+  {
+   "requete": "DevOps et test",
+   "attendus": [
+    {
+     "code": "CTFL",
+     "section": "2.1.4"
+    },
+    {
+     "code": "CT-QDO",
+     "section": ""
+    }
+   ],
+   "controle": true
+  },
+  {
+   "requete": "sélection d'un outil de test et preuve de concept",
+   "attendus": [
+    {
+     "code": "CTAL-TM",
+     "section": "1.6"
+    },
+    {
+     "code": "CT-TAS",
+     "section": ""
+    },
+    {
+     "code": "CTAL-TAE",
+     "section": "2.2"
+    }
+   ],
+   "controle": true
+  },
+  {
+   "requete": "tests de sécurité et analyse des vulnérabilités",
+   "attendus": [
+    {
+     "code": "CT-SEC",
+     "section": ""
+    },
+    {
+     "code": "CT-STE",
+     "section": ""
+    },
+    {
+     "code": "CTAL-TTA",
+     "section": "4"
+    }
+   ],
+   "controle": true
+  },
+  {
+   "requete": "tester une application mobile sur plusieurs appareils",
+   "attendus": [
+    {
+     "code": "CT-MAT",
+     "section": ""
+    }
+   ],
+   "controle": true
+  },
+  {
+   "requete": "mentoring et motivation de l'équipe de test",
+   "attendus": [
+    {
+     "code": "CTEL-TM",
+     "section": ""
+    },
+    {
+     "code": "CTAL-TM",
+     "section": "3"
+    }
+   ],
+   "controle": true
+  },
+  {
+   "requete": "parties prenantes du test",
+   "attendus": [
+    {
+     "code": "CTAL-TM",
+     "section": "1.2.1"
+    },
+    {
+     "code": "CTFL",
+     "section": ""
+    }
+   ],
+   "controle": true
+  },
+  {
+   "requete": "prompt engineering pour générer des cas de test",
+   "attendus": [
+    {
+     "code": "CT-GenAI",
+     "section": ""
+    }
+   ],
+   "controle": true
+  }
+ ]
+}
