@@ -22,10 +22,3 @@ frontend/dist-demo/
 
 # Session Claude Code du conteneur Docker (option AVEC_IA=1)
 claude/
-
-# QA Knowledge Agent : PDF sources (téléchargeables / fournis par l'utilisateur) et
-# bases SQLite reconstructibles. Versionnés : manifeste, connaissances.jsonl, journal.
-qa-knowledge/bibliotheque/sources/*
-!qa-knowledge/bibliotheque/sources/LISEZMOI.md
-qa-knowledge/bibliotheque/index.db
-qa-knowledge/connaissances/base.db

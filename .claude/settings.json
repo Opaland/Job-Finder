@@ -11,9 +11,7 @@
       "Bash(scripts/verif.bat:*)",
       "Bash(python scripts/revue_ia.py:*)",
       "Bash(python3 scripts/revue_ia.py:*)",
-      "Bash(node scripts/smoke_ui.mjs:*)",
-      "Bash(python qa-knowledge/qa.py:*)",
-      "Bash(python3 qa-knowledge/qa.py:*)"
+      "Bash(node scripts/smoke_ui.mjs:*)"
     ]
   },
   "hooks": {

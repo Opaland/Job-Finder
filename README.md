@@ -400,10 +400,3 @@ Relevées en interrogeant les vraies sources, pas déduites du code.
   casser sans préavis. Les tests réels (§8) et `python -m app.cli sources` le disent tout de suite.
 - Application **mono-utilisateur, 100 % locale**, sans authentification — ne pas l'exposer sur Internet
   en l'état.
-
-## 11. Bonus : QA Knowledge Agent
-
-Le dossier [`qa-knowledge/`](qa-knowledge/README.md) contient un assistant de connaissances
-QA utilisable en conversation dans Claude Code : syllabus ISTQB locaux (FR/EN, pages et
-sections citées), base d'idées QA capitalisées et versionnées, recherche Web seulement si
-justifiée. Indépendant de l'application Job Finder.

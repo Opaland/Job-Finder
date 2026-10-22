@@ -28,10 +28,6 @@ echo "-- Syntaxe backend (compileall)"
 echo "-- Tests backend (pytest)"
 (cd "$RACINE/backend" && "$PY" -m pytest tests/ -q -rs) || { echo "ÉCHEC : des tests backend sont rouges." >&2; exit 1; }
 
-echo "-- QA Knowledge Agent : syntaxe + tests (pytest)"
-"$PY" -m compileall -q "$RACINE/qa-knowledge/qak" || { echo "ÉCHEC : erreur de syntaxe dans qa-knowledge/qak." >&2; exit 1; }
-(cd "$RACINE/qa-knowledge" && "$PY" -m pytest tests/ -q -rs) || { echo "ÉCHEC : des tests qa-knowledge sont rouges." >&2; exit 1; }
-
 if [ $RAPIDE = 1 ]; then
   echo "== OK (rapide) : syntaxe + tests verts =="
   exit 0

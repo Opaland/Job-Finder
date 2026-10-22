@@ -24,14 +24,6 @@ pushd backend
 if errorlevel 1 ( popd & goto echec )
 popd
 
-echo -- QA Knowledge Agent (syntaxe + pytest)
-"%PY%" -m compileall -q qa-knowledge\qak
-if errorlevel 1 goto echec
-pushd qa-knowledge
-"%PY%" -m pytest tests\ -q -rs
-if errorlevel 1 ( popd & goto echec )
-popd
-
 if /i "%~1"=="rapide" goto fin_rapide
 if /i "%~1"=="--rapide" goto fin_rapide
 

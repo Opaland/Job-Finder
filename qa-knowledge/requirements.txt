@@ -1,3 +1,0 @@
-# QA Knowledge Agent — dépendances minimales (Python ≥ 3.10, SQLite avec FTS5 : inclus dans Python)
-pypdf>=4.2
-pytest>=8.2
